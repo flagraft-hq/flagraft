@@ -1,0 +1,16 @@
+services:
+  veltra-pg:
+    image: postgres:15
+    container_name: veltra-pg
+    environment:
+      POSTGRES_USER: veltra
+      POSTGRES_PASSWORD: veltra
+      POSTGRES_DB: veltra
+    ports:
+      - "5432:5432"
+    volumes:
+      - veltra-pg-data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  veltra-pg-data:

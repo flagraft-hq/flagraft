@@ -1,0 +1,35 @@
+import type { FastifyInstance } from 'fastify'
+
+import { createKeySchema, keyParamsSchema, keyProjectParamsSchema } from './key.schema.js'
+import * as service from './key.service.js'
+
+export async function keyRoutes(fastify: FastifyInstance) {
+  fastify.post(
+    '/api/admin/projects/:projectId/keys',
+    { preHandler: fastify.requireAdminKey },
+    async (request, reply) => {
+      const params = keyProjectParamsSchema.parse(request.params)
+      const key = await service.createKey(fastify.db, params.projectId, createKeySchema.parse(request.body))
+      return reply.status(201).send(key)
+    }
+  )
+
+  fastify.get(
+    '/api/admin/projects/:projectId/keys',
+    { preHandler: fastify.requireAdminKey },
+    async (request) => {
+      const params = keyProjectParamsSchema.parse(request.params)
+      return service.listKeys(fastify.db, params.projectId)
+    }
+  )
+
+  fastify.delete(
+    '/api/admin/projects/:projectId/keys/:keyId',
+    { preHandler: fastify.requireAdminKey },
+    async (request, reply) => {
+      const params = keyParamsSchema.parse(request.params)
+      await service.deleteKey(fastify.db, params.projectId, params.keyId)
+      return reply.status(204).send()
+    }
+  )
+}

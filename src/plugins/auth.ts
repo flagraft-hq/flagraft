@@ -1,0 +1,112 @@
+import { createHash, randomBytes } from 'node:crypto'
+
+import { and, eq } from 'drizzle-orm'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import fp from 'fastify-plugin'
+
+import { apiKeys } from '../db/schema.js'
+import { AppError } from './errorHandler.js'
+
+export interface KeyContext {
+  keyId: string
+  projectId: string | null
+  environmentId: string | null
+  type: 'client' | 'admin'
+  isRoot: boolean
+}
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    keyContext?: KeyContext
+  }
+
+  interface FastifyInstance {
+    requireAdminKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    requireRootKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    requireClientKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+  }
+}
+
+export function hashKey(plaintext: string): string {
+  return createHash('sha256').update(plaintext).digest('hex')
+}
+
+export function generateKey(): { plaintext: string; prefix: string; hash: string } {
+  const plaintext = `ff_${randomBytes(16).toString('hex')}`
+  return {
+    plaintext,
+    prefix: plaintext.slice(0, 12),
+    hash: hashKey(plaintext)
+  }
+}
+
+function projectIdFromParams(request: FastifyRequest): string | undefined {
+  const params = request.params
+  if (typeof params !== 'object' || params === null || !('projectId' in params)) {
+    return undefined
+  }
+
+  const value = (params as { projectId?: unknown }).projectId
+  return typeof value === 'string' ? value : undefined
+}
+
+async function authPlugin(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', async (request) => {
+    const authorization = request.headers.authorization
+    if (!authorization) {
+      throw new AppError('Missing authorization header', 401, 'Unauthorized')
+    }
+
+    const [key] = await fastify.db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.keyHash, hashKey(authorization)))
+      .limit(1)
+
+    if (!key) {
+      throw new AppError('Invalid authorization key', 401, 'Unauthorized')
+    }
+
+    request.keyContext = {
+      keyId: key.id,
+      projectId: key.projectId,
+      environmentId: key.environmentId,
+      type: key.type as 'client' | 'admin',
+      isRoot: key.projectId === null
+    }
+
+    void fastify.db
+      .update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(and(eq(apiKeys.id, key.id), eq(apiKeys.keyHash, key.keyHash)))
+      .catch((error: unknown) => request.log.warn({ error }, 'Failed to update key usage'))
+  })
+
+  fastify.decorate('requireAdminKey', async (request: FastifyRequest) => {
+    const context = request.keyContext
+    if (!context || context.type !== 'admin') {
+      throw new AppError('Admin key required', 403, 'Forbidden')
+    }
+
+    const routeProjectId = projectIdFromParams(request)
+    if (routeProjectId && !context.isRoot && context.projectId !== routeProjectId) {
+      throw new AppError('Project scope mismatch', 403, 'Forbidden')
+    }
+  })
+
+  fastify.decorate('requireRootKey', async (request: FastifyRequest) => {
+    const context = request.keyContext
+    if (!context || context.type !== 'admin' || !context.isRoot) {
+      throw new AppError('Root admin key required', 403, 'Forbidden')
+    }
+  })
+
+  fastify.decorate('requireClientKey', async (request: FastifyRequest) => {
+    const context = request.keyContext
+    if (!context || context.type !== 'client') {
+      throw new AppError('Client key required', 403, 'Forbidden')
+    }
+  })
+}
+
+export default fp(authPlugin, { name: 'auth' })
