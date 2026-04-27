@@ -9,7 +9,7 @@ import type { CreateProjectInput, PatchProjectInput } from './project.schema.js'
 const defaultEnvironments = [
   { name: 'Development', slug: 'development' },
   { name: 'Staging', slug: 'staging' },
-  { name: 'Production', slug: 'production' }
+  { name: 'Production', slug: 'production' },
 ]
 
 export async function createProject(db: Db, input: CreateProjectInput) {
@@ -18,8 +18,8 @@ export async function createProject(db: Db, input: CreateProjectInput) {
     await tx.insert(environments).values(
       defaultEnvironments.map((environment) => ({
         ...environment,
-        projectId: project.id
-      }))
+        projectId: project.id,
+      })),
     )
     return project
   })

@@ -22,7 +22,11 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "admin:create-root-key": "tsx src/cli/create-root-key.ts"
+    "admin:create-root-key": "tsx src/cli/create-root-key.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "dotenv": "^16.4.7",
@@ -35,12 +39,17 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.1",
     "@types/pg": "^8.11.10",
     "drizzle-kit": "^0.27.2",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.59.1",
     "vitest": "^2.1.8"
   }
 }

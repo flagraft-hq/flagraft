@@ -4,7 +4,7 @@ import {
   createFlagSchema,
   flagEnvironmentParamsSchema,
   flagParamsSchema,
-  patchFlagSchema
+  patchFlagSchema,
 } from './flag.schema.js'
 import * as service from './flag.service.js'
 
@@ -14,9 +14,13 @@ export async function flagRoutes(fastify: FastifyInstance) {
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
-      const flag = await service.createFlag(fastify.db, params.projectId, createFlagSchema.parse(request.body))
+      const flag = await service.createFlag(
+        fastify.db,
+        params.projectId,
+        createFlagSchema.parse(request.body),
+      )
       return reply.status(201).send(flag)
-    }
+    },
   )
 
   fastify.get(
@@ -25,7 +29,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
     async (request) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
       return service.listFlags(fastify.db, params.projectId)
-    }
+    },
   )
 
   fastify.get(
@@ -34,7 +38,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
     async (request) => {
       const params = flagParamsSchema.parse(request.params)
       return service.getFlag(fastify.db, params.projectId, params.flagKey)
-    }
+    },
   )
 
   fastify.patch(
@@ -46,9 +50,9 @@ export async function flagRoutes(fastify: FastifyInstance) {
         fastify.db,
         params.projectId,
         params.flagKey,
-        patchFlagSchema.parse(request.body)
+        patchFlagSchema.parse(request.body),
       )
-    }
+    },
   )
 
   fastify.delete(
@@ -58,12 +62,12 @@ export async function flagRoutes(fastify: FastifyInstance) {
       const params = flagParamsSchema.parse(request.params)
       await service.deleteFlag(fastify.db, params.projectId, params.flagKey)
       return reply.status(204).send()
-    }
+    },
   )
 
   for (const [action, enabled] of [
     ['enable', true],
-    ['disable', false]
+    ['disable', false],
   ] as const) {
     fastify.post(
       `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/${action}`,
@@ -75,9 +79,9 @@ export async function flagRoutes(fastify: FastifyInstance) {
           params.projectId,
           params.flagKey,
           params.environmentSlug,
-          enabled
+          enabled,
         )
-      }
+      },
     )
   }
 }

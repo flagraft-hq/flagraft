@@ -22,6 +22,7 @@ describe('errorHandlerPlugin', () => {
   it('normalizes unique conflicts', async () => {
     const fastify = await app()
     fastify.get('/conflict', async () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw { code: '23505' }
     })
     const response = await fastify.inject('/conflict')
@@ -49,7 +50,7 @@ describe('errorHandlerPlugin', () => {
     expect(response.json()).toEqual({
       error: 'InternalServerError',
       message: 'Internal error',
-      statusCode: 500
+      statusCode: 500,
     })
     expect(response.body).not.toContain('boom')
   })

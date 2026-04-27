@@ -6,7 +6,7 @@ export class AppError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number,
-    public readonly code: string
+    public readonly code: string,
   ) {
     super(message)
   }
@@ -24,7 +24,7 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
           error: 'ValidationError',
           message: 'Validation error',
           statusCode: 400,
-          issues: error.issues
+          issues: error.issues,
         })
       }
 
@@ -32,7 +32,7 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
         return reply.status(409).send({
           error: 'Conflict',
           message: 'Resource already exists',
-          statusCode: 409
+          statusCode: 409,
         })
       }
 
@@ -40,16 +40,16 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
         return reply.status(error.statusCode).send({
           error: error.code,
           message: error.message,
-          statusCode: error.statusCode
+          statusCode: error.statusCode,
         })
       }
 
       return reply.status(500).send({
         error: 'InternalServerError',
         message: 'Internal error',
-        statusCode: 500
+        statusCode: 500,
       })
-    }
+    },
   )
 }
 

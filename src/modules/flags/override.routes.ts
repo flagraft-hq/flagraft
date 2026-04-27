@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import {
   createOverrideSchema,
   deleteOverrideParamsSchema,
-  overrideParamsSchema
+  overrideParamsSchema,
 } from './override.schema.js'
 import * as service from './override.service.js'
 
@@ -18,10 +18,10 @@ export async function overrideRoutes(fastify: FastifyInstance) {
         params.projectId,
         params.flagKey,
         params.environmentSlug,
-        createOverrideSchema.parse(request.body)
+        createOverrideSchema.parse(request.body),
       )
       return reply.status(201).send(override)
-    }
+    },
   )
 
   fastify.get(
@@ -33,9 +33,9 @@ export async function overrideRoutes(fastify: FastifyInstance) {
         fastify.db,
         params.projectId,
         params.flagKey,
-        params.environmentSlug
+        params.environmentSlug,
       )
-    }
+    },
   )
 
   fastify.delete(
@@ -48,9 +48,9 @@ export async function overrideRoutes(fastify: FastifyInstance) {
         params.projectId,
         params.flagKey,
         params.environmentSlug,
-        params.overrideId
+        params.overrideId,
       )
       return reply.status(204).send()
-    }
+    },
   )
 }

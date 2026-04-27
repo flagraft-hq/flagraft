@@ -1,17 +1,20 @@
 import type { FastifyInstance } from 'fastify'
 
-import {
-  createProjectSchema,
-  patchProjectSchema,
-  projectIdParamsSchema
-} from './project.schema.js'
+import { createProjectSchema, patchProjectSchema, projectIdParamsSchema } from './project.schema.js'
 import * as service from './project.service.js'
 
 export async function projectRoutes(fastify: FastifyInstance) {
-  fastify.post('/api/admin/projects', { preHandler: fastify.requireRootKey }, async (request, reply) => {
-    const project = await service.createProject(fastify.db, createProjectSchema.parse(request.body))
-    return reply.status(201).send(project)
-  })
+  fastify.post(
+    '/api/admin/projects',
+    { preHandler: fastify.requireRootKey },
+    async (request, reply) => {
+      const project = await service.createProject(
+        fastify.db,
+        createProjectSchema.parse(request.body),
+      )
+      return reply.status(201).send(project)
+    },
+  )
 
   fastify.get('/api/admin/projects', { preHandler: fastify.requireAdminKey }, async (request) => {
     return service.listProjects(fastify.db, request.keyContext!)
@@ -23,7 +26,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     async (request) => {
       const params = projectIdParamsSchema.parse(request.params)
       return service.getProject(fastify.db, params.projectId)
-    }
+    },
   )
 
   fastify.patch(
@@ -34,9 +37,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
       return service.patchProject(
         fastify.db,
         params.projectId,
-        patchProjectSchema.parse(request.body)
+        patchProjectSchema.parse(request.body),
       )
-    }
+    },
   )
 
   fastify.delete(
@@ -46,6 +49,6 @@ export async function projectRoutes(fastify: FastifyInstance) {
       const params = projectIdParamsSchema.parse(request.params)
       await service.deleteProject(fastify.db, params.projectId)
       return reply.status(204).send()
-    }
+    },
   )
 }

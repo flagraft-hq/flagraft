@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: veltra
       POSTGRES_DB: veltra
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - veltra-pg-data:/var/lib/postgresql/data
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro

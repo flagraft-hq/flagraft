@@ -32,7 +32,7 @@ export async function createOverride(
   projectId: string,
   flagKey: string,
   environmentSlug: string,
-  input: CreateOverrideInput
+  input: CreateOverrideInput,
 ) {
   const { flag, environment } = await lookup(db, projectId, flagKey, environmentSlug)
   const [override] = await db
@@ -42,7 +42,7 @@ export async function createOverride(
       environmentId: environment.id,
       contextKey: input.contextKey,
       contextValue: input.contextValue,
-      enabled: input.enabled
+      enabled: input.enabled,
     })
     .returning()
   return override
@@ -52,7 +52,7 @@ export async function listOverrides(
   db: Db,
   projectId: string,
   flagKey: string,
-  environmentSlug: string
+  environmentSlug: string,
 ) {
   const { flag, environment } = await lookup(db, projectId, flagKey, environmentSlug)
   return db
@@ -67,7 +67,7 @@ export async function deleteOverride(
   projectId: string,
   flagKey: string,
   environmentSlug: string,
-  overrideId: string
+  overrideId: string,
 ) {
   const { flag, environment } = await lookup(db, projectId, flagKey, environmentSlug)
   const [override] = await db
@@ -76,8 +76,8 @@ export async function deleteOverride(
       and(
         eq(flagOverrides.id, overrideId),
         eq(flagOverrides.flagId, flag.id),
-        eq(flagOverrides.environmentId, environment.id)
-      )
+        eq(flagOverrides.environmentId, environment.id),
+      ),
     )
     .returning()
 

@@ -14,7 +14,7 @@ function publicKey(row: typeof apiKeys.$inferSelect) {
     environmentId: row.environmentId,
     description: row.description,
     lastUsedAt: row.lastUsedAt,
-    createdAt: row.createdAt
+    createdAt: row.createdAt,
   }
 }
 
@@ -47,13 +47,13 @@ export async function createKey(db: Db, projectId: string, input: CreateKeyInput
       keyHash: generated.hash,
       keyPrefix: generated.prefix,
       type: input.type,
-      description: input.description
+      description: input.description,
     })
     .returning()
 
   return {
     ...publicKey(row),
-    key: generated.plaintext
+    key: generated.plaintext,
   }
 }
 

@@ -1,0 +1,38 @@
+import js from '@eslint/js'
+import eslintConfigPrettier from 'eslint-config-prettier'
+import tseslint from 'typescript-eslint'
+
+export default tseslint.config(
+  {
+    ignores: ['dist/', 'node_modules/', 'coverage/'],
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  eslintConfigPrettier,
+  {
+    languageOptions: {
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      // Fastify registers async handlers and preHandlers on void-returning slots by design
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { arguments: false, properties: false } },
+      ],
+      // Fastify preHandlers must be async by interface even when no await is needed
+      '@typescript-eslint/require-await': 'off',
+      'no-console': 'warn',
+    },
+  },
+  {
+    files: ['src/cli/**'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+)

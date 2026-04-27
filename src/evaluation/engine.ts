@@ -22,7 +22,7 @@ export interface EvaluationResult {
 
 export function evaluateFlag(
   state: FlagEnvironmentState,
-  context: EvaluationContext
+  context: EvaluationContext,
 ): EvaluationResult {
   for (const override of state.overrides) {
     const ctxValue = context[override.contextKey]

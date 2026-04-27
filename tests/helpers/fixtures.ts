@@ -12,7 +12,7 @@ export async function createRootKey(db: Db) {
     type: 'admin',
     projectId: null,
     environmentId: null,
-    description: 'Test root key'
+    description: 'Test root key',
   })
   return generated.plaintext
 }
@@ -22,7 +22,7 @@ export async function createProject(app: FastifyInstance, rootKey: string, slug 
     method: 'POST',
     url: '/api/admin/projects',
     headers: { authorization: rootKey },
-    payload: { name: 'Test Project', slug }
+    payload: { name: 'Test Project', slug },
   })
   if (response.statusCode !== 201) {
     throw new Error(response.body)
@@ -35,7 +35,7 @@ export async function createAdminKey(app: FastifyInstance, rootKey: string, proj
     method: 'POST',
     url: `/api/admin/projects/${projectId}/keys`,
     headers: { authorization: rootKey },
-    payload: { type: 'admin', description: 'Project admin' }
+    payload: { type: 'admin', description: 'Project admin' },
   })
   if (response.statusCode !== 201) {
     throw new Error(response.body)
@@ -47,13 +47,13 @@ export async function createClientKey(
   app: FastifyInstance,
   adminKey: string,
   projectId: string,
-  environmentId: string
+  environmentId: string,
 ) {
   const response = await app.inject({
     method: 'POST',
     url: `/api/admin/projects/${projectId}/keys`,
     headers: { authorization: adminKey },
-    payload: { type: 'client', environmentId, description: 'Client' }
+    payload: { type: 'client', environmentId, description: 'Client' },
   })
   if (response.statusCode !== 201) {
     throw new Error(response.body)

@@ -45,8 +45,8 @@ export async function createFlag(db: Db, projectId: string, input: CreateFlagInp
         envs.map((environment) => ({
           flagId: flag.id,
           environmentId: environment.id,
-          enabled: false
-        }))
+          enabled: false,
+        })),
       )
     }
     return flag
@@ -65,12 +65,7 @@ export async function getFlag(db: Db, projectId: string, flagKey: string) {
   return findFlag(db, projectId, flagKey)
 }
 
-export async function patchFlag(
-  db: Db,
-  projectId: string,
-  flagKey: string,
-  input: PatchFlagInput
-) {
+export async function patchFlag(db: Db, projectId: string, flagKey: string, input: PatchFlagInput) {
   const [flag] = await db
     .update(featureFlags)
     .set({ ...input, updatedAt: new Date() })
@@ -100,7 +95,7 @@ export async function setFlagEnabled(
   projectId: string,
   flagKey: string,
   environmentSlug: string,
-  enabled: boolean
+  enabled: boolean,
 ) {
   const flag = await findFlag(db, projectId, flagKey)
   const environment = await findEnvironment(db, projectId, environmentSlug)
@@ -109,7 +104,7 @@ export async function setFlagEnabled(
     .values({ flagId: flag.id, environmentId: environment.id, enabled })
     .onConflictDoUpdate({
       target: [flagEnvironments.flagId, flagEnvironments.environmentId],
-      set: { enabled, updatedAt: sql`now()` }
+      set: { enabled, updatedAt: sql`now()` },
     })
     .returning()
   return row

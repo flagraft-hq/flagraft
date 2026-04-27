@@ -165,11 +165,11 @@ last_used_at   timestamptz
 
 ### 3.3 Three key tiers
 
-| Tier | `project_id` | `environment_id` | `type` | Capabilities |
-|---|---|---|---|---|
-| Root admin | NULL | NULL | `admin` | Everything, including create/delete projects. **CLI-created only.** |
-| Project admin | set | NULL | `admin` | Full CRUD within that project. Cannot create/delete projects. |
-| Client | set | set | `client` | Read-only evaluation for its `(project, environment)`. |
+| Tier          | `project_id` | `environment_id` | `type`   | Capabilities                                                        |
+| ------------- | ------------ | ---------------- | -------- | ------------------------------------------------------------------- |
+| Root admin    | NULL         | NULL             | `admin`  | Everything, including create/delete projects. **CLI-created only.** |
+| Project admin | set          | NULL             | `admin`  | Full CRUD within that project. Cannot create/delete projects.       |
+| Client        | set          | set              | `client` | Read-only evaluation for its `(project, environment)`.              |
 
 ### 3.4 Fastify plugin
 
@@ -229,7 +229,7 @@ export interface EvaluationResult {
 
 export function evaluateFlag(
   state: FlagEnvironmentState,
-  context: EvaluationContext
+  context: EvaluationContext,
 ): EvaluationResult {
   for (const override of state.overrides) {
     const ctxValue = context[override.contextKey]
@@ -274,10 +274,10 @@ All paths use JSON bodies. Request/response shapes validated by Zod schemas per 
 
 `projectId` and `environmentId` come from `keyContext`. Clients never pass them in the URL.
 
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/api/client/features` | Query params become evaluation context. Response: `{ features: [{ name, enabled }] }`. |
-| GET | `/api/client/features/:flagKey` | Same context handling. Response: `{ name, enabled, reason }`. 404 if flag key unknown in project. |
+| Method | Path                            | Notes                                                                                             |
+| ------ | ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| GET    | `/api/client/features`          | Query params become evaluation context. Response: `{ features: [{ name, enabled }] }`.            |
+| GET    | `/api/client/features/:flagKey` | Same context handling. Response: `{ name, enabled, reason }`. 404 if flag key unknown in project. |
 
 Reserved/ignored query params: none in Phase 1 — every query param is passed through as context. (Documented as a known limitation; Phase 2 may reserve a namespace.)
 
@@ -285,47 +285,47 @@ Reserved/ignored query params: none in Phase 1 — every query param is passed t
 
 **Projects**
 
-| Method | Path | Root only |
-|---|---|---|
-| POST | `/api/admin/projects` | yes |
-| GET | `/api/admin/projects` | no (but returns only projects the key is scoped to, or all if root) |
-| GET | `/api/admin/projects/:projectId` | no |
-| PATCH | `/api/admin/projects/:projectId` | no |
-| DELETE | `/api/admin/projects/:projectId` | yes |
+| Method | Path                             | Root only                                                           |
+| ------ | -------------------------------- | ------------------------------------------------------------------- |
+| POST   | `/api/admin/projects`            | yes                                                                 |
+| GET    | `/api/admin/projects`            | no (but returns only projects the key is scoped to, or all if root) |
+| GET    | `/api/admin/projects/:projectId` | no                                                                  |
+| PATCH  | `/api/admin/projects/:projectId` | no                                                                  |
+| DELETE | `/api/admin/projects/:projectId` | yes                                                                 |
 
 **Environments**
 
-| Method | Path |
-|---|---|
-| POST | `/api/admin/projects/:projectId/environments` |
-| GET | `/api/admin/projects/:projectId/environments` |
+| Method | Path                                                         |
+| ------ | ------------------------------------------------------------ |
+| POST   | `/api/admin/projects/:projectId/environments`                |
+| GET    | `/api/admin/projects/:projectId/environments`                |
 | DELETE | `/api/admin/projects/:projectId/environments/:environmentId` |
 
 **Flags**
 
-| Method | Path |
-|---|---|
-| POST | `/api/admin/projects/:projectId/flags` |
-| GET | `/api/admin/projects/:projectId/flags` |
-| GET / PATCH / DELETE | `/api/admin/projects/:projectId/flags/:flagKey` |
-| POST | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/enable` |
-| POST | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/disable` |
+| Method               | Path                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------- |
+| POST                 | `/api/admin/projects/:projectId/flags`                                                |
+| GET                  | `/api/admin/projects/:projectId/flags`                                                |
+| GET / PATCH / DELETE | `/api/admin/projects/:projectId/flags/:flagKey`                                       |
+| POST                 | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/enable`  |
+| POST                 | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/disable` |
 
 **Overrides**
 
-| Method | Path |
-|---|---|
-| POST | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides` |
-| GET | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides` |
+| Method | Path                                                                                                |
+| ------ | --------------------------------------------------------------------------------------------------- |
+| POST   | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides`             |
+| GET    | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides`             |
 | DELETE | `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides/:overrideId` |
 
 **API keys**
 
-| Method | Path | Notes |
-|---|---|---|
-| POST | `/api/admin/projects/:projectId/keys` | Body: `{ type, environmentId?, description? }`. Returns plaintext `key` once, plus prefix/id. |
-| GET | `/api/admin/projects/:projectId/keys` | Returns `{ id, prefix, type, environmentId, description, lastUsedAt, createdAt }` — never hash. |
-| DELETE | `/api/admin/projects/:projectId/keys/:keyId` | |
+| Method | Path                                         | Notes                                                                                           |
+| ------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| POST   | `/api/admin/projects/:projectId/keys`        | Body: `{ type, environmentId?, description? }`. Returns plaintext `key` once, plus prefix/id.   |
+| GET    | `/api/admin/projects/:projectId/keys`        | Returns `{ id, prefix, type, environmentId, description, lastUsedAt, createdAt }` — never hash. |
+| DELETE | `/api/admin/projects/:projectId/keys/:keyId` |                                                                                                 |
 
 ### 5.3 Cross-cutting
 
@@ -345,12 +345,12 @@ Reserved/ignored query params: none in Phase 1 — every query param is passed t
 
 Loads `.env` via `dotenv`, validates with Zod at module load, fails fast with a clear error. Exported as a frozen object.
 
-| Var | Required | Default | Notes |
-|---|---|---|---|
-| `DATABASE_URL` | yes | — | Postgres connection string |
-| `PORT` | no | `3000` | |
-| `NODE_ENV` | no | `development` | `development \| production \| test` |
-| `LOG_LEVEL` | no | `info` | pino level |
+| Var            | Required | Default       | Notes                               |
+| -------------- | -------- | ------------- | ----------------------------------- |
+| `DATABASE_URL` | yes      | —             | Postgres connection string          |
+| `PORT`         | no       | `3000`        |                                     |
+| `NODE_ENV`     | no       | `development` | `development \| production \| test` |
+| `LOG_LEVEL`    | no       | `info`        | pino level                          |
 
 No `BCRYPT_ROUNDS` (bcrypt dropped). No `BOOTSTRAP_ADMIN_KEY` (CLI handles it).
 
@@ -371,16 +371,16 @@ Exports `buildServer(opts?)` (used by tests and prod) and `start()`. `buildServe
 
 ### 6.5 `package.json` scripts
 
-| Script | Command |
-|---|---|
-| `dev` | `tsx watch src/server.ts` |
-| `build` | `tsup` |
-| `start` | `node dist/server.cjs` |
-| `typecheck` | `tsc --noEmit` |
-| `test` | `vitest run` |
-| `test:watch` | `vitest` |
-| `db:generate` | `drizzle-kit generate` |
-| `db:migrate` | `drizzle-kit migrate` |
+| Script                  | Command                          |
+| ----------------------- | -------------------------------- |
+| `dev`                   | `tsx watch src/server.ts`        |
+| `build`                 | `tsup`                           |
+| `start`                 | `node dist/server.cjs`           |
+| `typecheck`             | `tsc --noEmit`                   |
+| `test`                  | `vitest run`                     |
+| `test:watch`            | `vitest`                         |
+| `db:generate`           | `drizzle-kit generate`           |
+| `db:migrate`            | `drizzle-kit migrate`            |
 | `admin:create-root-key` | `tsx src/cli/create-root-key.ts` |
 
 ### 6.6 README quickstart

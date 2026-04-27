@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import {
   createEnvironmentSchema,
   environmentParamsSchema,
-  projectEnvironmentParamsSchema
+  projectEnvironmentParamsSchema,
 } from './environment.schema.js'
 import * as service from './environment.service.js'
 
@@ -16,10 +16,10 @@ export async function environmentRoutes(fastify: FastifyInstance) {
       const environment = await service.createEnvironment(
         fastify.db,
         params.projectId,
-        createEnvironmentSchema.parse(request.body)
+        createEnvironmentSchema.parse(request.body),
       )
       return reply.status(201).send(environment)
-    }
+    },
   )
 
   fastify.get(
@@ -28,7 +28,7 @@ export async function environmentRoutes(fastify: FastifyInstance) {
     async (request) => {
       const params = projectEnvironmentParamsSchema.parse(request.params)
       return service.listEnvironments(fastify.db, params.projectId)
-    }
+    },
   )
 
   fastify.delete(
@@ -38,6 +38,6 @@ export async function environmentRoutes(fastify: FastifyInstance) {
       const params = environmentParamsSchema.parse(request.params)
       await service.deleteEnvironment(fastify.db, params.projectId, params.environmentId)
       return reply.status(204).send()
-    }
+    },
   )
 }

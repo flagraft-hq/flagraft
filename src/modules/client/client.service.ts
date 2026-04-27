@@ -6,7 +6,7 @@ import {
   evaluateFlag,
   type EvaluationContext,
   type EvaluationResult,
-  type FlagEnvironmentState
+  type FlagEnvironmentState,
 } from '../../evaluation/engine.js'
 import { AppError } from '../../plugins/errorHandler.js'
 
@@ -17,12 +17,12 @@ export interface EvaluatedFeature extends EvaluationResult {
 export async function loadFlagState(
   db: Db,
   projectId: string,
-  environmentId: string
+  environmentId: string,
 ): Promise<Map<string, FlagEnvironmentState>> {
   const rows = await db
     .select({
       flagKey: featureFlags.key,
-      enabled: flagEnvironments.enabled
+      enabled: flagEnvironments.enabled,
     })
     .from(flagEnvironments)
     .innerJoin(featureFlags, eq(featureFlags.id, flagEnvironments.flagId))
@@ -31,8 +31,8 @@ export async function loadFlagState(
       and(
         eq(featureFlags.projectId, projectId),
         eq(environments.projectId, projectId),
-        eq(flagEnvironments.environmentId, environmentId)
-      )
+        eq(flagEnvironments.environmentId, environmentId),
+      ),
     )
 
   const overrides = await db
@@ -40,12 +40,12 @@ export async function loadFlagState(
       flagKey: featureFlags.key,
       contextKey: flagOverrides.contextKey,
       contextValue: flagOverrides.contextValue,
-      enabled: flagOverrides.enabled
+      enabled: flagOverrides.enabled,
     })
     .from(flagOverrides)
     .innerJoin(featureFlags, eq(featureFlags.id, flagOverrides.flagId))
     .where(
-      and(eq(featureFlags.projectId, projectId), eq(flagOverrides.environmentId, environmentId))
+      and(eq(featureFlags.projectId, projectId), eq(flagOverrides.environmentId, environmentId)),
     )
     .orderBy(flagOverrides.createdAt)
 
@@ -58,7 +58,7 @@ export async function loadFlagState(
     state.get(override.flagKey)?.overrides.push({
       contextKey: override.contextKey,
       contextValue: override.contextValue,
-      enabled: override.enabled
+      enabled: override.enabled,
     })
   }
 
@@ -67,11 +67,11 @@ export async function loadFlagState(
 
 export function evaluateAll(
   state: Map<string, FlagEnvironmentState>,
-  context: EvaluationContext
+  context: EvaluationContext,
 ): EvaluatedFeature[] {
   return [...state.entries()].map(([name, flagState]) => ({
     name,
-    ...evaluateFlag(flagState, context)
+    ...evaluateFlag(flagState, context),
   }))
 }
 
@@ -80,7 +80,7 @@ export async function evaluateOne(
   projectId: string,
   environmentId: string,
   flagKey: string,
-  context: EvaluationContext
+  context: EvaluationContext,
 ): Promise<EvaluatedFeature> {
   const state = await loadFlagState(db, projectId, environmentId)
   const flagState = state.get(flagKey)

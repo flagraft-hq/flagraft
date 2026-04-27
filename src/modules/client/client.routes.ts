@@ -24,7 +24,11 @@ function queryToContext(query: unknown): EvaluationContext {
 export async function clientRoutes(fastify: FastifyInstance) {
   fastify.get('/api/client/features', { preHandler: fastify.requireClientKey }, async (request) => {
     const context = request.keyContext!
-    const state = await service.loadFlagState(fastify.db, context.projectId!, context.environmentId!)
+    const state = await service.loadFlagState(
+      fastify.db,
+      context.projectId!,
+      context.environmentId!,
+    )
     return { features: service.evaluateAll(state, queryToContext(request.query)) }
   })
 
@@ -39,8 +43,8 @@ export async function clientRoutes(fastify: FastifyInstance) {
         context.projectId!,
         context.environmentId!,
         params.flagKey,
-        queryToContext(request.query)
+        queryToContext(request.query),
       )
-    }
+    },
   )
 }

@@ -36,7 +36,7 @@ export function generateKey(): { plaintext: string; prefix: string; hash: string
   return {
     plaintext,
     prefix: plaintext.slice(0, 12),
-    hash: hashKey(plaintext)
+    hash: hashKey(plaintext),
   }
 }
 
@@ -72,7 +72,7 @@ async function authPlugin(fastify: FastifyInstance) {
       projectId: key.projectId,
       environmentId: key.environmentId,
       type: key.type as 'client' | 'admin',
-      isRoot: key.projectId === null
+      isRoot: key.projectId === null,
     }
 
     void fastify.db

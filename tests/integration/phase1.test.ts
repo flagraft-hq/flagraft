@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { buildServer } from '../../src/server.js'
 import { environments } from '../../src/db/schema.js'
-import { createAdminKey, createClientKey, createProject, createRootKey } from '../helpers/fixtures.js'
+import {
+  createAdminKey,
+  createClientKey,
+  createProject,
+  createRootKey,
+} from '../helpers/fixtures.js'
 import { getTestDb, truncateAll } from '../helpers/db.js'
 
 const describeIfDb = process.env.TEST_DATABASE_URL ? describe : describe.skip
@@ -26,19 +31,19 @@ describeIfDb('phase 1 integration', () => {
     expect(envs.map((environment) => environment.slug).sort()).toEqual([
       'development',
       'production',
-      'staging'
+      'staging',
     ])
 
     await app.inject({
       method: 'POST',
       url: `/api/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
-      payload: { name: 'Checkout', key: 'checkout' }
+      payload: { name: 'Checkout', key: 'checkout' },
     })
     await app.inject({
       method: 'POST',
       url: `/api/admin/projects/${project.id}/flags/checkout/environments/staging/enable`,
-      headers: { authorization: adminKey }
+      headers: { authorization: adminKey },
     })
 
     const staging = envs.find((environment) => environment.slug === 'staging')!
@@ -49,12 +54,12 @@ describeIfDb('phase 1 integration', () => {
     const stagingResponse = await app.inject({
       method: 'GET',
       url: '/api/client/features/checkout',
-      headers: { authorization: stagingClient }
+      headers: { authorization: stagingClient },
     })
     const productionResponse = await app.inject({
       method: 'GET',
       url: '/api/client/features/checkout',
-      headers: { authorization: productionClient }
+      headers: { authorization: productionClient },
     })
 
     expect(stagingResponse.json()).toMatchObject({ name: 'checkout', enabled: true })
@@ -78,24 +83,24 @@ describeIfDb('phase 1 integration', () => {
       method: 'POST',
       url: `/api/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
-      payload: { name: 'Checkout', key: 'checkout' }
+      payload: { name: 'Checkout', key: 'checkout' },
     })
     await app.inject({
       method: 'POST',
       url: `/api/admin/projects/${project.id}/flags/checkout/environments/${staging.slug}/overrides`,
       headers: { authorization: adminKey },
-      payload: { contextKey: 'userId', contextValue: 'user_abc123', enabled: true }
+      payload: { contextKey: 'userId', contextValue: 'user_abc123', enabled: true },
     })
 
     const match = await app.inject({
       method: 'GET',
       url: '/api/client/features/checkout?userId=user_abc123',
-      headers: { authorization: clientKey }
+      headers: { authorization: clientKey },
     })
     const miss = await app.inject({
       method: 'GET',
       url: '/api/client/features/checkout?userId=other',
-      headers: { authorization: clientKey }
+      headers: { authorization: clientKey },
     })
 
     expect(match.json()).toMatchObject({ enabled: true, reason: 'override' })
@@ -121,9 +126,9 @@ describeIfDb('phase 1 integration', () => {
         await app.inject({
           method: 'GET',
           url: `/api/admin/projects/${project.id}/flags`,
-          headers: { authorization: clientKey }
+          headers: { authorization: clientKey },
         })
-      ).statusCode
+      ).statusCode,
     ).toBe(403)
 
     expect(
@@ -131,9 +136,9 @@ describeIfDb('phase 1 integration', () => {
         await app.inject({
           method: 'GET',
           url: `/api/admin/projects/${other.id}`,
-          headers: { authorization: adminKey }
+          headers: { authorization: adminKey },
         })
-      ).statusCode
+      ).statusCode,
     ).toBe(403)
 
     expect(
@@ -142,9 +147,9 @@ describeIfDb('phase 1 integration', () => {
           method: 'POST',
           url: '/api/admin/projects',
           headers: { authorization: adminKey },
-          payload: { name: 'Nope', slug: 'nope' }
+          payload: { name: 'Nope', slug: 'nope' },
         })
-      ).statusCode
+      ).statusCode,
     ).toBe(403)
     await app.close()
   })
@@ -159,7 +164,7 @@ describeIfDb('phase 1 integration', () => {
       method: 'POST',
       url: '/api/admin/projects',
       headers: { authorization: rootKey },
-      payload: { name: 'Duplicate', slug: project.slug }
+      payload: { name: 'Duplicate', slug: project.slug },
     })
     expect(duplicateProject.statusCode).toBe(409)
 
@@ -167,13 +172,13 @@ describeIfDb('phase 1 integration', () => {
       method: 'POST',
       url: `/api/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
-      payload: { name: 'Checkout', key: 'checkout' }
+      payload: { name: 'Checkout', key: 'checkout' },
     })
     const duplicateFlag = await app.inject({
       method: 'POST',
       url: `/api/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
-      payload: { name: 'Checkout 2', key: 'checkout' }
+      payload: { name: 'Checkout 2', key: 'checkout' },
     })
     expect(duplicateFlag.statusCode).toBe(409)
     await app.close()
@@ -187,11 +192,13 @@ describeIfDb('phase 1 integration', () => {
     const response = await app.inject({
       method: 'DELETE',
       url: `/api/admin/projects/${project.id}`,
-      headers: { authorization: rootKey }
+      headers: { authorization: rootKey },
     })
 
     expect(response.statusCode).toBe(204)
-    expect(await db!.select().from(environments).where(eq(environments.projectId, project.id))).toEqual([])
+    expect(
+      await db!.select().from(environments).where(eq(environments.projectId, project.id)),
+    ).toEqual([])
     await app.close()
   })
 })

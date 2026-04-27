@@ -9,7 +9,8 @@ async function main() {
     config = loadConfig()
   } catch (error) {
     throw new Error(
-      `DATABASE_URL is required before creating a root key. ${(error as Error).message}`
+      `DATABASE_URL is required before creating a root key. ${(error as Error).message}`,
+      { cause: error },
     )
   }
 
@@ -22,7 +23,7 @@ async function main() {
       keyHash: key.hash,
       keyPrefix: key.prefix,
       type: 'admin',
-      description: 'Root admin key'
+      description: 'Root admin key',
     })
 
     console.log('Created root admin key. Save this - it will not be shown again:')
@@ -30,7 +31,7 @@ async function main() {
   } catch (error) {
     const message = (error as Error).message
     if (message.includes('api_keys') || message.includes('relation')) {
-      throw new Error('api_keys table does not exist. Run pnpm db:migrate first.')
+      throw new Error('api_keys table does not exist. Run pnpm db:migrate first.', { cause: error })
     }
 
     throw error

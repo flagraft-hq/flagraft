@@ -19,7 +19,7 @@ export interface BuildServerOptions {
 export async function buildServer(opts: BuildServerOptions = {}) {
   const config = loadConfig()
   const fastify = Fastify({
-    logger: { level: config.LOG_LEVEL }
+    logger: { level: config.LOG_LEVEL },
   })
 
   await fastify.register(dbPlugin, { db: opts.db, connectionString: config.DATABASE_URL })
@@ -42,9 +42,13 @@ export async function start() {
 }
 
 const entrypoint = process.argv[1]?.replace(/\\/g, '/')
-if (entrypoint?.endsWith('/src/server.ts') || entrypoint?.endsWith('/dist/server.js') || entrypoint?.endsWith('/dist/server.cjs')) {
+if (
+  entrypoint?.endsWith('/src/server.ts') ||
+  entrypoint?.endsWith('/dist/server.js') ||
+  entrypoint?.endsWith('/dist/server.cjs')
+) {
   void start().catch((error) => {
-    console.error(error)
+    console.error(error) // eslint-disable-line no-console
     process.exit(1)
   })
 }

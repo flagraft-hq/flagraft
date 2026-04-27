@@ -18,33 +18,33 @@
 
 Matches spec §1.1 exactly. Key files and their responsibilities:
 
-| File | Responsibility |
-|---|---|
-| `package.json` | scripts, dependencies |
-| `tsconfig.json` | strict TS, ES2022, bundler resolution |
-| `tsup.config.ts` | dual CJS+ESM bundle, two entries |
-| `drizzle.config.ts` | drizzle-kit config for migrations |
-| `vitest.config.ts` | test runner config; serial execution for integration |
-| `docker-compose.yml` | Postgres 15 for local/test |
-| `.env.example` | all env vars from spec §6.1 |
-| `src/config.ts` | Zod-validated frozen config object |
-| `src/db/schema.ts` | Drizzle table definitions (6 tables) |
-| `src/db/index.ts` | Drizzle client factory |
-| `src/db/migrations/` | drizzle-kit generated SQL |
-| `src/evaluation/engine.ts` | pure function, zero runtime imports |
-| `src/plugins/db.ts` | decorates fastify with `db` |
-| `src/plugins/errorHandler.ts` | normalized error envelope |
-| `src/plugins/auth.ts` | preHandler + `requireAdminKey` / `requireClientKey` decorators |
-| `src/modules/projects/*` | project routes/service/schema |
-| `src/modules/environments/*` | environment routes/service/schema |
-| `src/modules/flags/*` | flag routes/service/schema (incl. overrides, enable/disable, api keys) |
-| `src/modules/client/*` | client evaluation routes/service |
-| `src/server.ts` | `buildServer(opts?)` + `start()` |
-| `src/cli/create-root-key.ts` | bootstrap root admin key CLI |
-| `tests/evaluation/engine.test.ts` | 9 unit tests for the engine |
-| `tests/integration/*.test.ts` | 5 integration scenarios from spec §7.3 |
-| `tests/helpers/db.ts` | test db factory + truncation helper |
-| `README.md` | quickstart per spec §6.6 |
+| File                              | Responsibility                                                         |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| `package.json`                    | scripts, dependencies                                                  |
+| `tsconfig.json`                   | strict TS, ES2022, bundler resolution                                  |
+| `tsup.config.ts`                  | dual CJS+ESM bundle, two entries                                       |
+| `drizzle.config.ts`               | drizzle-kit config for migrations                                      |
+| `vitest.config.ts`                | test runner config; serial execution for integration                   |
+| `docker-compose.yml`              | Postgres 15 for local/test                                             |
+| `.env.example`                    | all env vars from spec §6.1                                            |
+| `src/config.ts`                   | Zod-validated frozen config object                                     |
+| `src/db/schema.ts`                | Drizzle table definitions (6 tables)                                   |
+| `src/db/index.ts`                 | Drizzle client factory                                                 |
+| `src/db/migrations/`              | drizzle-kit generated SQL                                              |
+| `src/evaluation/engine.ts`        | pure function, zero runtime imports                                    |
+| `src/plugins/db.ts`               | decorates fastify with `db`                                            |
+| `src/plugins/errorHandler.ts`     | normalized error envelope                                              |
+| `src/plugins/auth.ts`             | preHandler + `requireAdminKey` / `requireClientKey` decorators         |
+| `src/modules/projects/*`          | project routes/service/schema                                          |
+| `src/modules/environments/*`      | environment routes/service/schema                                      |
+| `src/modules/flags/*`             | flag routes/service/schema (incl. overrides, enable/disable, api keys) |
+| `src/modules/client/*`            | client evaluation routes/service                                       |
+| `src/server.ts`                   | `buildServer(opts?)` + `start()`                                       |
+| `src/cli/create-root-key.ts`      | bootstrap root admin key CLI                                           |
+| `tests/evaluation/engine.test.ts` | 9 unit tests for the engine                                            |
+| `tests/integration/*.test.ts`     | 5 integration scenarios from spec §7.3                                 |
+| `tests/helpers/db.ts`             | test db factory + truncation helper                                    |
+| `README.md`                       | quickstart per spec §6.6                                               |
 
 **Note on API keys (deviation from spec §1.1):** The spec's file layout only enumerates `projects/environments/flags/client` modules but §5.2 introduces an API keys resource. This plan adds a dedicated `src/modules/keys/{key.routes.ts, key.service.ts, key.schema.ts}` module to keep responsibilities clean rather than folding keys into the projects module. Routes still live under `/api/admin/projects/:projectId/keys` per spec §5.2 — only the file layout differs.
 
@@ -53,6 +53,7 @@ Matches spec §1.1 exactly. Key files and their responsibilities:
 ## Task 1: Scaffold project (package.json, tsconfig, tooling configs)
 
 **Files:**
+
 - Create: `package.json`, `tsconfig.json`, `tsup.config.ts`, `vitest.config.ts`, `.env.example`, `.gitignore`, `docker-compose.yml`, `drizzle.config.ts`
 
 - [ ] **Step 1: Create `package.json`** with scripts from spec §6.5 and dependencies: `fastify@^4`, `zod`, `fastify-type-provider-zod`, `drizzle-orm`, `drizzle-kit`, `pg`, `dotenv`, `pino`; devDeps: `typescript`, `@types/node`, `@types/pg`, `tsup`, `tsx`, `vitest`. `"type": "module"`. Node engine `">=20"`.
@@ -80,6 +81,7 @@ Matches spec §1.1 exactly. Key files and their responsibilities:
 ## Task 2: Config module (TDD)
 
 **Files:**
+
 - Create: `src/config.ts`, `tests/config.test.ts`
 
 - [ ] **Step 1: Write failing test** — `tests/config.test.ts`: import `loadConfig` from `../src/config`, pass a fake `env` object missing `DATABASE_URL`, assert it throws. Pass a valid env object, assert frozen output matches.
@@ -99,6 +101,7 @@ Matches spec §1.1 exactly. Key files and their responsibilities:
 The engine is the hot path and must stay pure. Spec §4 has the full implementation and all 9 test cases — copy them verbatim.
 
 **Files:**
+
 - Create: `src/evaluation/engine.ts`, `tests/evaluation/engine.test.ts`
 
 - [ ] **Step 1: Write the 9 tests** from spec §4.2 in `tests/evaluation/engine.test.ts`. Include the static-analysis test as case 9: read the engine file as a string, parse import lines, assert every `import` is prefixed with `type` (e.g. regex `/^import\s+type\b/` on each non-empty import line; trivial implementation OK — this is a safety net, not a parser).
@@ -116,6 +119,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 4: DB schema + migration
 
 **Files:**
+
 - Create: `src/db/schema.ts`, `src/db/index.ts`, `src/db/migrations/` (generated)
 
 - [ ] **Step 1: Implement `src/db/schema.ts`** — Drizzle `pgTable` definitions for the 6 tables per spec §2. Enumerated requirements the executor must get right:
@@ -140,6 +144,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 5: Test helpers + integration scaffolding
 
 **Files:**
+
 - Create: `tests/helpers/db.ts`, `tests/helpers/fixtures.ts`
 
 - [ ] **Step 1: `tests/helpers/db.ts`** — export `getTestDb()` which reads `TEST_DATABASE_URL`, builds a Drizzle client, and exposes `truncateAll()` that runs `TRUNCATE api_keys, flag_overrides, flag_environments, feature_flags, environments, projects RESTART IDENTITY CASCADE` in one statement. README must document running `pnpm db:migrate` against the test DB once before tests.
@@ -153,6 +158,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 6: Error handler plugin (TDD)
 
 **Files:**
+
 - Create: `src/plugins/errorHandler.ts`, `tests/plugins/errorHandler.test.ts`
 
 - [ ] **Step 1: Write `tests/plugins/errorHandler.test.ts`** — build a minimal Fastify instance, register the plugin, add throwaway routes that throw each error type. Use `fastify.inject()` to assert each branch:
@@ -174,6 +180,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 7: DB plugin
 
 **Files:**
+
 - Create: `src/plugins/db.ts`
 
 - [ ] **Step 1: Implement `src/plugins/db.ts`** — A `fastify-plugin` that accepts `{ db?: Db, connectionString?: string }`. If `db` provided, decorate as-is (tests pass this). Otherwise build one from `connectionString` (or config). Decorate `fastify.db`. Register `onClose` to end the pool (only if plugin created it).
@@ -185,6 +192,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 8: Auth plugin + CLI bootstrap
 
 **Files:**
+
 - Create: `src/plugins/auth.ts`, `src/cli/create-root-key.ts`
 
 - [ ] **Step 1: Write `src/plugins/auth.ts`** per spec §3.4:
@@ -203,6 +211,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 9: Server bootstrap
 
 **Files:**
+
 - Create: `src/server.ts`
 
 - [ ] **Step 1: Implement `buildServer(opts?: { db?: Db })`** — create Fastify instance with `logger: { level: config.LOG_LEVEL }`, register plugins in order: `db` (pass `opts.db` through) → `errorHandler` → `auth` → route modules (stubbed for now; add imports as modules land). Return the instance without listening.
@@ -216,6 +225,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 10: Projects module (TDD via integration test)
 
 **Files:**
+
 - Create: `src/modules/projects/{project.routes.ts, project.service.ts, project.schema.ts}`
 - Modify: `src/server.ts` to register project routes
 - Update: `tests/helpers/fixtures.ts` — implement `createRootKey` (direct DB insert using auth helpers) and `createProject(rootKey)` (via `fastify.inject`)
@@ -244,6 +254,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 ## Task 11: Environments module
 
 **Files:**
+
 - Create: `src/modules/environments/{environment.routes.ts, environment.service.ts, environment.schema.ts}`
 - Modify: `src/server.ts`
 
@@ -260,6 +271,7 @@ The engine is the hot path and must stay pure. Spec §4 has the full implementat
 Flags is the biggest module. Split internally but keep in one directory for co-location.
 
 **Files:**
+
 - Create: `src/modules/flags/{flag.routes.ts, flag.service.ts, flag.schema.ts, override.routes.ts, override.service.ts, override.schema.ts}`
 - Modify: `src/server.ts`
 
@@ -276,6 +288,7 @@ Flags is the biggest module. Split internally but keep in one directory for co-l
 ## Task 13: API keys module
 
 **Files:**
+
 - Create: `src/modules/keys/{key.routes.ts, key.service.ts, key.schema.ts}`
 - Modify: `src/server.ts`, `tests/helpers/fixtures.ts` (now implement `createAdminKey`, `createClientKey` via endpoints).
 
@@ -290,6 +303,7 @@ Flags is the biggest module. Split internally but keep in one directory for co-l
 ## Task 14: Client evaluation routes + full integration scenarios
 
 **Files:**
+
 - Create: `src/modules/client/{client.routes.ts, client.service.ts}`
 - Modify: `src/server.ts`
 - Create: `tests/integration/auth-scopes.test.ts`, `tests/integration/conflicts.test.ts`, `tests/integration/cascades.test.ts` (the five required scenarios from spec §7.3 — any previously covered within Tasks 10–13 can be referenced rather than duplicated).
@@ -309,6 +323,7 @@ Flags is the biggest module. Split internally but keep in one directory for co-l
 ## Task 15: Docs + final verification
 
 **Files:**
+
 - Create: `README.md`
 
 - [ ] **Step 1: Write README.md** per spec §6.6 — prerequisites, `pnpm install`, `.env`, `docker compose up -d`, `pnpm db:migrate` for both DBs, `pnpm admin:create-root-key`, `pnpm dev`, `pnpm test`. Include a troubleshooting note: "if `pnpm admin:create-root-key` fails with `relation "api_keys" does not exist`, run `pnpm db:migrate` first."

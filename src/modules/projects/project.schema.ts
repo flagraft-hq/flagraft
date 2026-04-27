@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
 export const projectIdParamsSchema = z.object({
-  projectId: z.string().uuid()
+  projectId: z.string().uuid(),
 })
 
 export const createProjectSchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
-  description: z.string().optional()
+  description: z.string().optional(),
 })
 
 export const patchProjectSchema = createProjectSchema.partial().refine((value) => {
