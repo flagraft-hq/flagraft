@@ -5,6 +5,9 @@ import { environments, featureFlags, flagOverrides } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateOverrideInput } from './override.schema.js'
 
+/**
+ * Internal helper to lookup both a flag and an environment by their keys/slugs
+ */
 async function lookup(db: Db, projectId: string, flagKey: string, environmentSlug: string) {
   const [flag] = await db
     .select()
@@ -27,6 +30,9 @@ async function lookup(db: Db, projectId: string, flagKey: string, environmentSlu
   return { flag, environment }
 }
 
+/**
+ * Creates a new contextual override for a specific flag and environment
+ */
 export async function createOverride(
   db: Db,
   projectId: string,
@@ -48,6 +54,9 @@ export async function createOverride(
   return override
 }
 
+/**
+ * Lists all overrides configured for a flag within a specific environment
+ */
 export async function listOverrides(
   db: Db,
   projectId: string,
@@ -62,6 +71,9 @@ export async function listOverrides(
     .orderBy(flagOverrides.createdAt)
 }
 
+/**
+ * Deletes a specific flag override from an environment
+ */
 export async function deleteOverride(
   db: Db,
   projectId: string,

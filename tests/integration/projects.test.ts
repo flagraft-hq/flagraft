@@ -14,6 +14,9 @@ describeIfDb('projects', () => {
     await truncateAll(db!)
   })
 
+  /**
+   * Tests for creating new projects
+   */
   describe('POST /api/admin/projects', () => {
     it('creates a project successfully and returns 201 with correct shape', async () => {
       const app = await buildServer({ db })
@@ -128,6 +131,9 @@ describeIfDb('projects', () => {
     })
   })
 
+  /**
+   * Tests for listing all projects
+   */
   describe('GET /api/admin/projects', () => {
     it('root key sees all projects when multiple exist', async () => {
       const app = await buildServer({ db })
@@ -186,6 +192,9 @@ describeIfDb('projects', () => {
     })
   })
 
+  /**
+   * Tests for retrieving a single project by ID
+   */
   describe('GET /api/admin/projects/:projectId', () => {
     it('returns the project by id', async () => {
       const app = await buildServer({ db })
@@ -237,6 +246,9 @@ describeIfDb('projects', () => {
     })
   })
 
+  /**
+   * Tests for updating a project
+   */
   describe('PATCH /api/admin/projects/:projectId', () => {
     it('updates name successfully and returns 200 with updated name', async () => {
       const app = await buildServer({ db })
@@ -323,6 +335,9 @@ describeIfDb('projects', () => {
     })
   })
 
+  /**
+   * Tests for deleting a project
+   */
   describe('DELETE /api/admin/projects/:projectId', () => {
     it('deletes a project and returns 204', async () => {
       const app = await buildServer({ db })

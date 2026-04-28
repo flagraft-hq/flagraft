@@ -1,3 +1,4 @@
+import { API_KEY_TYPES } from '../auth/constants.js'
 import { relations, sql } from 'drizzle-orm'
 import { boolean, check, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
@@ -113,7 +114,10 @@ export const apiKeys = pgTable(
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   },
   (table) => ({
-    typeCheck: check('api_keys_type_check', sql`${table.type} IN ('client', 'admin')`),
+    typeCheck: check(
+      'api_keys_type_check',
+      sql`${table.type} IN (${API_KEY_TYPES.CLIENT}, ${API_KEY_TYPES.ADMIN})`,
+    ),
   }),
 )
 

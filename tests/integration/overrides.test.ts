@@ -6,6 +6,9 @@ import { getTestDb, truncateAll } from '../helpers/db.js'
 
 const describeIfDb = process.env.TEST_DATABASE_URL ? describe : describe.skip
 
+/**
+ * Helper function to create a feature flag for testing overrides
+ */
 async function createFlag(
   app: Awaited<ReturnType<typeof buildServer>>,
   adminKey: string,

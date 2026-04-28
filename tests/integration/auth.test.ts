@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { API_KEY_TYPES } from '../../src/auth/constants.js'
 import { buildServer } from '../../src/server.js'
 import {
   createAdminKey,
@@ -292,7 +293,7 @@ describeIfDb('auth', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'admin', description: 'Temporary key' },
+        payload: { type: API_KEY_TYPES.ADMIN, description: 'Temporary key' },
       })
       expect(createRes.statusCode).toBe(201)
       const { key, id: keyId } = createRes.json<{ key: string; id: string }>()

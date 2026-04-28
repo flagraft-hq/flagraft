@@ -4,14 +4,18 @@ import { and, eq } from 'drizzle-orm'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
 
+import { API_KEY_TYPES, type ApiKeyType } from '../auth/constants.js'
 import { apiKeys } from '../db/schema.js'
 import { AppError } from './errorHandler.js'
 
+/**
+ * Represents the security context derived from an API key
+ */
 export interface KeyContext {
   keyId: string
   projectId: string | null
   environmentId: string | null
-  type: 'client' | 'admin'
+  type: ApiKeyType
   isRoot: boolean
 }
 
@@ -27,10 +31,16 @@ declare module 'fastify' {
   }
 }
 
+/**
+ * Hashes a plaintext API key for secure storage
+ */
 export function hashKey(plaintext: string): string {
   return createHash('sha256').update(plaintext).digest('hex')
 }
 
+/**
+ * Generates a new API key with its prefix and hashed value
+ */
 export function generateKey(): { plaintext: string; prefix: string; hash: string } {
   const plaintext = `ff_${randomBytes(16).toString('hex')}`
   return {
@@ -71,7 +81,7 @@ async function authPlugin(fastify: FastifyInstance) {
       keyId: key.id,
       projectId: key.projectId,
       environmentId: key.environmentId,
-      type: key.type as 'client' | 'admin',
+      type: key.type as ApiKeyType,
       isRoot: key.projectId === null,
     }
 
@@ -82,9 +92,12 @@ async function authPlugin(fastify: FastifyInstance) {
       .catch((error: unknown) => request.log.warn({ error }, 'Failed to update key usage'))
   })
 
+  /**
+   * Decorator that ensures the request has a valid admin key with proper scope
+   */
   fastify.decorate('requireAdminKey', async (request: FastifyRequest) => {
     const context = request.keyContext
-    if (!context || context.type !== 'admin') {
+    if (!context || context.type !== API_KEY_TYPES.ADMIN) {
       throw new AppError('Admin key required', 403, 'Forbidden')
     }
 
@@ -94,16 +107,22 @@ async function authPlugin(fastify: FastifyInstance) {
     }
   })
 
+  /**
+   * Decorator that ensures the request has a root admin key
+   */
   fastify.decorate('requireRootKey', async (request: FastifyRequest) => {
     const context = request.keyContext
-    if (!context || context.type !== 'admin' || !context.isRoot) {
+    if (!context || context.type !== API_KEY_TYPES.ADMIN || !context.isRoot) {
       throw new AppError('Root admin key required', 403, 'Forbidden')
     }
   })
 
+  /**
+   * Decorator that ensures the request has a valid client key
+   */
   fastify.decorate('requireClientKey', async (request: FastifyRequest) => {
     const context = request.keyContext
-    if (!context || context.type !== 'client') {
+    if (!context || context.type !== API_KEY_TYPES.CLIENT) {
       throw new AppError('Client key required', 403, 'Forbidden')
     }
   })

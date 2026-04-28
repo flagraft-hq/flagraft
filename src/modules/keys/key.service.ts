@@ -1,11 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 
+import { API_KEY_TYPES } from '../../auth/constants.js'
 import type { Db } from '../../db/index.js'
 import { apiKeys, environments } from '../../db/schema.js'
 import { generateKey } from '../../plugins/auth.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateKeyInput } from './key.schema.js'
 
+/**
+ * Formats a raw database API key record for public consumption (hiding sensitive data)
+ */
 function publicKey(row: typeof apiKeys.$inferSelect) {
   return {
     id: row.id,
@@ -18,12 +22,15 @@ function publicKey(row: typeof apiKeys.$inferSelect) {
   }
 }
 
+/**
+ * Creates a new API key (admin or client) and returns the plaintext key once
+ */
 export async function createKey(db: Db, projectId: string, input: CreateKeyInput) {
-  if (input.type === 'client' && !input.environmentId) {
+  if (input.type === API_KEY_TYPES.CLIENT && !input.environmentId) {
     throw new AppError('Client keys require environmentId', 400, 'BadRequest')
   }
 
-  if (input.type === 'admin' && input.environmentId) {
+  if (input.type === API_KEY_TYPES.ADMIN && input.environmentId) {
     throw new AppError('Admin keys cannot be scoped to an environment', 400, 'BadRequest')
   }
 
@@ -57,6 +64,9 @@ export async function createKey(db: Db, projectId: string, input: CreateKeyInput
   }
 }
 
+/**
+ * Lists all API keys associated with a project
+ */
 export async function listKeys(db: Db, projectId: string) {
   const rows = await db
     .select()
@@ -66,6 +76,9 @@ export async function listKeys(db: Db, projectId: string) {
   return rows.map(publicKey)
 }
 
+/**
+ * Revokes and deletes an API key
+ */
 export async function deleteKey(db: Db, projectId: string, keyId: string) {
   const [row] = await db
     .delete(apiKeys)

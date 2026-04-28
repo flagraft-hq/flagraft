@@ -5,6 +5,9 @@ import { environments } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateEnvironmentInput } from './environment.schema.js'
 
+/**
+ * Creates a new environment within a project
+ */
 export async function createEnvironment(db: Db, projectId: string, input: CreateEnvironmentInput) {
   const [environment] = await db
     .insert(environments)
@@ -13,6 +16,9 @@ export async function createEnvironment(db: Db, projectId: string, input: Create
   return environment
 }
 
+/**
+ * Lists all environments for a given project
+ */
 export async function listEnvironments(db: Db, projectId: string) {
   return db
     .select()
@@ -21,6 +27,9 @@ export async function listEnvironments(db: Db, projectId: string) {
     .orderBy(environments.createdAt)
 }
 
+/**
+ * Deletes an environment from a project
+ */
 export async function deleteEnvironment(db: Db, projectId: string, environmentId: string) {
   const [environment] = await db
     .delete(environments)

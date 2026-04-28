@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+
+import { API_KEY_TYPES } from '../../src/auth/constants.js'
 import { buildServer } from '../../src/server.js'
 import { createAdminKey, createProject, createRootKey } from '../helpers/fixtures.js'
 import { getTestDb, truncateAll } from '../helpers/db.js'
@@ -13,6 +15,9 @@ describeIfDb('api keys', () => {
     await truncateAll(db!)
   })
 
+  /**
+   * Helper function to retrieve the unique ID of an environment by its slug
+   */
   async function getEnvironmentId(
     app: Awaited<ReturnType<typeof buildServer>>,
     rootKey: string,
@@ -28,6 +33,9 @@ describeIfDb('api keys', () => {
     return envs.find((e) => e.slug === slug)!.id
   }
 
+  /**
+   * Tests for creating various types of API keys
+   */
   describe('POST /api/admin/projects/:projectId/keys', () => {
     it('creates an admin key successfully and returns 201 with correct shape', async () => {
       const app = await buildServer({ db })
@@ -38,7 +46,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'admin', description: 'My admin key' },
+        payload: { type: API_KEY_TYPES.ADMIN, description: 'My admin key' },
       })
 
       expect(res.statusCode).toBe(201)
@@ -50,7 +58,7 @@ describeIfDb('api keys', () => {
         key: string
         createdAt: string
       }>()
-      expect(body.type).toBe('admin')
+      expect(body.type).toBe(API_KEY_TYPES.ADMIN)
       expect(body.environmentId).toBeNull()
       expect(typeof body.id).toBe('string')
       expect(typeof body.key).toBe('string')
@@ -68,7 +76,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'admin' },
+        payload: { type: API_KEY_TYPES.ADMIN },
       })
 
       expect(res.statusCode).toBe(201)
@@ -86,7 +94,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'admin' },
+        payload: { type: API_KEY_TYPES.ADMIN },
       })
 
       expect(res.statusCode).toBe(201)
@@ -105,12 +113,16 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'client', environmentId: stagingId, description: 'Staging client' },
+        payload: {
+          type: API_KEY_TYPES.CLIENT,
+          environmentId: stagingId,
+          description: 'Staging client',
+        },
       })
 
       expect(res.statusCode).toBe(201)
       const body = res.json<{ type: string; environmentId: string }>()
-      expect(body.type).toBe('client')
+      expect(body.type).toBe(API_KEY_TYPES.CLIENT)
       expect(body.environmentId).toBe(stagingId)
       await app.close()
     })
@@ -124,7 +136,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'client' },
+        payload: { type: API_KEY_TYPES.CLIENT },
       })
 
       expect(res.statusCode).toBe(400)
@@ -146,7 +158,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'admin', environmentId: stagingId },
+        payload: { type: API_KEY_TYPES.ADMIN, environmentId: stagingId },
       })
 
       expect(res.statusCode).toBe(400)
@@ -167,7 +179,10 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'client', environmentId: '00000000-0000-0000-0000-000000000000' },
+        payload: {
+          type: API_KEY_TYPES.CLIENT,
+          environmentId: '00000000-0000-0000-0000-000000000000',
+        },
       })
 
       expect(res.statusCode).toBe(404)
@@ -199,6 +214,9 @@ describeIfDb('api keys', () => {
     })
   })
 
+  /**
+   * Tests for listing API keys within a project
+   */
   describe('GET /api/admin/projects/:projectId/keys', () => {
     it('returns an empty array when no project-scoped keys have been created', async () => {
       const app = await buildServer({ db })
@@ -227,7 +245,11 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: adminKey },
-        payload: { type: 'client', environmentId: stagingId, description: 'Staging client' },
+        payload: {
+          type: API_KEY_TYPES.CLIENT,
+          environmentId: stagingId,
+          description: 'Staging client',
+        },
       })
 
       const res = await app.inject({
@@ -239,8 +261,8 @@ describeIfDb('api keys', () => {
       expect(res.statusCode).toBe(200)
       const keys = res.json<Array<{ type: string; environmentId: string | null }>>()
       expect(keys.length).toBe(2)
-      expect(keys.some((k) => k.type === 'admin')).toBe(true)
-      expect(keys.some((k) => k.type === 'client')).toBe(true)
+      expect(keys.some((k) => k.type === API_KEY_TYPES.ADMIN)).toBe(true)
+      expect(keys.some((k) => k.type === API_KEY_TYPES.CLIENT)).toBe(true)
       await app.close()
     })
 
@@ -280,7 +302,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: adminKeyStr },
-        payload: { type: 'client', environmentId: stagingId },
+        payload: { type: API_KEY_TYPES.CLIENT, environmentId: stagingId },
       })
 
       const res = await app.inject({
@@ -298,6 +320,9 @@ describeIfDb('api keys', () => {
     })
   })
 
+  /**
+   * Tests for revoking and deleting API keys
+   */
   describe('DELETE /api/admin/projects/:projectId/keys/:keyId', () => {
     it('deletes a key and returns 204', async () => {
       const app = await buildServer({ db })

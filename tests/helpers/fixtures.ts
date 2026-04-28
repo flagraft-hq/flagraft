@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 
+import { API_KEY_TYPES } from '../../src/auth/constants.js'
 import type { Db } from '../../src/db/index.js'
 import { apiKeys } from '../../src/db/schema.js'
 import { generateKey } from '../../src/plugins/auth.js'
@@ -9,7 +10,7 @@ export async function createRootKey(db: Db) {
   await db.insert(apiKeys).values({
     keyHash: generated.hash,
     keyPrefix: generated.prefix,
-    type: 'admin',
+    type: API_KEY_TYPES.ADMIN,
     projectId: null,
     environmentId: null,
     description: 'Test root key',
@@ -35,7 +36,7 @@ export async function createAdminKey(app: FastifyInstance, rootKey: string, proj
     method: 'POST',
     url: `/api/admin/projects/${projectId}/keys`,
     headers: { authorization: rootKey },
-    payload: { type: 'admin', description: 'Project admin' },
+    payload: { type: API_KEY_TYPES.ADMIN, description: 'Project admin' },
   })
   if (response.statusCode !== 201) {
     throw new Error(response.body)
@@ -53,7 +54,7 @@ export async function createClientKey(
     method: 'POST',
     url: `/api/admin/projects/${projectId}/keys`,
     headers: { authorization: adminKey },
-    payload: { type: 'client', environmentId, description: 'Client' },
+    payload: { type: API_KEY_TYPES.CLIENT, environmentId, description: 'Client' },
   })
   if (response.statusCode !== 201) {
     throw new Error(response.body)

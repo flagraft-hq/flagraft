@@ -5,6 +5,9 @@ import { environments, featureFlags, flagEnvironments } from '../../db/schema.js
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateFlagInput, PatchFlagInput } from './flag.schema.js'
 
+/**
+ * Internal helper to find a flag by key within a project
+ */
 async function findFlag(db: Db, projectId: string, flagKey: string) {
   const [flag] = await db
     .select()
@@ -19,6 +22,9 @@ async function findFlag(db: Db, projectId: string, flagKey: string) {
   return flag
 }
 
+/**
+ * Internal helper to find an environment by slug within a project
+ */
 async function findEnvironment(db: Db, projectId: string, environmentSlug: string) {
   const [environment] = await db
     .select()
@@ -33,6 +39,9 @@ async function findEnvironment(db: Db, projectId: string, environmentSlug: strin
   return environment
 }
 
+/**
+ * Creates a new feature flag and initializes its state in all project environments
+ */
 export async function createFlag(db: Db, projectId: string, input: CreateFlagInput) {
   return db.transaction(async (tx) => {
     const [flag] = await tx
@@ -53,6 +62,9 @@ export async function createFlag(db: Db, projectId: string, input: CreateFlagInp
   })
 }
 
+/**
+ * Lists all feature flags for a project
+ */
 export async function listFlags(db: Db, projectId: string) {
   return db
     .select()
@@ -61,10 +73,16 @@ export async function listFlags(db: Db, projectId: string) {
     .orderBy(featureFlags.createdAt)
 }
 
+/**
+ * Retrieves a flag by its key
+ */
 export async function getFlag(db: Db, projectId: string, flagKey: string) {
   return findFlag(db, projectId, flagKey)
 }
 
+/**
+ * Updates a flag's metadata (name, description)
+ */
 export async function patchFlag(db: Db, projectId: string, flagKey: string, input: PatchFlagInput) {
   const [flag] = await db
     .update(featureFlags)
@@ -79,6 +97,9 @@ export async function patchFlag(db: Db, projectId: string, flagKey: string, inpu
   return flag
 }
 
+/**
+ * Deletes a flag from the project
+ */
 export async function deleteFlag(db: Db, projectId: string, flagKey: string) {
   const [flag] = await db
     .delete(featureFlags)
@@ -90,6 +111,9 @@ export async function deleteFlag(db: Db, projectId: string, flagKey: string) {
   }
 }
 
+/**
+ * Enables or disables a flag for a specific environment
+ */
 export async function setFlagEnabled(
   db: Db,
   projectId: string,

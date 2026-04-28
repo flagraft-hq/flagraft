@@ -12,6 +12,9 @@ const defaultEnvironments = [
   { name: 'Production', slug: 'production' },
 ]
 
+/**
+ * Creates a new project and initializes it with default environments
+ */
 export async function createProject(db: Db, input: CreateProjectInput) {
   return db.transaction(async (tx) => {
     const [project] = await tx.insert(projects).values(input).returning()
@@ -25,6 +28,9 @@ export async function createProject(db: Db, input: CreateProjectInput) {
   })
 }
 
+/**
+ * Lists projects visible to the given security context
+ */
 export async function listProjects(db: Db, context: KeyContext) {
   if (context.isRoot) {
     return db.select().from(projects).orderBy(projects.createdAt)
@@ -37,6 +43,9 @@ export async function listProjects(db: Db, context: KeyContext) {
   return db.select().from(projects).where(eq(projects.id, context.projectId))
 }
 
+/**
+ * Retrieves a single project by its ID
+ */
 export async function getProject(db: Db, projectId: string) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
   if (!project) {
@@ -45,6 +54,9 @@ export async function getProject(db: Db, projectId: string) {
   return project
 }
 
+/**
+ * Updates an existing project's details
+ */
 export async function patchProject(db: Db, projectId: string, input: PatchProjectInput) {
   const [project] = await db
     .update(projects)
@@ -59,6 +71,9 @@ export async function patchProject(db: Db, projectId: string, input: PatchProjec
   return project
 }
 
+/**
+ * Deletes a project
+ */
 export async function deleteProject(db: Db, projectId: string) {
   const [project] = await db.delete(projects).where(eq(projects.id, projectId)).returning()
   if (!project) {

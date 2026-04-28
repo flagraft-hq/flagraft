@@ -12,10 +12,19 @@ import authPlugin from './plugins/auth.js'
 import dbPlugin from './plugins/db.js'
 import errorHandlerPlugin from './plugins/errorHandler.js'
 
+/**
+ * Options for configuring the server build
+ */
 export interface BuildServerOptions {
+  /**
+   * Optional pre-configured database instance
+   */
   db?: Db
 }
 
+/**
+ * Builds and configures the Fastify server instance
+ */
 export async function buildServer(opts: BuildServerOptions = {}) {
   const config = loadConfig()
   const fastify = Fastify({
@@ -35,6 +44,9 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   return fastify
 }
 
+/**
+ * Starts the server after loading configuration and building the instance
+ */
 export async function start() {
   const config = loadConfig()
   const server = await buildServer()

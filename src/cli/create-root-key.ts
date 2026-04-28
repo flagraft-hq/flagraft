@@ -1,3 +1,15 @@
+/**
+ * CLI script to generate and store a root admin API key.
+ *
+ * This script initializes the database connection, generates a new secure API key,
+ * and inserts it into the `apiKeys` table with admin privileges. The generated
+ * plaintext key is printed to the console exactly once and should be stored securely.
+ *
+ * Pre-requisites:
+ * - DATABASE_URL must be set in the environment.
+ * - Database migrations must have been run (`pnpm db:migrate`).
+ */
+import { API_KEY_TYPES } from '../auth/constants.js'
 import { apiKeys } from '../db/schema.js'
 import { loadConfig } from '../config.js'
 import { createDb } from '../db/index.js'
@@ -22,7 +34,7 @@ async function main() {
       environmentId: null,
       keyHash: key.hash,
       keyPrefix: key.prefix,
-      type: 'admin',
+      type: API_KEY_TYPES.ADMIN,
       description: 'Root admin key',
     })
 

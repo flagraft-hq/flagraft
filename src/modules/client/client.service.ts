@@ -68,10 +68,10 @@ export async function loadFlagState(
 export function evaluateAll(
   state: Map<string, FlagEnvironmentState>,
   context: EvaluationContext,
-): EvaluatedFeature[] {
+): Array<{ name: string; enabled: boolean }> {
   return [...state.entries()].map(([name, flagState]) => ({
     name,
-    ...evaluateFlag(flagState, context),
+    enabled: evaluateFlag(flagState, context).enabled,
   }))
 }
 
