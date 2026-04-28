@@ -107,7 +107,7 @@ describeIfDb('api keys', () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
-      const stagingId = await getEnvironmentId(app, rootKey, project.id, 'staging')
+      const productionId = await getEnvironmentId(app, rootKey, project.id, 'production')
 
       const res = await app.inject({
         method: 'POST',
@@ -115,15 +115,15 @@ describeIfDb('api keys', () => {
         headers: { authorization: rootKey },
         payload: {
           type: API_KEY_TYPES.CLIENT,
-          environmentId: stagingId,
-          description: 'Staging client',
+          environmentId: productionId,
+          description: 'Production client',
         },
       })
 
       expect(res.statusCode).toBe(201)
       const body = res.json<{ type: string; environmentId: string }>()
       expect(body.type).toBe(API_KEY_TYPES.CLIENT)
-      expect(body.environmentId).toBe(stagingId)
+      expect(body.environmentId).toBe(productionId)
       await app.close()
     })
 
@@ -152,13 +152,13 @@ describeIfDb('api keys', () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
-      const stagingId = await getEnvironmentId(app, rootKey, project.id, 'staging')
+      const productionId = await getEnvironmentId(app, rootKey, project.id, 'production')
 
       const res = await app.inject({
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: API_KEY_TYPES.ADMIN, environmentId: stagingId },
+        payload: { type: API_KEY_TYPES.ADMIN, environmentId: productionId },
       })
 
       expect(res.statusCode).toBe(400)
@@ -238,7 +238,7 @@ describeIfDb('api keys', () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
-      const stagingId = await getEnvironmentId(app, rootKey, project.id, 'staging')
+      const productionId = await getEnvironmentId(app, rootKey, project.id, 'production')
 
       const adminKey = await createAdminKey(app, rootKey, project.id)
       await app.inject({
@@ -247,8 +247,8 @@ describeIfDb('api keys', () => {
         headers: { authorization: adminKey },
         payload: {
           type: API_KEY_TYPES.CLIENT,
-          environmentId: stagingId,
-          description: 'Staging client',
+          environmentId: productionId,
+          description: 'Production client',
         },
       })
 
@@ -292,7 +292,7 @@ describeIfDb('api keys', () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
-      const stagingId = await getEnvironmentId(app, rootKey, project.id, 'staging')
+      const productionId = await getEnvironmentId(app, rootKey, project.id, 'production')
 
       /**
        * Create an admin key then a client key -- order should be preserved
@@ -302,7 +302,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/admin/projects/${project.id}/keys`,
         headers: { authorization: adminKeyStr },
-        payload: { type: API_KEY_TYPES.CLIENT, environmentId: stagingId },
+        payload: { type: API_KEY_TYPES.CLIENT, environmentId: productionId },
       })
 
       const res = await app.inject({

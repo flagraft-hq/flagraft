@@ -144,7 +144,7 @@ describeIfDb('environments', () => {
   })
 
   describe('GET /api/admin/projects/:projectId/environments', () => {
-    it('returns the 3 auto-created environments after project creation', async () => {
+    it('returns the 2 auto-created environments after project creation', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -158,12 +158,12 @@ describeIfDb('environments', () => {
 
       expect(res.statusCode).toBe(200)
       const envs = res.json<Array<{ id: string; slug: string }>>()
-      expect(envs).toHaveLength(3)
-      expect(envs.map((e) => e.slug).sort()).toEqual(['development', 'production', 'staging'])
+      expect(envs).toHaveLength(2)
+      expect(envs.map((e) => e.slug).sort()).toEqual(['development', 'production'])
       await app.close()
     })
 
-    it('includes a newly created environment in addition to the 3 defaults', async () => {
+    it('includes a newly created environment in addition to the 2 defaults', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -184,7 +184,7 @@ describeIfDb('environments', () => {
 
       expect(res.statusCode).toBe(200)
       const envs = res.json<Array<{ id: string; slug: string }>>()
-      expect(envs).toHaveLength(4)
+      expect(envs).toHaveLength(3)
       expect(envs.map((e) => e.slug)).toContain('qa')
       await app.close()
     })
@@ -210,9 +210,9 @@ describeIfDb('environments', () => {
 
       expect(res.statusCode).toBe(200)
       const envs = res.json<Array<{ id: string; slug: string; createdAt: string }>>()
-      expect(envs).toHaveLength(4)
+      expect(envs).toHaveLength(3)
 
-      const defaultSlugs = ['development', 'staging', 'production']
+      const defaultSlugs = ['development', 'production']
       const defaultEnvs = envs.filter((e) => defaultSlugs.includes(e.slug))
       const customEnvs = envs.filter((e) => !defaultSlugs.includes(e.slug))
 

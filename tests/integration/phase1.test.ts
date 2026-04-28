@@ -31,7 +31,6 @@ describeIfDb('phase 1 integration', () => {
     expect(envs.map((environment) => environment.slug).sort()).toEqual([
       'development',
       'production',
-      'staging',
     ])
 
     await app.inject({
@@ -42,19 +41,19 @@ describeIfDb('phase 1 integration', () => {
     })
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags/checkout/environments/staging/enable`,
+      url: `/api/admin/projects/${project.id}/flags/checkout/environments/production/enable`,
       headers: { authorization: adminKey },
     })
 
-    const staging = envs.find((environment) => environment.slug === 'staging')!
+    const dev = envs.find((environment) => environment.slug === 'development')!
     const production = envs.find((environment) => environment.slug === 'production')!
-    const stagingClient = await createClientKey(app, adminKey, project.id, staging.id)
+    const devClient = await createClientKey(app, adminKey, project.id, dev.id)
     const productionClient = await createClientKey(app, adminKey, project.id, production.id)
 
-    const stagingResponse = await app.inject({
+    const devResponse = await app.inject({
       method: 'GET',
       url: '/api/client/features/checkout',
-      headers: { authorization: stagingClient },
+      headers: { authorization: devClient },
     })
     const productionResponse = await app.inject({
       method: 'GET',
@@ -62,8 +61,8 @@ describeIfDb('phase 1 integration', () => {
       headers: { authorization: productionClient },
     })
 
-    expect(stagingResponse.json()).toMatchObject({ name: 'checkout', enabled: true })
-    expect(productionResponse.json()).toMatchObject({ name: 'checkout', enabled: false })
+    expect(devResponse.json()).toMatchObject({ name: 'checkout', enabled: false })
+    expect(productionResponse.json()).toMatchObject({ name: 'checkout', enabled: true })
     await app.close()
   })
 
@@ -72,12 +71,12 @@ describeIfDb('phase 1 integration', () => {
     const rootKey = await createRootKey(db!)
     const project = await createProject(app, rootKey)
     const adminKey = await createAdminKey(app, rootKey, project.id)
-    const [staging] = await db!
+    const [firstEnv] = await db!
       .select()
       .from(environments)
       .where(eq(environments.projectId, project.id))
       .limit(1)
-    const clientKey = await createClientKey(app, adminKey, project.id, staging.id)
+    const clientKey = await createClientKey(app, adminKey, project.id, firstEnv.id)
 
     await app.inject({
       method: 'POST',
@@ -87,7 +86,7 @@ describeIfDb('phase 1 integration', () => {
     })
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags/checkout/environments/${staging.slug}/overrides`,
+      url: `/api/admin/projects/${project.id}/flags/checkout/environments/${firstEnv.slug}/overrides`,
       headers: { authorization: adminKey },
       payload: { contextKey: 'userId', contextValue: 'user_abc123', enabled: true },
     })

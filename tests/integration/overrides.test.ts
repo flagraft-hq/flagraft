@@ -42,7 +42,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'userId', contextValue: 'user_001', enabled: true },
       })
@@ -78,7 +78,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'userId', contextValue: 'user_002', enabled: false },
       })
@@ -96,7 +96,7 @@ describeIfDb('overrides', () => {
       await createFlag(app, adminKey, project.id)
 
       const payload = { contextKey: 'userId', contextValue: 'user_dup', enabled: true }
-      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`
+      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`
 
       await app.inject({ method: 'POST', url: base, headers: { authorization: adminKey }, payload })
       const res = await app.inject({
@@ -121,7 +121,7 @@ describeIfDb('overrides', () => {
       const adminKey = await createAdminKey(app, rootKey, project.id)
       await createFlag(app, adminKey, project.id)
 
-      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`
+      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`
 
       const first = await app.inject({
         method: 'POST',
@@ -150,7 +150,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'plan', contextValue: '', enabled: true },
       })
@@ -169,7 +169,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextValue: 'user_001', enabled: true },
       })
@@ -191,7 +191,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'userId', contextValue: 'user_001' },
       })
@@ -213,7 +213,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'userId', contextValue: 'user_001', enabled: 'true' },
       })
@@ -234,7 +234,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/nonexistent-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/nonexistent-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'userId', contextValue: 'user_001', enabled: true },
       })
@@ -274,7 +274,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`,
         headers: { authorization: adminKey },
       })
 
@@ -290,7 +290,7 @@ describeIfDb('overrides', () => {
       const adminKey = await createAdminKey(app, rootKey, project.id)
       await createFlag(app, adminKey, project.id)
 
-      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`
+      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`
 
       await app.inject({
         method: 'POST',
@@ -336,20 +336,20 @@ describeIfDb('overrides', () => {
 
       await app.inject({
         method: 'POST',
-        url: `${envPath}/flag-a/environments/staging/overrides`,
+        url: `${envPath}/flag-a/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'userId', contextValue: 'user_a', enabled: true },
       })
       await app.inject({
         method: 'POST',
-        url: `${envPath}/flag-b/environments/staging/overrides`,
+        url: `${envPath}/flag-b/environments/production/overrides`,
         headers: { authorization: adminKey },
         payload: { contextKey: 'userId', contextValue: 'user_b', enabled: false },
       })
 
       const res = await app.inject({
         method: 'GET',
-        url: `${envPath}/flag-a/environments/staging/overrides`,
+        url: `${envPath}/flag-a/environments/production/overrides`,
         headers: { authorization: adminKey },
       })
 
@@ -369,7 +369,7 @@ describeIfDb('overrides', () => {
       const adminKey = await createAdminKey(app, rootKey, project.id)
       await createFlag(app, adminKey, project.id)
 
-      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`
+      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`
 
       const created = await app.inject({
         method: 'POST',
@@ -396,7 +396,7 @@ describeIfDb('overrides', () => {
       const adminKey = await createAdminKey(app, rootKey, project.id)
       await createFlag(app, adminKey, project.id)
 
-      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides`
+      const base = `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides`
 
       const created = await app.inject({
         method: 'POST',
@@ -432,7 +432,7 @@ describeIfDb('overrides', () => {
 
       const res = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/staging/overrides/00000000-0000-0000-0000-000000000000`,
+        url: `/api/admin/projects/${project.id}/flags/test-flag/environments/production/overrides/00000000-0000-0000-0000-000000000000`,
         headers: { authorization: adminKey },
       })
 

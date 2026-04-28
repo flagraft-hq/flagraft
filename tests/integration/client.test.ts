@@ -133,8 +133,8 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'new-flag')
 
@@ -157,11 +157,11 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'launched')
-      await enableFlag(app, adminKey, project.id, 'launched', 'staging')
+      await enableFlag(app, adminKey, project.id, 'launched', 'production')
 
       const res = await app.inject({
         method: 'GET',
@@ -183,32 +183,32 @@ describeIfDb('client eval', () => {
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
       const devEnv = envs.find((e) => e.slug === 'development')!
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
+      const productionEnv = envs.find((e) => e.slug === 'production')!
       const devClient = await createClientKey(app, adminKey, project.id, devEnv.id)
-      const stagingClient = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionClient = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'staged-only')
-      await enableFlag(app, adminKey, project.id, 'staged-only', 'staging')
+      await enableFlag(app, adminKey, project.id, 'staged-only', 'production')
 
       const devRes = await app.inject({
         method: 'GET',
         url: '/api/client/features',
         headers: { authorization: devClient },
       })
-      const stagingRes = await app.inject({
+      const productionRes = await app.inject({
         method: 'GET',
         url: '/api/client/features',
-        headers: { authorization: stagingClient },
+        headers: { authorization: productionClient },
       })
 
       const devFeatures = devRes.json<{ features: Array<{ name: string; enabled: boolean }> }>()
         .features
-      const stagingFeatures = stagingRes.json<{
+      const productionFeatures = productionRes.json<{
         features: Array<{ name: string; enabled: boolean }>
       }>().features
 
       expect(devFeatures.find((f) => f.name === 'staged-only')).toMatchObject({ enabled: false })
-      expect(stagingFeatures.find((f) => f.name === 'staged-only')).toMatchObject({ enabled: true })
+      expect(productionFeatures.find((f) => f.name === 'staged-only')).toMatchObject({ enabled: true })
       await app.close()
     })
 
@@ -218,8 +218,8 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'ctx-flag')
       await createOverride(
@@ -227,7 +227,7 @@ describeIfDb('client eval', () => {
         adminKey,
         project.id,
         'ctx-flag',
-        'staging',
+        'production',
         'userId',
         'user_abc',
         true,
@@ -317,11 +317,11 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'on-flag')
-      await enableFlag(app, adminKey, project.id, 'on-flag', 'staging')
+      await enableFlag(app, adminKey, project.id, 'on-flag', 'production')
 
       const res = await app.inject({
         method: 'GET',
@@ -340,8 +340,8 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'beta-flag')
       await createOverride(
@@ -349,7 +349,7 @@ describeIfDb('client eval', () => {
         adminKey,
         project.id,
         'beta-flag',
-        'staging',
+        'production',
         'userId',
         'tester_1',
         true,
@@ -372,17 +372,17 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'global-on')
-      await enableFlag(app, adminKey, project.id, 'global-on', 'staging')
+      await enableFlag(app, adminKey, project.id, 'global-on', 'production')
       await createOverride(
         app,
         adminKey,
         project.id,
         'global-on',
-        'staging',
+        'production',
         'userId',
         'blocked_user',
         false,
@@ -405,8 +405,8 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'selective')
       await createOverride(
@@ -414,7 +414,7 @@ describeIfDb('client eval', () => {
         adminKey,
         project.id,
         'selective',
-        'staging',
+        'production',
         'userId',
         'special_user',
         true,
@@ -457,11 +457,11 @@ describeIfDb('client eval', () => {
       const project = await createProject(app, rootKey)
       const adminKey = await createAdminKey(app, rootKey, project.id)
       const envs = await getEnvironments(app, adminKey, project.id)
-      const stagingEnv = envs.find((e) => e.slug === 'staging')!
-      const clientKey = await createClientKey(app, adminKey, project.id, stagingEnv.id)
+      const productionEnv = envs.find((e) => e.slug === 'production')!
+      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'pro-feature')
-      await createOverride(app, adminKey, project.id, 'pro-feature', 'staging', 'plan', 'pro', true)
+      await createOverride(app, adminKey, project.id, 'pro-feature', 'production', 'plan', 'pro', true)
 
       const proRes = await app.inject({
         method: 'GET',

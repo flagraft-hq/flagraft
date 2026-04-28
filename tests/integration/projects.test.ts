@@ -47,7 +47,7 @@ describeIfDb('projects', () => {
       await app.close()
     })
 
-    it('auto-creates development, staging, and production environments', async () => {
+    it('auto-creates development and production environments', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey, 'env-check')
@@ -61,7 +61,7 @@ describeIfDb('projects', () => {
       expect(response.statusCode).toBe(200)
       const envs = response.json<Array<{ slug: string }>>()
       const slugs = envs.map((e) => e.slug).sort()
-      expect(slugs).toEqual(['development', 'production', 'staging'])
+      expect(slugs).toEqual(['development', 'production'])
       await app.close()
     })
 

@@ -4,13 +4,8 @@ import type { Db } from '../../db/index.js'
 import { environments, projects } from '../../db/schema.js'
 import type { KeyContext } from '../../plugins/auth.js'
 import { AppError } from '../../plugins/errorHandler.js'
+import { DEFAULT_ENVIRONMENTS } from '../../constants/environments.js'
 import type { CreateProjectInput, PatchProjectInput } from './project.schema.js'
-
-const defaultEnvironments = [
-  { name: 'Development', slug: 'development' },
-  { name: 'Staging', slug: 'staging' },
-  { name: 'Production', slug: 'production' },
-]
 
 /**
  * Creates a new project and initializes it with default environments
@@ -19,7 +14,7 @@ export async function createProject(db: Db, input: CreateProjectInput) {
   return db.transaction(async (tx) => {
     const [project] = await tx.insert(projects).values(input).returning()
     await tx.insert(environments).values(
-      defaultEnvironments.map((environment) => ({
+      DEFAULT_ENVIRONMENTS.map((environment) => ({
         ...environment,
         projectId: project.id,
       })),

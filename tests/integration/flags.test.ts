@@ -467,7 +467,7 @@ describeIfDb('flags', () => {
   })
 
   describe('enable/disable flag per environment', () => {
-    it('enables flag in staging, returns 200 with enabled: true', async () => {
+    it('enables flag in production, returns 200 with enabled: true', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -482,7 +482,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/new-feature/environments/staging/enable`,
+        url: `/api/admin/projects/${project.id}/flags/new-feature/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
@@ -496,7 +496,7 @@ describeIfDb('flags', () => {
       await app.close()
     })
 
-    it('disables flag in staging, returns 200 with enabled: false', async () => {
+    it('disables flag in production, returns 200 with enabled: false', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -510,13 +510,13 @@ describeIfDb('flags', () => {
       })
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/toggle-me/environments/staging/enable`,
+        url: `/api/admin/projects/${project.id}/flags/toggle-me/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/toggle-me/environments/staging/disable`,
+        url: `/api/admin/projects/${project.id}/flags/toggle-me/environments/production/disable`,
         headers: { authorization: adminKey },
       })
 
@@ -540,12 +540,12 @@ describeIfDb('flags', () => {
 
       const first = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-enable/environments/staging/enable`,
+        url: `/api/admin/projects/${project.id}/flags/idempotent-enable/environments/production/enable`,
         headers: { authorization: adminKey },
       })
       const second = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-enable/environments/staging/enable`,
+        url: `/api/admin/projects/${project.id}/flags/idempotent-enable/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
@@ -571,12 +571,12 @@ describeIfDb('flags', () => {
 
       const first = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-disable/environments/staging/disable`,
+        url: `/api/admin/projects/${project.id}/flags/idempotent-disable/environments/production/disable`,
         headers: { authorization: adminKey },
       })
       const second = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-disable/environments/staging/disable`,
+        url: `/api/admin/projects/${project.id}/flags/idempotent-disable/environments/production/disable`,
         headers: { authorization: adminKey },
       })
 
@@ -595,7 +595,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/ghost/environments/staging/enable`,
+        url: `/api/admin/projects/${project.id}/flags/ghost/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
