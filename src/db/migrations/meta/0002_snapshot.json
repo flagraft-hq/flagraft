@@ -71,12 +71,8 @@
           "name": "api_keys_project_id_projects_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -84,12 +80,8 @@
           "name": "api_keys_environment_id_environments_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "environments",
-          "columnsFrom": [
-            "environment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["environment_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -99,9 +91,7 @@
         "api_keys_key_hash_unique": {
           "name": "api_keys_key_hash_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key_hash"
-          ]
+          "columns": ["key_hash"]
         }
       },
       "policies": {},
@@ -156,12 +146,8 @@
           "name": "environments_project_id_projects_id_fk",
           "tableFrom": "environments",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -171,10 +157,7 @@
         "environments_project_id_slug_unique": {
           "name": "environments_project_id_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "slug"
-          ]
+          "columns": ["project_id", "slug"]
         }
       },
       "policies": {},
@@ -237,12 +220,8 @@
           "name": "feature_flags_project_id_projects_id_fk",
           "tableFrom": "feature_flags",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -252,10 +231,7 @@
         "feature_flags_project_id_key_unique": {
           "name": "feature_flags_project_id_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "key"
-          ]
+          "columns": ["project_id", "key"]
         }
       },
       "policies": {},
@@ -306,12 +282,8 @@
           "name": "flag_environments_flag_id_feature_flags_id_fk",
           "tableFrom": "flag_environments",
           "tableTo": "feature_flags",
-          "columnsFrom": [
-            "flag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["flag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -319,12 +291,8 @@
           "name": "flag_environments_environment_id_environments_id_fk",
           "tableFrom": "flag_environments",
           "tableTo": "environments",
-          "columnsFrom": [
-            "environment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["environment_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -334,10 +302,7 @@
         "flag_environments_flag_id_environment_id_unique": {
           "name": "flag_environments_flag_id_environment_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "flag_id",
-            "environment_id"
-          ]
+          "columns": ["flag_id", "environment_id"]
         }
       },
       "policies": {},
@@ -399,12 +364,8 @@
           "name": "flag_overrides_flag_id_feature_flags_id_fk",
           "tableFrom": "flag_overrides",
           "tableTo": "feature_flags",
-          "columnsFrom": [
-            "flag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["flag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -412,12 +373,8 @@
           "name": "flag_overrides_environment_id_environments_id_fk",
           "tableFrom": "flag_overrides",
           "tableTo": "environments",
-          "columnsFrom": [
-            "environment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["environment_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -427,12 +384,7 @@
         "flag_overrides_tuple_unique": {
           "name": "flag_overrides_tuple_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "flag_id",
-            "environment_id",
-            "context_key",
-            "context_value"
-          ]
+          "columns": ["flag_id", "environment_id", "context_key", "context_value"]
         }
       },
       "policies": {},
@@ -490,9 +442,7 @@
         "projects_slug_unique": {
           "name": "projects_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},

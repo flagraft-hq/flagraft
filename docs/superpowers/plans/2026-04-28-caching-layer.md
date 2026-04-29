@@ -13,11 +13,13 @@
 ## File Map
 
 **Create:**
+
 - `src/cache/index.ts` - `Cache` interface + `createCache(ttlSeconds)` factory
 - `src/plugins/cache.ts` - Fastify plugin, decorates `fastify.cache`
 - `tests/unit/cache.test.ts` - unit tests for cache hit / miss / delete / deleteByPrefix / TTL
 
 **Modify:**
+
 - `package.json` - add `bentocache` dependency
 - `src/config.ts` - add `CACHE_TTL_SECONDS` field (Zod, default 30)
 - `.env.example` - document `CACHE_TTL_SECONDS`
@@ -36,15 +38,15 @@
 
 ## Cache Key Design
 
-| Trigger | Cache key affected |
-|---|---|
-| `loadFlagState(projectId, envId)` | read/write `flags:${projectId}:${envId}` |
-| `createFlag` (affects all envs) | deleteByPrefix `flags:${projectId}:` |
-| `deleteFlag` (affects all envs) | deleteByPrefix `flags:${projectId}:` |
-| `setFlagEnabled(envSlug)` | delete `flags:${projectId}:${env.id}` (id from DB lookup already done) |
-| `createOverride(envSlug)` | delete `flags:${projectId}:${env.id}` (id from DB lookup already done) |
-| `deleteOverride(envSlug)` | delete `flags:${projectId}:${env.id}` (id from DB lookup already done) |
-| `deleteEnvironment(envId)` | deleteByPrefix `flags:${projectId}:` |
+| Trigger                           | Cache key affected                                                     |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| `loadFlagState(projectId, envId)` | read/write `flags:${projectId}:${envId}`                               |
+| `createFlag` (affects all envs)   | deleteByPrefix `flags:${projectId}:`                                   |
+| `deleteFlag` (affects all envs)   | deleteByPrefix `flags:${projectId}:`                                   |
+| `setFlagEnabled(envSlug)`         | delete `flags:${projectId}:${env.id}` (id from DB lookup already done) |
+| `createOverride(envSlug)`         | delete `flags:${projectId}:${env.id}` (id from DB lookup already done) |
+| `deleteOverride(envSlug)`         | delete `flags:${projectId}:${env.id}` (id from DB lookup already done) |
+| `deleteEnvironment(envId)`        | deleteByPrefix `flags:${projectId}:`                                   |
 
 `patchFlag` (name/description only) does not affect evaluation state -- no cache action needed.
 
@@ -53,6 +55,7 @@
 ## Task 1: Install bentocache and add CACHE_TTL_SECONDS to config
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `src/config.ts`
 - Modify: `.env.example`
@@ -143,6 +146,7 @@ git commit -m "feat: add bentocache dependency and CACHE_TTL_SECONDS config"
 ## Task 2: Create the Cache module
 
 **Files:**
+
 - Create: `src/cache/index.ts`
 - Create: `tests/unit/cache.test.ts`
 
@@ -302,6 +306,7 @@ git commit -m "feat: add Cache interface and BentoCache memory implementation"
 ## Task 3: Create the cache Fastify plugin and register it
 
 **Files:**
+
 - Create: `src/plugins/cache.ts`
 - Modify: `src/server.ts`
 
@@ -401,6 +406,7 @@ git commit -m "feat: register cache Fastify plugin and expose fastify.cache"
 ## Task 4: Cache the client evaluation hot path
 
 **Files:**
+
 - Modify: `src/modules/client/client.service.ts`
 - Modify: `src/modules/client/client.routes.ts`
 
@@ -452,10 +458,7 @@ export async function loadFlagState(
       .from(flagOverrides)
       .innerJoin(featureFlags, eq(featureFlags.id, flagOverrides.flagId))
       .where(
-        and(
-          eq(featureFlags.projectId, projectId),
-          eq(flagOverrides.environmentId, environmentId),
-        ),
+        and(eq(featureFlags.projectId, projectId), eq(flagOverrides.environmentId, environmentId)),
       )
       .orderBy(flagOverrides.createdAt)
 
@@ -562,6 +565,7 @@ git commit -m "feat: cache flag state in client evaluation hot path"
 ## Task 5: Invalidate cache on flag mutations
 
 **Files:**
+
 - Modify: `src/modules/flags/flag.service.ts`
 - Modify: `src/modules/flags/flag.routes.ts`
 
@@ -578,12 +582,7 @@ import type { Cache } from '../../cache/index.js'
 Update `createFlag` to accept and use cache (all-project invalidation because new flag appears in every environment):
 
 ```typescript
-export async function createFlag(
-  db: Db,
-  projectId: string,
-  input: CreateFlagInput,
-  cache?: Cache,
-) {
+export async function createFlag(db: Db, projectId: string, input: CreateFlagInput, cache?: Cache) {
   const flag = await db.transaction(async (tx) => {
     const [newFlag] = await tx
       .insert(featureFlags)
@@ -609,12 +608,7 @@ export async function createFlag(
 Update `deleteFlag`:
 
 ```typescript
-export async function deleteFlag(
-  db: Db,
-  projectId: string,
-  flagKey: string,
-  cache?: Cache,
-) {
+export async function deleteFlag(db: Db, projectId: string, flagKey: string, cache?: Cache) {
   const [flag] = await db
     .delete(featureFlags)
     .where(and(eq(featureFlags.projectId, projectId), eq(featureFlags.key, flagKey)))
@@ -700,6 +694,7 @@ git commit -m "feat: invalidate cache after flag create, delete, and enable/disa
 ## Task 6: Invalidate cache on override mutations
 
 **Files:**
+
 - Modify: `src/modules/flags/override.service.ts`
 - Modify: `src/modules/flags/override.routes.ts`
 
@@ -814,6 +809,7 @@ git commit -m "feat: invalidate cache after override create and delete"
 ## Task 7: Invalidate cache on environment deletion
 
 **Files:**
+
 - Modify: `src/modules/environments/environment.service.ts`
 - Modify: `src/modules/environments/environment.routes.ts`
 
@@ -852,12 +848,7 @@ export async function deleteEnvironment(
 
 ```typescript
 // deleteEnvironment
-await service.deleteEnvironment(
-  fastify.db,
-  params.projectId,
-  params.environmentId,
-  fastify.cache,
-)
+await service.deleteEnvironment(fastify.db, params.projectId, params.environmentId, fastify.cache)
 ```
 
 - [ ] **Step 3: Run typecheck + full test suite**
@@ -880,6 +871,7 @@ git commit -m "feat: invalidate cache prefix after environment deletion"
 ## Task 8: Integration tests for cache invalidation and TTL
 
 **Files:**
+
 - Create: `tests/integration/cache.test.ts`
 
 These tests verify the end-to-end behavior: that a stale cached value is replaced after a mutation, and that TTL expiry causes a fresh DB read. They use the same `buildServer` + `createRootKey` helpers as existing integration tests.
@@ -898,7 +890,12 @@ import { createCache } from '../../src/cache/index.js'
 import { flagEnvironments, featureFlags } from '../../src/db/schema.js'
 import { buildServer } from '../../src/server.js'
 import { getTestDb, truncateAll } from '../helpers/db.js'
-import { createAdminKey, createClientKey, createProject, createRootKey } from '../helpers/fixtures.js'
+import {
+  createAdminKey,
+  createClientKey,
+  createProject,
+  createRootKey,
+} from '../helpers/fixtures.js'
 
 const describeIfDb = process.env.TEST_DATABASE_URL ? describe : describe.skip
 

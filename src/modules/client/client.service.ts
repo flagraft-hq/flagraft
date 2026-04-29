@@ -48,10 +48,7 @@ export async function loadFlagState(
     .from(flagOverrides)
     .innerJoin(featureFlags, eq(featureFlags.id, flagOverrides.flagId))
     .where(
-      and(
-        eq(featureFlags.projectId, projectId),
-        eq(flagOverrides.environmentId, environmentId),
-      ),
+      and(eq(featureFlags.projectId, projectId), eq(flagOverrides.environmentId, environmentId)),
     )
     .orderBy(flagOverrides.createdAt)
 

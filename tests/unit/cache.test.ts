@@ -66,5 +66,4 @@ describe('createCache', () => {
     await cache.getOrSet('k4', factory)
     expect(factory).toHaveBeenCalledTimes(2)
   })
-
 })

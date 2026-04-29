@@ -15,7 +15,11 @@ export async function flagRoutes(fastify: FastifyInstance) {
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
-      const flag = await service.createFlag(fastify.db, params.projectId, createFlagSchema.parse(request.body))
+      const flag = await service.createFlag(
+        fastify.db,
+        params.projectId,
+        createFlagSchema.parse(request.body),
+      )
       await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
       return reply.status(201).send(flag)
     },

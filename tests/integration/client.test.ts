@@ -208,7 +208,9 @@ describeIfDb('client eval', () => {
       }>().features
 
       expect(devFeatures.find((f) => f.name === 'staged-only')).toMatchObject({ enabled: false })
-      expect(productionFeatures.find((f) => f.name === 'staged-only')).toMatchObject({ enabled: true })
+      expect(productionFeatures.find((f) => f.name === 'staged-only')).toMatchObject({
+        enabled: true,
+      })
       await app.close()
     })
 
@@ -461,7 +463,16 @@ describeIfDb('client eval', () => {
       const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'pro-feature')
-      await createOverride(app, adminKey, project.id, 'pro-feature', 'production', 'plan', 'pro', true)
+      await createOverride(
+        app,
+        adminKey,
+        project.id,
+        'pro-feature',
+        'production',
+        'plan',
+        'pro',
+        true,
+      )
 
       const proRes = await app.inject({
         method: 'GET',
