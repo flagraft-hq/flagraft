@@ -6,6 +6,7 @@ import {
   flagParamsSchema,
   patchFlagSchema,
 } from './flag.schema.js'
+import { cacheKeys } from '../../cache/keys.js'
 import * as service from './flag.service.js'
 
 export async function flagRoutes(fastify: FastifyInstance) {
@@ -14,11 +15,8 @@ export async function flagRoutes(fastify: FastifyInstance) {
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
-      const flag = await service.createFlag(
-        fastify.db,
-        params.projectId,
-        createFlagSchema.parse(request.body),
-      )
+      const flag = await service.createFlag(fastify.db, params.projectId, createFlagSchema.parse(request.body))
+      await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
       return reply.status(201).send(flag)
     },
   )
@@ -61,6 +59,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const params = flagParamsSchema.parse(request.params)
       await service.deleteFlag(fastify.db, params.projectId, params.flagKey)
+      await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
       return reply.status(204).send()
     },
   )
@@ -74,13 +73,15 @@ export async function flagRoutes(fastify: FastifyInstance) {
       { preHandler: fastify.requireAdminKey },
       async (request) => {
         const params = flagEnvironmentParamsSchema.parse(request.params)
-        return service.setFlagEnabled(
+        const row = await service.setFlagEnabled(
           fastify.db,
           params.projectId,
           params.flagKey,
           params.environmentSlug,
           enabled,
         )
+        await fastify.cache.delete(cacheKeys.flagState(params.projectId, row.environmentId))
+        return row
       },
     )
   }

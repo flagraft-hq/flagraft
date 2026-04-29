@@ -1,6 +1,7 @@
 import Fastify from 'fastify'
 
 import { loadConfig } from './config.js'
+import type { Cache } from './cache/index.js'
 import type { Db } from './db/index.js'
 import { clientRoutes } from './modules/client/client.routes.js'
 import { environmentRoutes } from './modules/environments/environment.routes.js'
@@ -9,6 +10,7 @@ import { overrideRoutes } from './modules/flags/override.routes.js'
 import { keyRoutes } from './modules/keys/key.routes.js'
 import { projectRoutes } from './modules/projects/project.routes.js'
 import authPlugin from './plugins/auth.js'
+import cachePlugin from './plugins/cache.js'
 import dbPlugin from './plugins/db.js'
 import errorHandlerPlugin from './plugins/errorHandler.js'
 
@@ -20,6 +22,7 @@ export interface BuildServerOptions {
    * Optional pre-configured database instance
    */
   db?: Db
+  cache?: Cache
 }
 
 /**
@@ -32,6 +35,7 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   })
 
   await fastify.register(dbPlugin, { db: opts.db, connectionString: config.DATABASE_URL })
+  await fastify.register(cachePlugin, { cache: opts.cache, ttlSeconds: config.CACHE_TTL_SECONDS })
   await fastify.register(errorHandlerPlugin)
   await fastify.register(authPlugin)
   await fastify.register(projectRoutes)

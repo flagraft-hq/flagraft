@@ -43,8 +43,8 @@ async function findEnvironment(db: Db, projectId: string, environmentSlug: strin
  * Creates a new feature flag and initializes its state in all project environments
  */
 export async function createFlag(db: Db, projectId: string, input: CreateFlagInput) {
-  return db.transaction(async (tx) => {
-    const [flag] = await tx
+  const flag = await db.transaction(async (tx) => {
+    const [newFlag] = await tx
       .insert(featureFlags)
       .values({ ...input, projectId })
       .returning()
@@ -52,14 +52,15 @@ export async function createFlag(db: Db, projectId: string, input: CreateFlagInp
     if (envs.length > 0) {
       await tx.insert(flagEnvironments).values(
         envs.map((environment) => ({
-          flagId: flag.id,
+          flagId: newFlag.id,
           environmentId: environment.id,
           enabled: false,
         })),
       )
     }
-    return flag
+    return newFlag
   })
+  return flag
 }
 
 /**

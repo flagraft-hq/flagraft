@@ -28,29 +28,29 @@ Phase 1 is complete. The core service is working:
 
 **Setup**
 
-- [ ] Add `bentocache` and `@bentocache/drivers/memory` as dependencies
-- [ ] Add `CACHE_TTL_SECONDS` to `src/config.ts` with Zod validation (default `30`, coerced number)
-- [ ] Add `CACHE_TTL_SECONDS` to `.env.example` with a comment explaining its effect
+- [x] Add `bentocache` and `@bentocache/drivers/memory` as dependencies
+- [x] Add `CACHE_TTL_SECONDS` to `src/config.ts` with Zod validation (default `30`, coerced number)
+- [x] Add `CACHE_TTL_SECONDS` to `.env.example` with a comment explaining its effect
 
 **Integration**
 
-- [ ] Create `src/cache/index.ts` -- exports a `createCache(ttl: number)` factory using BentoCache memory driver
-- [ ] Register cache as a Fastify plugin (`src/plugins/cache.ts`) and decorate `fastify.cache`
-- [ ] Wrap `clientService.loadFlagStates()` to check cache before issuing DB queries
-- [ ] Cache key format: `flags:${projectId}:${environmentId}`
+- [x] Create `src/cache/index.ts` -- exports a `createCache(ttl: number)` factory using BentoCache memory driver
+- [x] Register cache as a Fastify plugin (`src/plugins/cache.ts`) and decorate `fastify.cache`
+- [x] Wrap `clientService.loadFlagStates()` to check cache before issuing DB queries
+- [x] Cache key format: `flags:${projectId}:${environmentId}`
 
 **Invalidation**
 
-- [ ] Call `fastify.cache.delete(key)` in flag service after any create / update / delete
-- [ ] Call `fastify.cache.delete(key)` in override service after any create / delete
-- [ ] Call `fastify.cache.deleteByPrefix('flags:${projectId}')` when an environment is deleted
+- [x] Call `fastify.cache.delete(key)` in flag service after any create / update / delete
+- [x] Call `fastify.cache.delete(key)` in override service after any create / delete
+- [x] Call `fastify.cache.deleteByPrefix('flags:${projectId}')` when an environment is deleted
 
 **Tests**
 
-- [ ] Unit test: cache hit does not call the DB query function
-- [ ] Unit test: cache miss calls through and stores result
-- [ ] Integration test: flag update invalidates cache so next eval reads fresh data
-- [ ] Integration test: verify TTL expiry causes a fresh DB read (use fake timers)
+- [x] Unit test: cache hit does not call the DB query function
+- [x] Unit test: cache miss calls through and stores result
+- [x] Integration test: flag update invalidates cache so next eval reads fresh data
+- [x] Integration test: verify TTL expiry causes a fresh DB read (use fake timers)
 
 ---
 

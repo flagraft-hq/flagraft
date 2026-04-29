@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
 import type { EvaluationContext } from '../../evaluation/engine.js'
+import { cacheKeys } from '../../cache/keys.js'
 import * as service from './client.service.js'
 
 const flagParamSchema = z.object({ flagKey: z.string().min(1) })
@@ -23,11 +24,10 @@ function queryToContext(query: unknown): EvaluationContext {
 
 export async function clientRoutes(fastify: FastifyInstance) {
   fastify.get('/api/client/features', { preHandler: fastify.requireClientKey }, async (request) => {
-    const context = request.keyContext!
-    const state = await service.loadFlagState(
-      fastify.db,
-      context.projectId!,
-      context.environmentId!,
+    const ctx = request.keyContext!
+    const state = await fastify.cache.getOrSet(
+      cacheKeys.flagState(ctx.projectId!, ctx.environmentId!),
+      () => service.loadFlagState(fastify.db, ctx.projectId!, ctx.environmentId!),
     )
     return { features: service.evaluateAll(state, queryToContext(request.query)) }
   })
@@ -36,15 +36,13 @@ export async function clientRoutes(fastify: FastifyInstance) {
     '/api/client/features/:flagKey',
     { preHandler: fastify.requireClientKey },
     async (request) => {
-      const context = request.keyContext!
+      const ctx = request.keyContext!
       const params = flagParamSchema.parse(request.params)
-      return service.evaluateOne(
-        fastify.db,
-        context.projectId!,
-        context.environmentId!,
-        params.flagKey,
-        queryToContext(request.query),
+      const state = await fastify.cache.getOrSet(
+        cacheKeys.flagState(ctx.projectId!, ctx.environmentId!),
+        () => service.loadFlagState(fastify.db, ctx.projectId!, ctx.environmentId!),
       )
+      return service.evaluateOne(state, params.flagKey, queryToContext(request.query))
     },
   )
 }

@@ -29,6 +29,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "bentocache": "^1.6.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.36.4",
     "fastify": "^4.28.1",

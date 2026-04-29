@@ -14,16 +14,19 @@ export interface EvaluatedFeature extends EvaluationResult {
   name: string
 }
 
+/**
+ * Loads the state of all feature flags for a project environment.
+ *
+ * Returns a plain Record rather than a Map so callers can pass the result
+ * directly to cache layers (which serialize via JSON) without a conversion step.
+ */
 export async function loadFlagState(
   db: Db,
   projectId: string,
   environmentId: string,
-): Promise<Map<string, FlagEnvironmentState>> {
+): Promise<Record<string, FlagEnvironmentState>> {
   const rows = await db
-    .select({
-      flagKey: featureFlags.key,
-      enabled: flagEnvironments.enabled,
-    })
+    .select({ flagKey: featureFlags.key, enabled: flagEnvironments.enabled })
     .from(flagEnvironments)
     .innerJoin(featureFlags, eq(featureFlags.id, flagEnvironments.flagId))
     .innerJoin(environments, eq(environments.id, flagEnvironments.environmentId))
@@ -45,48 +48,45 @@ export async function loadFlagState(
     .from(flagOverrides)
     .innerJoin(featureFlags, eq(featureFlags.id, flagOverrides.flagId))
     .where(
-      and(eq(featureFlags.projectId, projectId), eq(flagOverrides.environmentId, environmentId)),
+      and(
+        eq(featureFlags.projectId, projectId),
+        eq(flagOverrides.environmentId, environmentId),
+      ),
     )
     .orderBy(flagOverrides.createdAt)
 
-  const state = new Map<string, FlagEnvironmentState>()
+  const state: Record<string, FlagEnvironmentState> = {}
   for (const row of rows) {
-    state.set(row.flagKey, { enabled: row.enabled, overrides: [] })
+    state[row.flagKey] = { enabled: row.enabled, overrides: [] }
   }
-
   for (const override of overrides) {
-    state.get(override.flagKey)?.overrides.push({
+    state[override.flagKey]?.overrides.push({
       contextKey: override.contextKey,
       contextValue: override.contextValue,
       enabled: override.enabled,
     })
   }
-
   return state
 }
 
 export function evaluateAll(
-  state: Map<string, FlagEnvironmentState>,
+  state: Record<string, FlagEnvironmentState>,
   context: EvaluationContext,
 ): Array<{ name: string; enabled: boolean }> {
-  return [...state.entries()].map(([name, flagState]) => ({
+  return Object.entries(state).map(([name, flagState]) => ({
     name,
     enabled: evaluateFlag(flagState, context).enabled,
   }))
 }
 
-export async function evaluateOne(
-  db: Db,
-  projectId: string,
-  environmentId: string,
+export function evaluateOne(
+  state: Record<string, FlagEnvironmentState>,
   flagKey: string,
   context: EvaluationContext,
-): Promise<EvaluatedFeature> {
-  const state = await loadFlagState(db, projectId, environmentId)
-  const flagState = state.get(flagKey)
+): EvaluatedFeature {
+  const flagState = state[flagKey]
   if (!flagState) {
     throw new AppError('Flag not found', 404, 'NotFound')
   }
-
   return { name: flagKey, ...evaluateFlag(flagState, context) }
 }

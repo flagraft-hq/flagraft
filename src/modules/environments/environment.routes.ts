@@ -5,6 +5,7 @@ import {
   environmentParamsSchema,
   projectEnvironmentParamsSchema,
 } from './environment.schema.js'
+import { cacheKeys } from '../../cache/keys.js'
 import * as service from './environment.service.js'
 
 export async function environmentRoutes(fastify: FastifyInstance) {
@@ -37,6 +38,7 @@ export async function environmentRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const params = environmentParamsSchema.parse(request.params)
       await service.deleteEnvironment(fastify.db, params.projectId, params.environmentId)
+      await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
       return reply.status(204).send()
     },
   )

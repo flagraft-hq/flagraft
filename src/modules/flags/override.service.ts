@@ -73,6 +73,9 @@ export async function listOverrides(
 
 /**
  * Deletes a specific flag override from an environment
+ *
+ * Returns the deleted override row so callers can access environmentId for
+ * downstream cache invalidation without re-querying the database.
  */
 export async function deleteOverride(
   db: Db,
@@ -96,4 +99,6 @@ export async function deleteOverride(
   if (!override) {
     throw new AppError('Override not found', 404, 'NotFound')
   }
+
+  return override
 }

@@ -6,6 +6,7 @@ const configSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.string().default('info'),
+  CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(30),
 })
 
 export type AppConfig = Readonly<z.infer<typeof configSchema>>

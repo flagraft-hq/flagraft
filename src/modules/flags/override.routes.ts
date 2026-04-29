@@ -5,6 +5,7 @@ import {
   deleteOverrideParamsSchema,
   overrideParamsSchema,
 } from './override.schema.js'
+import { cacheKeys } from '../../cache/keys.js'
 import * as service from './override.service.js'
 
 export async function overrideRoutes(fastify: FastifyInstance) {
@@ -20,6 +21,7 @@ export async function overrideRoutes(fastify: FastifyInstance) {
         params.environmentSlug,
         createOverrideSchema.parse(request.body),
       )
+      await fastify.cache.delete(cacheKeys.flagState(params.projectId, override.environmentId))
       return reply.status(201).send(override)
     },
   )
@@ -43,13 +45,14 @@ export async function overrideRoutes(fastify: FastifyInstance) {
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = deleteOverrideParamsSchema.parse(request.params)
-      await service.deleteOverride(
+      const override = await service.deleteOverride(
         fastify.db,
         params.projectId,
         params.flagKey,
         params.environmentSlug,
         params.overrideId,
       )
+      await fastify.cache.delete(cacheKeys.flagState(params.projectId, override.environmentId))
       return reply.status(204).send()
     },
   )
