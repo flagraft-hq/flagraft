@@ -26,12 +26,9 @@ export const environments = pgTable(
     slug: text('slug').notNull(),
     createdAt: createdAt(),
   },
-  (table) => ({
-    projectSlugUnique: unique('environments_project_id_slug_unique').on(
-      table.projectId,
-      table.slug,
-    ),
-  }),
+  (table) => [
+    unique('environments_project_id_slug_unique').on(table.projectId, table.slug),
+  ],
 )
 
 export const featureFlags = pgTable(
@@ -47,9 +44,7 @@ export const featureFlags = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (table) => ({
-    projectKeyUnique: unique('feature_flags_project_id_key_unique').on(table.projectId, table.key),
-  }),
+  (table) => [unique('feature_flags_project_id_key_unique').on(table.projectId, table.key)],
 )
 
 export const flagEnvironments = pgTable(
@@ -65,12 +60,12 @@ export const flagEnvironments = pgTable(
     enabled: boolean('enabled').notNull().default(false),
     updatedAt: updatedAt(),
   },
-  (table) => ({
-    flagEnvironmentUnique: unique('flag_environments_flag_id_environment_id_unique').on(
+  (table) => [
+    unique('flag_environments_flag_id_environment_id_unique').on(
       table.flagId,
       table.environmentId,
     ),
-  }),
+  ],
 )
 
 export const flagOverrides = pgTable(
@@ -88,14 +83,14 @@ export const flagOverrides = pgTable(
     enabled: boolean('enabled').notNull(),
     createdAt: createdAt(),
   },
-  (table) => ({
-    overrideUnique: unique('flag_overrides_tuple_unique').on(
+  (table) => [
+    unique('flag_overrides_tuple_unique').on(
       table.flagId,
       table.environmentId,
       table.contextKey,
       table.contextValue,
     ),
-  }),
+  ],
 )
 
 export const apiKeys = pgTable(
@@ -113,12 +108,12 @@ export const apiKeys = pgTable(
     createdAt: createdAt(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   },
-  (table) => ({
-    typeCheck: check(
+  (table) => [
+    check(
       'api_keys_type_check',
       sql`${table.type} IN (${API_KEY_TYPES.CLIENT}, ${API_KEY_TYPES.ADMIN})`,
     ),
-  }),
+  ],
 )
 
 export const projectRelations = relations(projects, ({ many }) => ({
