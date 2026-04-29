@@ -5,7 +5,12 @@ import { createCache } from '../../src/cache/index.js'
 import { featureFlags, flagEnvironments } from '../../src/db/schema.js'
 import { buildServer } from '../../src/server.js'
 import { getTestDb, truncateAll } from '../helpers/db.js'
-import { createAdminKey, createClientKey, createProject, createRootKey } from '../helpers/fixtures.js'
+import {
+  createAdminKey,
+  createClientKey,
+  createProject,
+  createRootKey,
+} from '../helpers/fixtures.js'
 
 const describeIfDb = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const db = process.env.TEST_DATABASE_URL ? getTestDb() : undefined
@@ -162,10 +167,7 @@ describeIfDb('cache invalidation', () => {
       .update(flagEnvironments)
       .set({ enabled: false })
       .where(
-        and(
-          eq(flagEnvironments.flagId, flag.id),
-          eq(flagEnvironments.environmentId, prodEnv.id),
-        ),
+        and(eq(flagEnvironments.flagId, flag.id), eq(flagEnvironments.environmentId, prodEnv.id)),
       )
 
     // The stale cache entry should still serve enabled=true

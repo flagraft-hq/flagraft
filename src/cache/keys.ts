@@ -7,8 +7,7 @@ export const cacheKeys = {
    * Key for a project's flag evaluation state scoped to one environment.
    * Used for reads (getOrSet) and targeted invalidation after single-env mutations.
    */
-  flagState: (projectId: string, environmentId: string) =>
-    `flags:${projectId}:${environmentId}`,
+  flagState: (projectId: string, environmentId: string) => `flags:${projectId}:${environmentId}`,
 
   /**
    * Prefix covering all cached environments for a project.

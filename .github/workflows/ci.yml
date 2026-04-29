@@ -84,8 +84,8 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgres://veltra:veltra@localhost:5432/veltra_test
-      TEST_DATABASE_URL: postgres://veltra:veltra@localhost:5432/veltra_test
+      DATABASE_URL: postgres://veltra:veltra@127.0.0.1:5432/veltra_test
+      TEST_DATABASE_URL: postgres://veltra:veltra@127.0.0.1:5432/veltra_test
       NODE_ENV: test
       PORT: 3000
       LOG_LEVEL: silent
