@@ -62,20 +62,20 @@ Phase 1 is complete. The core service is working:
 
 **GitHub Actions CI**
 
-- [ ] Create `.github/workflows/ci.yml`
-- [ ] Jobs: `lint` (`pnpm lint`), `typecheck` (`pnpm typecheck`), `test` (`pnpm test`)
-- [ ] Spin up a Postgres 15 service container for the test job
-- [ ] Run `pnpm db:migrate` against the test DB before running tests
-- [ ] Cache `node_modules` using pnpm store path for faster runs
-- [ ] Fail the pipeline if any job exits non-zero
+- [x] Create `.github/workflows/ci.yml`
+- [x] Jobs: `lint` (`pnpm lint`), `typecheck` (`pnpm typecheck`), `test` (`pnpm test`)
+- [x] Spin up a Postgres 15 service container for the test job
+- [x] Run `pnpm db:migrate` against the test DB before running tests
+- [x] Cache `node_modules` using pnpm store path for faster runs
+- [x] Fail the pipeline if any job exits non-zero
 
 **Docker**
 
-- [ ] Write a multi-stage `Dockerfile`:
+- [x] Write a multi-stage `Dockerfile`:
   - Build stage: `node:20-alpine`, install deps, run `pnpm build`
   - Runtime stage: `node:20-alpine`, copy `dist/`, run `node dist/server.cjs`
-- [ ] Add `.dockerignore` (exclude `node_modules`, `dist`, `.env`, `tests`, `docs`)
-- [ ] Add `docker build` smoke test to CI
+- [x] Add `.dockerignore` (exclude `node_modules`, `dist`, `.env`, `tests`, `docs`)
+- [x] Add `docker build` smoke test to CI
 
 **Health and Observability**
 

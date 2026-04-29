@@ -64,6 +64,15 @@ jobs:
 
       - run: pnpm build
 
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t veltra:smoke .
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
