@@ -13,6 +13,8 @@ import authPlugin from './plugins/auth.js'
 import cachePlugin from './plugins/cache.js'
 import dbPlugin from './plugins/db.js'
 import errorHandlerPlugin from './plugins/errorHandler.js'
+import healthPlugin from './plugins/health.js'
+import requestIdPlugin from './plugins/requestId.js'
 
 /**
  * Options for configuring the server build
@@ -37,7 +39,9 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(dbPlugin, { db: opts.db, connectionString: config.DATABASE_URL })
   await fastify.register(cachePlugin, { cache: opts.cache, ttlSeconds: config.CACHE_TTL_SECONDS })
   await fastify.register(errorHandlerPlugin)
+  await fastify.register(requestIdPlugin)
   await fastify.register(authPlugin)
+  await fastify.register(healthPlugin)
   const v1Prefix = { prefix: '/api/v1' }
   await fastify.register(projectRoutes, v1Prefix)
   await fastify.register(environmentRoutes, v1Prefix)

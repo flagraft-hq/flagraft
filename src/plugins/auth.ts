@@ -20,6 +20,10 @@ export interface KeyContext {
 }
 
 declare module 'fastify' {
+  interface FastifyContextConfig {
+    skipAuth?: boolean
+  }
+
   interface FastifyRequest {
     keyContext?: KeyContext
   }
@@ -62,6 +66,8 @@ function projectIdFromParams(request: FastifyRequest): string | undefined {
 
 async function authPlugin(fastify: FastifyInstance) {
   fastify.addHook('preHandler', async (request) => {
+    if (request.routeOptions.config?.skipAuth) return
+
     const authorization = request.headers.authorization
     if (!authorization) {
       throw new AppError('Missing authorization header', 401, 'Unauthorized')
