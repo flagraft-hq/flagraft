@@ -1,4 +1,4 @@
-import { API_KEY_TYPES } from '../auth/constants.js'
+import { API_KEY_TYPES } from '../auth/constants'
 import { relations, sql } from 'drizzle-orm'
 import { boolean, check, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
@@ -26,9 +26,7 @@ export const environments = pgTable(
     slug: text('slug').notNull(),
     createdAt: createdAt(),
   },
-  (table) => [
-    unique('environments_project_id_slug_unique').on(table.projectId, table.slug),
-  ],
+  (table) => [unique('environments_project_id_slug_unique').on(table.projectId, table.slug)],
 )
 
 export const featureFlags = pgTable(
@@ -61,10 +59,7 @@ export const flagEnvironments = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
-    unique('flag_environments_flag_id_environment_id_unique').on(
-      table.flagId,
-      table.environmentId,
-    ),
+    unique('flag_environments_flag_id_environment_id_unique').on(table.flagId, table.environmentId),
   ],
 )
 
@@ -108,10 +103,10 @@ export const apiKeys = pgTable(
     createdAt: createdAt(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   },
-  (table) => [
+  () => [
     check(
       'api_keys_type_check',
-      sql`${table.type} IN (${API_KEY_TYPES.CLIENT}, ${API_KEY_TYPES.ADMIN})`,
+      sql.raw(`"type" IN ('${API_KEY_TYPES.CLIENT}', '${API_KEY_TYPES.ADMIN}')`),
     ),
   ],
 )
@@ -133,6 +128,30 @@ export const featureFlagRelations = relations(featureFlags, ({ one, many }) => (
   project: one(projects, { fields: [featureFlags.projectId], references: [projects.id] }),
   environments: many(flagEnvironments),
   overrides: many(flagOverrides),
+}))
+
+export const flagEnvironmentsRelations = relations(flagEnvironments, ({ one }) => ({
+  flag: one(featureFlags, { fields: [flagEnvironments.flagId], references: [featureFlags.id] }),
+  environment: one(environments, {
+    fields: [flagEnvironments.environmentId],
+    references: [environments.id],
+  }),
+}))
+
+export const flagOverridesRelations = relations(flagOverrides, ({ one }) => ({
+  flag: one(featureFlags, { fields: [flagOverrides.flagId], references: [featureFlags.id] }),
+  environment: one(environments, {
+    fields: [flagOverrides.environmentId],
+    references: [environments.id],
+  }),
+}))
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  project: one(projects, { fields: [apiKeys.projectId], references: [projects.id] }),
+  environment: one(environments, {
+    fields: [apiKeys.environmentId],
+    references: [environments.id],
+  }),
 }))
 
 export type Project = typeof projects.$inferSelect
