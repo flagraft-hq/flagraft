@@ -5,7 +5,7 @@ import * as service from './project.service.js'
 
 export async function projectRoutes(fastify: FastifyInstance) {
   fastify.post(
-    '/api/admin/projects',
+    '/admin/projects',
     { preHandler: fastify.requireRootKey },
     async (request, reply) => {
       const project = await service.createProject(
@@ -16,12 +16,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
     },
   )
 
-  fastify.get('/api/admin/projects', { preHandler: fastify.requireAdminKey }, async (request) => {
+  fastify.get('/admin/projects', { preHandler: fastify.requireAdminKey }, async (request) => {
     return service.listProjects(fastify.db, request.keyContext!)
   })
 
   fastify.get(
-    '/api/admin/projects/:projectId',
+    '/admin/projects/:projectId',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = projectIdParamsSchema.parse(request.params)
@@ -30,7 +30,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   )
 
   fastify.patch(
-    '/api/admin/projects/:projectId',
+    '/admin/projects/:projectId',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = projectIdParamsSchema.parse(request.params)
@@ -43,7 +43,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   )
 
   fastify.delete(
-    '/api/admin/projects/:projectId',
+    '/admin/projects/:projectId',
     { preHandler: fastify.requireRootKey },
     async (request, reply) => {
       const params = projectIdParamsSchema.parse(request.params)

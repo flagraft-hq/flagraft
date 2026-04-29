@@ -26,7 +26,7 @@ describeIfDb('api keys', () => {
   ): Promise<string> {
     const res = await app.inject({
       method: 'GET',
-      url: `/api/admin/projects/${projectId}/environments`,
+      url: `/api/v1/admin/projects/${projectId}/environments`,
       headers: { authorization: rootKey },
     })
     const envs = res.json<Array<{ id: string; slug: string }>>()
@@ -36,7 +36,7 @@ describeIfDb('api keys', () => {
   /**
    * Tests for creating various types of API keys
    */
-  describe('POST /api/admin/projects/:projectId/keys', () => {
+  describe('POST /api/v1/admin/projects/:projectId/keys', () => {
     it('creates an admin key successfully and returns 201 with correct shape', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -44,7 +44,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: { type: API_KEY_TYPES.ADMIN, description: 'My admin key' },
       })
@@ -74,7 +74,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: { type: API_KEY_TYPES.ADMIN },
       })
@@ -92,7 +92,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: { type: API_KEY_TYPES.ADMIN },
       })
@@ -111,7 +111,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: {
           type: API_KEY_TYPES.CLIENT,
@@ -134,7 +134,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: { type: API_KEY_TYPES.CLIENT },
       })
@@ -156,7 +156,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: { type: API_KEY_TYPES.ADMIN, environmentId: productionId },
       })
@@ -177,7 +177,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: {
           type: API_KEY_TYPES.CLIENT,
@@ -200,7 +200,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
         payload: { type: 'superadmin' },
       })
@@ -217,7 +217,7 @@ describeIfDb('api keys', () => {
   /**
    * Tests for listing API keys within a project
    */
-  describe('GET /api/admin/projects/:projectId/keys', () => {
+  describe('GET /api/v1/admin/projects/:projectId/keys', () => {
     it('returns an empty array when no project-scoped keys have been created', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -225,7 +225,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
 
@@ -243,7 +243,7 @@ describeIfDb('api keys', () => {
       const adminKey = await createAdminKey(app, rootKey, project.id)
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: adminKey },
         payload: {
           type: API_KEY_TYPES.CLIENT,
@@ -254,7 +254,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
 
@@ -274,7 +274,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
 
@@ -300,14 +300,14 @@ describeIfDb('api keys', () => {
       const adminKeyStr = await createAdminKey(app, rootKey, project.id)
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: adminKeyStr },
         payload: { type: API_KEY_TYPES.CLIENT, environmentId: productionId },
       })
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
 
@@ -323,7 +323,7 @@ describeIfDb('api keys', () => {
   /**
    * Tests for revoking and deleting API keys
    */
-  describe('DELETE /api/admin/projects/:projectId/keys/:keyId', () => {
+  describe('DELETE /api/v1/admin/projects/:projectId/keys/:keyId', () => {
     it('deletes a key and returns 204', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -332,7 +332,7 @@ describeIfDb('api keys', () => {
 
       const listRes = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
       const keys = listRes.json<Array<{ id: string }>>()
@@ -340,7 +340,7 @@ describeIfDb('api keys', () => {
 
       const deleteRes = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/keys/${target.id}`,
+        url: `/api/v1/admin/projects/${project.id}/keys/${target.id}`,
         headers: { authorization: rootKey },
       })
 
@@ -348,7 +348,7 @@ describeIfDb('api keys', () => {
 
       const afterList = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
       const remaining = afterList.json<Array<{ id: string }>>()
@@ -364,7 +364,7 @@ describeIfDb('api keys', () => {
 
       const listRes = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
       const keys = listRes.json<Array<{ id: string }>>()
@@ -372,7 +372,7 @@ describeIfDb('api keys', () => {
 
       await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/keys/${target.id}`,
+        url: `/api/v1/admin/projects/${project.id}/keys/${target.id}`,
         headers: { authorization: rootKey },
       })
 
@@ -381,7 +381,7 @@ describeIfDb('api keys', () => {
        */
       const afterDelete = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/keys`,
+        url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: adminKey },
       })
 
@@ -396,7 +396,7 @@ describeIfDb('api keys', () => {
 
       const res = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/keys/00000000-0000-0000-0000-000000000000`,
+        url: `/api/v1/admin/projects/${project.id}/keys/00000000-0000-0000-0000-000000000000`,
         headers: { authorization: rootKey },
       })
 

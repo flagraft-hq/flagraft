@@ -14,7 +14,7 @@ describeIfDb('flags', () => {
     await truncateAll(db!)
   })
 
-  describe('POST /api/admin/projects/:projectId/flags', () => {
+  describe('POST /api/v1/admin/projects/:projectId/flags', () => {
     it('creates a flag successfully and returns 201 with correct shape', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -23,7 +23,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'My Flag', key: 'my-flag', description: 'A test flag' },
       })
@@ -50,14 +50,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Flag One', key: 'duplicate-key' },
       })
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Flag Two', key: 'duplicate-key' },
       })
@@ -80,13 +80,13 @@ describeIfDb('flags', () => {
 
       const responseA = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${projectA.id}/flags`,
+        url: `/api/v1/admin/projects/${projectA.id}/flags`,
         headers: { authorization: adminKeyA },
         payload: { name: 'Shared Key Flag', key: 'shared-key' },
       })
       const responseB = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${projectB.id}/flags`,
+        url: `/api/v1/admin/projects/${projectB.id}/flags`,
         headers: { authorization: adminKeyB },
         payload: { name: 'Shared Key Flag', key: 'shared-key' },
       })
@@ -104,7 +104,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { key: 'no-name-flag' },
       })
@@ -125,7 +125,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'No Key Flag' },
       })
@@ -139,7 +139,7 @@ describeIfDb('flags', () => {
     })
   })
 
-  describe('GET /api/admin/projects/:projectId/flags', () => {
+  describe('GET /api/v1/admin/projects/:projectId/flags', () => {
     it('returns an empty array when no flags exist', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -148,7 +148,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
       })
 
@@ -165,20 +165,20 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Alpha', key: 'alpha' },
       })
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Beta', key: 'beta' },
       })
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
       })
 
@@ -202,26 +202,26 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'First', key: 'first' },
       })
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Second', key: 'second' },
       })
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Third', key: 'third' },
       })
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
       })
 
@@ -234,7 +234,7 @@ describeIfDb('flags', () => {
     })
   })
 
-  describe('GET /api/admin/projects/:projectId/flags/:flagKey', () => {
+  describe('GET /api/v1/admin/projects/:projectId/flags/:flagKey', () => {
     it('returns flag by key', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -243,14 +243,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Checkout', key: 'checkout', description: 'Checkout flow flag' },
       })
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/flags/checkout`,
+        url: `/api/v1/admin/projects/${project.id}/flags/checkout`,
         headers: { authorization: adminKey },
       })
 
@@ -272,7 +272,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/flags/does-not-exist`,
+        url: `/api/v1/admin/projects/${project.id}/flags/does-not-exist`,
         headers: { authorization: adminKey },
       })
 
@@ -285,7 +285,7 @@ describeIfDb('flags', () => {
     })
   })
 
-  describe('PATCH /api/admin/projects/:projectId/flags/:flagKey', () => {
+  describe('PATCH /api/v1/admin/projects/:projectId/flags/:flagKey', () => {
     it('updates name successfully and returns 200 with updated flag', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -294,14 +294,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Original Name', key: 'my-flag' },
       })
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}/flags/my-flag`,
+        url: `/api/v1/admin/projects/${project.id}/flags/my-flag`,
         headers: { authorization: adminKey },
         payload: { name: 'Updated Name' },
       })
@@ -323,14 +323,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Feature Toggle', key: 'feature-toggle' },
       })
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}/flags/feature-toggle`,
+        url: `/api/v1/admin/projects/${project.id}/flags/feature-toggle`,
         headers: { authorization: adminKey },
         payload: { description: 'Now with a description' },
       })
@@ -351,7 +351,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}/flags/ghost-flag`,
+        url: `/api/v1/admin/projects/${project.id}/flags/ghost-flag`,
         headers: { authorization: adminKey },
         payload: { name: 'Irrelevant' },
       })
@@ -372,14 +372,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Patch Target', key: 'patch-target' },
       })
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}/flags/patch-target`,
+        url: `/api/v1/admin/projects/${project.id}/flags/patch-target`,
         headers: { authorization: adminKey },
         payload: {},
       })
@@ -393,7 +393,7 @@ describeIfDb('flags', () => {
     })
   })
 
-  describe('DELETE /api/admin/projects/:projectId/flags/:flagKey', () => {
+  describe('DELETE /api/v1/admin/projects/:projectId/flags/:flagKey', () => {
     it('deletes a flag and returns 204', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -402,14 +402,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'To Delete', key: 'to-delete' },
       })
 
       const response = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/flags/to-delete`,
+        url: `/api/v1/admin/projects/${project.id}/flags/to-delete`,
         headers: { authorization: adminKey },
       })
 
@@ -425,19 +425,19 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Ephemeral', key: 'ephemeral' },
       })
       await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/flags/ephemeral`,
+        url: `/api/v1/admin/projects/${project.id}/flags/ephemeral`,
         headers: { authorization: adminKey },
       })
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/flags/ephemeral`,
+        url: `/api/v1/admin/projects/${project.id}/flags/ephemeral`,
         headers: { authorization: adminKey },
       })
 
@@ -453,7 +453,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/flags/nonexistent-flag`,
+        url: `/api/v1/admin/projects/${project.id}/flags/nonexistent-flag`,
         headers: { authorization: adminKey },
       })
 
@@ -475,14 +475,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'New Feature', key: 'new-feature' },
       })
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/new-feature/environments/production/enable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/new-feature/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
@@ -504,19 +504,19 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Toggle Me', key: 'toggle-me' },
       })
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/toggle-me/environments/production/enable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/toggle-me/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/toggle-me/environments/production/disable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/toggle-me/environments/production/disable`,
         headers: { authorization: adminKey },
       })
 
@@ -533,19 +533,19 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Idempotent Enable', key: 'idempotent-enable' },
       })
 
       const first = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-enable/environments/production/enable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/idempotent-enable/environments/production/enable`,
         headers: { authorization: adminKey },
       })
       const second = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-enable/environments/production/enable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/idempotent-enable/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
@@ -564,19 +564,19 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Idempotent Disable', key: 'idempotent-disable' },
       })
 
       const first = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-disable/environments/production/disable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/idempotent-disable/environments/production/disable`,
         headers: { authorization: adminKey },
       })
       const second = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/idempotent-disable/environments/production/disable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/idempotent-disable/environments/production/disable`,
         headers: { authorization: adminKey },
       })
 
@@ -595,7 +595,7 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/ghost/environments/production/enable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/ghost/environments/production/enable`,
         headers: { authorization: adminKey },
       })
 
@@ -615,14 +615,14 @@ describeIfDb('flags', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags`,
         headers: { authorization: adminKey },
         payload: { name: 'Env Test Flag', key: 'env-test-flag' },
       })
 
       const response = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/flags/env-test-flag/environments/nonexistent/enable`,
+        url: `/api/v1/admin/projects/${project.id}/flags/env-test-flag/environments/nonexistent/enable`,
         headers: { authorization: adminKey },
       })
 

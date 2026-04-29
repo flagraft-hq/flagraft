@@ -35,13 +35,13 @@ describeIfDb('phase 1 integration', () => {
 
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags`,
+      url: `/api/v1/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
       payload: { name: 'Checkout', key: 'checkout' },
     })
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags/checkout/environments/production/enable`,
+      url: `/api/v1/admin/projects/${project.id}/flags/checkout/environments/production/enable`,
       headers: { authorization: adminKey },
     })
 
@@ -52,12 +52,12 @@ describeIfDb('phase 1 integration', () => {
 
     const devResponse = await app.inject({
       method: 'GET',
-      url: '/api/client/features/checkout',
+      url: '/api/v1/client/features/checkout',
       headers: { authorization: devClient },
     })
     const productionResponse = await app.inject({
       method: 'GET',
-      url: '/api/client/features/checkout',
+      url: '/api/v1/client/features/checkout',
       headers: { authorization: productionClient },
     })
 
@@ -80,25 +80,25 @@ describeIfDb('phase 1 integration', () => {
 
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags`,
+      url: `/api/v1/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
       payload: { name: 'Checkout', key: 'checkout' },
     })
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags/checkout/environments/${firstEnv.slug}/overrides`,
+      url: `/api/v1/admin/projects/${project.id}/flags/checkout/environments/${firstEnv.slug}/overrides`,
       headers: { authorization: adminKey },
       payload: { contextKey: 'userId', contextValue: 'user_abc123', enabled: true },
     })
 
     const match = await app.inject({
       method: 'GET',
-      url: '/api/client/features/checkout?userId=user_abc123',
+      url: '/api/v1/client/features/checkout?userId=user_abc123',
       headers: { authorization: clientKey },
     })
     const miss = await app.inject({
       method: 'GET',
-      url: '/api/client/features/checkout?userId=other',
+      url: '/api/v1/client/features/checkout?userId=other',
       headers: { authorization: clientKey },
     })
 
@@ -124,7 +124,7 @@ describeIfDb('phase 1 integration', () => {
       (
         await app.inject({
           method: 'GET',
-          url: `/api/admin/projects/${project.id}/flags`,
+          url: `/api/v1/admin/projects/${project.id}/flags`,
           headers: { authorization: clientKey },
         })
       ).statusCode,
@@ -134,7 +134,7 @@ describeIfDb('phase 1 integration', () => {
       (
         await app.inject({
           method: 'GET',
-          url: `/api/admin/projects/${other.id}`,
+          url: `/api/v1/admin/projects/${other.id}`,
           headers: { authorization: adminKey },
         })
       ).statusCode,
@@ -144,7 +144,7 @@ describeIfDb('phase 1 integration', () => {
       (
         await app.inject({
           method: 'POST',
-          url: '/api/admin/projects',
+          url: '/api/v1/admin/projects',
           headers: { authorization: adminKey },
           payload: { name: 'Nope', slug: 'nope' },
         })
@@ -161,7 +161,7 @@ describeIfDb('phase 1 integration', () => {
 
     const duplicateProject = await app.inject({
       method: 'POST',
-      url: '/api/admin/projects',
+      url: '/api/v1/admin/projects',
       headers: { authorization: rootKey },
       payload: { name: 'Duplicate', slug: project.slug },
     })
@@ -169,13 +169,13 @@ describeIfDb('phase 1 integration', () => {
 
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags`,
+      url: `/api/v1/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
       payload: { name: 'Checkout', key: 'checkout' },
     })
     const duplicateFlag = await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags`,
+      url: `/api/v1/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
       payload: { name: 'Checkout 2', key: 'checkout' },
     })
@@ -190,7 +190,7 @@ describeIfDb('phase 1 integration', () => {
 
     const response = await app.inject({
       method: 'DELETE',
-      url: `/api/admin/projects/${project.id}`,
+      url: `/api/v1/admin/projects/${project.id}`,
       headers: { authorization: rootKey },
     })
 

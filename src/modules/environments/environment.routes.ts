@@ -10,7 +10,7 @@ import * as service from './environment.service.js'
 
 export async function environmentRoutes(fastify: FastifyInstance) {
   fastify.post(
-    '/api/admin/projects/:projectId/environments',
+    '/admin/projects/:projectId/environments',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = projectEnvironmentParamsSchema.parse(request.params)
@@ -24,7 +24,7 @@ export async function environmentRoutes(fastify: FastifyInstance) {
   )
 
   fastify.get(
-    '/api/admin/projects/:projectId/environments',
+    '/admin/projects/:projectId/environments',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = projectEnvironmentParamsSchema.parse(request.params)
@@ -33,7 +33,7 @@ export async function environmentRoutes(fastify: FastifyInstance) {
   )
 
   fastify.delete(
-    '/api/admin/projects/:projectId/environments/:environmentId',
+    '/admin/projects/:projectId/environments/:environmentId',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = environmentParamsSchema.parse(request.params)

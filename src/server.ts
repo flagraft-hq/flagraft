@@ -38,12 +38,13 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(cachePlugin, { cache: opts.cache, ttlSeconds: config.CACHE_TTL_SECONDS })
   await fastify.register(errorHandlerPlugin)
   await fastify.register(authPlugin)
-  await fastify.register(projectRoutes)
-  await fastify.register(environmentRoutes)
-  await fastify.register(flagRoutes)
-  await fastify.register(overrideRoutes)
-  await fastify.register(keyRoutes)
-  await fastify.register(clientRoutes)
+  const v1Prefix = { prefix: '/api/v1' }
+  await fastify.register(projectRoutes, v1Prefix)
+  await fastify.register(environmentRoutes, v1Prefix)
+  await fastify.register(flagRoutes, v1Prefix)
+  await fastify.register(overrideRoutes, v1Prefix)
+  await fastify.register(keyRoutes, v1Prefix)
+  await fastify.register(clientRoutes, v1Prefix)
 
   return fastify
 }

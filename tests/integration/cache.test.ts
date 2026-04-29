@@ -32,7 +32,7 @@ describeIfDb('cache invalidation', () => {
 
     const envsRes = await app.inject({
       method: 'GET',
-      url: `/api/admin/projects/${project.id}/environments`,
+      url: `/api/v1/admin/projects/${project.id}/environments`,
       headers: { authorization: adminKey },
     })
     const envs = envsRes.json<Array<{ id: string; slug: string }>>()
@@ -48,7 +48,7 @@ describeIfDb('cache invalidation', () => {
 
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags`,
+      url: `/api/v1/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
       payload: { name: 'My Feature', key: 'my-feature' },
     })
@@ -56,7 +56,7 @@ describeIfDb('cache invalidation', () => {
     // Populate cache with disabled state
     const first = await app.inject({
       method: 'GET',
-      url: '/api/client/features/my-feature',
+      url: '/api/v1/client/features/my-feature',
       headers: { authorization: clientKey },
     })
     expect(first.statusCode).toBe(200)
@@ -65,14 +65,14 @@ describeIfDb('cache invalidation', () => {
     // Enable the flag via the admin route -- this must invalidate the cache
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags/my-feature/environments/production/enable`,
+      url: `/api/v1/admin/projects/${project.id}/flags/my-feature/environments/production/enable`,
       headers: { authorization: adminKey },
     })
 
     // Cache must be gone; fresh DB read must reflect enabled=true
     const second = await app.inject({
       method: 'GET',
-      url: '/api/client/features/my-feature',
+      url: '/api/v1/client/features/my-feature',
       headers: { authorization: clientKey },
     })
     expect(second.statusCode).toBe(200)
@@ -87,7 +87,7 @@ describeIfDb('cache invalidation', () => {
 
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags`,
+      url: `/api/v1/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
       payload: { name: 'Beta', key: 'beta' },
     })
@@ -95,7 +95,7 @@ describeIfDb('cache invalidation', () => {
     // Populate cache: flag is globally disabled, no override for alice yet
     const first = await app.inject({
       method: 'GET',
-      url: '/api/client/features/beta?userId=alice',
+      url: '/api/v1/client/features/beta?userId=alice',
       headers: { authorization: clientKey },
     })
     expect(first.statusCode).toBe(200)
@@ -104,7 +104,7 @@ describeIfDb('cache invalidation', () => {
     // Create an override that enables the flag specifically for alice
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags/beta/environments/production/overrides`,
+      url: `/api/v1/admin/projects/${project.id}/flags/beta/environments/production/overrides`,
       headers: { authorization: adminKey },
       payload: { contextKey: 'userId', contextValue: 'alice', enabled: true },
     })
@@ -112,7 +112,7 @@ describeIfDb('cache invalidation', () => {
     // Cache must be invalidated; alice should now see enabled=true
     const second = await app.inject({
       method: 'GET',
-      url: '/api/client/features/beta?userId=alice',
+      url: '/api/v1/client/features/beta?userId=alice',
       headers: { authorization: clientKey },
     })
     expect(second.statusCode).toBe(200)
@@ -134,7 +134,7 @@ describeIfDb('cache invalidation', () => {
 
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags`,
+      url: `/api/v1/admin/projects/${project.id}/flags`,
       headers: { authorization: adminKey },
       payload: { name: 'TTL Flag', key: 'ttl-flag' },
     })
@@ -142,14 +142,14 @@ describeIfDb('cache invalidation', () => {
     // Enable via admin so the flag is on in the DB and the cache entry is warm with enabled=true
     await app.inject({
       method: 'POST',
-      url: `/api/admin/projects/${project.id}/flags/ttl-flag/environments/production/enable`,
+      url: `/api/v1/admin/projects/${project.id}/flags/ttl-flag/environments/production/enable`,
       headers: { authorization: adminKey },
     })
 
     // Confirm the cache is populated with enabled=true
     const first = await app.inject({
       method: 'GET',
-      url: '/api/client/features/ttl-flag',
+      url: '/api/v1/client/features/ttl-flag',
       headers: { authorization: clientKey },
     })
     expect(first.statusCode).toBe(200)
@@ -173,7 +173,7 @@ describeIfDb('cache invalidation', () => {
     // The stale cache entry should still serve enabled=true
     const stale = await app.inject({
       method: 'GET',
-      url: '/api/client/features/ttl-flag',
+      url: '/api/v1/client/features/ttl-flag',
       headers: { authorization: clientKey },
     })
     expect(stale.statusCode).toBe(200)
@@ -185,7 +185,7 @@ describeIfDb('cache invalidation', () => {
     // After TTL expiry the cache misses and the DB value (disabled) is returned
     const fresh = await app.inject({
       method: 'GET',
-      url: '/api/client/features/ttl-flag',
+      url: '/api/v1/client/features/ttl-flag',
       headers: { authorization: clientKey },
     })
     expect(fresh.statusCode).toBe(200)

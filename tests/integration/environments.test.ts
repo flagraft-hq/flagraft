@@ -13,7 +13,7 @@ describeIfDb('environments', () => {
     await truncateAll(db!)
   })
 
-  describe('POST /api/admin/projects/:projectId/environments', () => {
+  describe('POST /api/v1/admin/projects/:projectId/environments', () => {
     it('creates an environment successfully and returns 201 with correct shape', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -22,7 +22,7 @@ describeIfDb('environments', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
         payload: { name: 'QA', slug: 'qa' },
       })
@@ -53,14 +53,14 @@ describeIfDb('environments', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
         payload: { name: 'Canary', slug: 'canary' },
       })
 
       const duplicate = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
         payload: { name: 'Canary Again', slug: 'canary' },
       })
@@ -83,14 +83,14 @@ describeIfDb('environments', () => {
 
       const resA = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${projectA.id}/environments`,
+        url: `/api/v1/admin/projects/${projectA.id}/environments`,
         headers: { authorization: adminKeyA },
         payload: { name: 'Canary', slug: 'canary' },
       })
 
       const resB = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${projectB.id}/environments`,
+        url: `/api/v1/admin/projects/${projectB.id}/environments`,
         headers: { authorization: adminKeyB },
         payload: { name: 'Canary', slug: 'canary' },
       })
@@ -108,7 +108,7 @@ describeIfDb('environments', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
         payload: { slug: 'no-name' },
       })
@@ -129,7 +129,7 @@ describeIfDb('environments', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
         payload: { name: 'No Slug' },
       })
@@ -143,7 +143,7 @@ describeIfDb('environments', () => {
     })
   })
 
-  describe('GET /api/admin/projects/:projectId/environments', () => {
+  describe('GET /api/v1/admin/projects/:projectId/environments', () => {
     it('returns the 2 auto-created environments after project creation', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -152,7 +152,7 @@ describeIfDb('environments', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
       })
 
@@ -171,14 +171,14 @@ describeIfDb('environments', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
         payload: { name: 'QA', slug: 'qa' },
       })
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
       })
 
@@ -197,14 +197,14 @@ describeIfDb('environments', () => {
 
       await app.inject({
         method: 'POST',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
         payload: { name: 'QA', slug: 'qa' },
       })
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
       })
 
@@ -233,7 +233,7 @@ describeIfDb('environments', () => {
     })
   })
 
-  describe('DELETE /api/admin/projects/:projectId/environments/:environmentId', () => {
+  describe('DELETE /api/v1/admin/projects/:projectId/environments/:environmentId', () => {
     it('deletes an environment and returns 204', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -242,7 +242,7 @@ describeIfDb('environments', () => {
 
       const envsRes = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
       })
       const envs = envsRes.json<Array<{ id: string; slug: string }>>()
@@ -250,7 +250,7 @@ describeIfDb('environments', () => {
 
       const res = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/environments/${target.id}`,
+        url: `/api/v1/admin/projects/${project.id}/environments/${target.id}`,
         headers: { authorization: adminKey },
       })
 
@@ -258,7 +258,7 @@ describeIfDb('environments', () => {
 
       const afterRes = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: adminKey },
       })
       const remaining = afterRes.json<Array<{ id: string; slug: string }>>()
@@ -274,7 +274,7 @@ describeIfDb('environments', () => {
 
       const res = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}/environments/00000000-0000-0000-0000-000000000000`,
+        url: `/api/v1/admin/projects/${project.id}/environments/00000000-0000-0000-0000-000000000000`,
         headers: { authorization: adminKey },
       })
 
@@ -296,7 +296,7 @@ describeIfDb('environments', () => {
 
       const envsRes = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${projectA.id}/environments`,
+        url: `/api/v1/admin/projects/${projectA.id}/environments`,
         headers: { authorization: adminKeyA },
       })
       const envs = envsRes.json<Array<{ id: string; slug: string }>>()
@@ -307,7 +307,7 @@ describeIfDb('environments', () => {
        */
       const res = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${projectB.id}/environments/${targetEnv.id}`,
+        url: `/api/v1/admin/projects/${projectB.id}/environments/${targetEnv.id}`,
         headers: { authorization: adminKeyB },
       })
 

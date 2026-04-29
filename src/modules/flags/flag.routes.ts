@@ -11,7 +11,7 @@ import * as service from './flag.service.js'
 
 export async function flagRoutes(fastify: FastifyInstance) {
   fastify.post(
-    '/api/admin/projects/:projectId/flags',
+    '/admin/projects/:projectId/flags',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
@@ -26,7 +26,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
   )
 
   fastify.get(
-    '/api/admin/projects/:projectId/flags',
+    '/admin/projects/:projectId/flags',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
@@ -35,7 +35,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
   )
 
   fastify.get(
-    '/api/admin/projects/:projectId/flags/:flagKey',
+    '/admin/projects/:projectId/flags/:flagKey',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = flagParamsSchema.parse(request.params)
@@ -44,7 +44,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
   )
 
   fastify.patch(
-    '/api/admin/projects/:projectId/flags/:flagKey',
+    '/admin/projects/:projectId/flags/:flagKey',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = flagParamsSchema.parse(request.params)
@@ -58,7 +58,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
   )
 
   fastify.delete(
-    '/api/admin/projects/:projectId/flags/:flagKey',
+    '/admin/projects/:projectId/flags/:flagKey',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = flagParamsSchema.parse(request.params)
@@ -73,7 +73,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
     ['disable', false],
   ] as const) {
     fastify.post(
-      `/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/${action}`,
+      `/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/${action}`,
       { preHandler: fastify.requireAdminKey },
       async (request) => {
         const params = flagEnvironmentParamsSchema.parse(request.params)

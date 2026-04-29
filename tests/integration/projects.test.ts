@@ -17,14 +17,14 @@ describeIfDb('projects', () => {
   /**
    * Tests for creating new projects
    */
-  describe('POST /api/admin/projects', () => {
+  describe('POST /api/v1/admin/projects', () => {
     it('creates a project successfully and returns 201 with correct shape', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
 
       const response = await app.inject({
         method: 'POST',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: rootKey },
         payload: { name: 'My Project', slug: 'my-project' },
       })
@@ -54,7 +54,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}/environments`,
+        url: `/api/v1/admin/projects/${project.id}/environments`,
         headers: { authorization: rootKey },
       })
 
@@ -72,7 +72,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: rootKey },
         payload: { name: 'Another', slug: 'clash' },
       })
@@ -88,7 +88,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: rootKey },
         payload: { slug: 'no-name' },
       })
@@ -103,7 +103,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: rootKey },
         payload: { name: 'No Slug' },
       })
@@ -120,7 +120,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: adminKey },
         payload: { name: 'Sneaky', slug: 'sneaky' },
       })
@@ -134,7 +134,7 @@ describeIfDb('projects', () => {
   /**
    * Tests for listing all projects
    */
-  describe('GET /api/admin/projects', () => {
+  describe('GET /api/v1/admin/projects', () => {
     it('root key sees all projects when multiple exist', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -143,7 +143,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: rootKey },
       })
 
@@ -165,7 +165,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: adminKey },
       })
 
@@ -182,7 +182,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/admin/projects',
+        url: '/api/v1/admin/projects',
         headers: { authorization: rootKey },
       })
 
@@ -195,7 +195,7 @@ describeIfDb('projects', () => {
   /**
    * Tests for retrieving a single project by ID
    */
-  describe('GET /api/admin/projects/:projectId', () => {
+  describe('GET /api/v1/admin/projects/:projectId', () => {
     it('returns the project by id', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -203,7 +203,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${project.id}`,
+        url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: rootKey },
       })
 
@@ -218,7 +218,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/admin/projects/00000000-0000-0000-0000-000000000000',
+        url: '/api/v1/admin/projects/00000000-0000-0000-0000-000000000000',
         headers: { authorization: rootKey },
       })
 
@@ -236,7 +236,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/admin/projects/${projectB.id}`,
+        url: `/api/v1/admin/projects/${projectB.id}`,
         headers: { authorization: adminKeyA },
       })
 
@@ -249,7 +249,7 @@ describeIfDb('projects', () => {
   /**
    * Tests for updating a project
    */
-  describe('PATCH /api/admin/projects/:projectId', () => {
+  describe('PATCH /api/v1/admin/projects/:projectId', () => {
     it('updates name successfully and returns 200 with updated name', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -257,7 +257,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}`,
+        url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: rootKey },
         payload: { name: 'Updated Name' },
       })
@@ -274,7 +274,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}`,
+        url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: rootKey },
         payload: { slug: 'new-slug' },
       })
@@ -290,7 +290,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: '/api/admin/projects/00000000-0000-0000-0000-000000000000',
+        url: '/api/v1/admin/projects/00000000-0000-0000-0000-000000000000',
         headers: { authorization: rootKey },
         payload: { name: 'Ghost' },
       })
@@ -308,7 +308,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}`,
+        url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: rootKey },
         payload: { slug: 'taken' },
       })
@@ -325,7 +325,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/projects/${project.id}`,
+        url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: rootKey },
         payload: {},
       })
@@ -338,7 +338,7 @@ describeIfDb('projects', () => {
   /**
    * Tests for deleting a project
    */
-  describe('DELETE /api/admin/projects/:projectId', () => {
+  describe('DELETE /api/v1/admin/projects/:projectId', () => {
     it('deletes a project and returns 204', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -346,7 +346,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}`,
+        url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: rootKey },
       })
 
@@ -360,7 +360,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'DELETE',
-        url: '/api/admin/projects/00000000-0000-0000-0000-000000000000',
+        url: '/api/v1/admin/projects/00000000-0000-0000-0000-000000000000',
         headers: { authorization: rootKey },
       })
 
@@ -377,7 +377,7 @@ describeIfDb('projects', () => {
 
       const response = await app.inject({
         method: 'DELETE',
-        url: `/api/admin/projects/${project.id}`,
+        url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: adminKey },
       })
 

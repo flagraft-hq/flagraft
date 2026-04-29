@@ -10,7 +10,7 @@ import * as service from './override.service.js'
 
 export async function overrideRoutes(fastify: FastifyInstance) {
   fastify.post(
-    '/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides',
+    '/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = overrideParamsSchema.parse(request.params)
@@ -27,7 +27,7 @@ export async function overrideRoutes(fastify: FastifyInstance) {
   )
 
   fastify.get(
-    '/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides',
+    '/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = overrideParamsSchema.parse(request.params)
@@ -41,7 +41,7 @@ export async function overrideRoutes(fastify: FastifyInstance) {
   )
 
   fastify.delete(
-    '/api/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides/:overrideId',
+    '/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/overrides/:overrideId',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = deleteOverrideParamsSchema.parse(request.params)

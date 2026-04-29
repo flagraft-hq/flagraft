@@ -5,7 +5,7 @@ import * as service from './key.service.js'
 
 export async function keyRoutes(fastify: FastifyInstance) {
   fastify.post(
-    '/api/admin/projects/:projectId/keys',
+    '/admin/projects/:projectId/keys',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = keyProjectParamsSchema.parse(request.params)
@@ -19,7 +19,7 @@ export async function keyRoutes(fastify: FastifyInstance) {
   )
 
   fastify.get(
-    '/api/admin/projects/:projectId/keys',
+    '/admin/projects/:projectId/keys',
     { preHandler: fastify.requireAdminKey },
     async (request) => {
       const params = keyProjectParamsSchema.parse(request.params)
@@ -28,7 +28,7 @@ export async function keyRoutes(fastify: FastifyInstance) {
   )
 
   fastify.delete(
-    '/api/admin/projects/:projectId/keys/:keyId',
+    '/admin/projects/:projectId/keys/:keyId',
     { preHandler: fastify.requireAdminKey },
     async (request, reply) => {
       const params = keyParamsSchema.parse(request.params)

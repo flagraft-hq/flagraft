@@ -21,7 +21,7 @@ export async function createRootKey(db: Db) {
 export async function createProject(app: FastifyInstance, rootKey: string, slug = 'test-project') {
   const response = await app.inject({
     method: 'POST',
-    url: '/api/admin/projects',
+    url: '/api/v1/admin/projects',
     headers: { authorization: rootKey },
     payload: { name: 'Test Project', slug },
   })
@@ -34,7 +34,7 @@ export async function createProject(app: FastifyInstance, rootKey: string, slug 
 export async function createAdminKey(app: FastifyInstance, rootKey: string, projectId: string) {
   const response = await app.inject({
     method: 'POST',
-    url: `/api/admin/projects/${projectId}/keys`,
+    url: `/api/v1/admin/projects/${projectId}/keys`,
     headers: { authorization: rootKey },
     payload: { type: API_KEY_TYPES.ADMIN, description: 'Project admin' },
   })
@@ -52,7 +52,7 @@ export async function createClientKey(
 ) {
   const response = await app.inject({
     method: 'POST',
-    url: `/api/admin/projects/${projectId}/keys`,
+    url: `/api/v1/admin/projects/${projectId}/keys`,
     headers: { authorization: adminKey },
     payload: { type: API_KEY_TYPES.CLIENT, environmentId, description: 'Client' },
   })

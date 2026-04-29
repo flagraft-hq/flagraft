@@ -23,7 +23,7 @@ function queryToContext(query: unknown): EvaluationContext {
 }
 
 export async function clientRoutes(fastify: FastifyInstance) {
-  fastify.get('/api/client/features', { preHandler: fastify.requireClientKey }, async (request) => {
+  fastify.get('/client/features', { preHandler: fastify.requireClientKey }, async (request) => {
     const ctx = request.keyContext!
     const state = await fastify.cache.getOrSet(
       cacheKeys.flagState(ctx.projectId!, ctx.environmentId!),
@@ -33,7 +33,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
   })
 
   fastify.get(
-    '/api/client/features/:flagKey',
+    '/client/features/:flagKey',
     { preHandler: fastify.requireClientKey },
     async (request) => {
       const ctx = request.keyContext!

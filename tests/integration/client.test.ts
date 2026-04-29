@@ -17,7 +17,7 @@ async function getEnvironments(
 ) {
   const res = await app.inject({
     method: 'GET',
-    url: `/api/admin/projects/${projectId}/environments`,
+    url: `/api/v1/admin/projects/${projectId}/environments`,
     headers: { authorization: key },
   })
   return res.json<Array<{ id: string; slug: string }>>()
@@ -31,7 +31,7 @@ async function createFlag(
 ) {
   await app.inject({
     method: 'POST',
-    url: `/api/admin/projects/${projectId}/flags`,
+    url: `/api/v1/admin/projects/${projectId}/flags`,
     headers: { authorization: key },
     payload: { name: flagKey, key: flagKey },
   })
@@ -46,7 +46,7 @@ async function enableFlag(
 ) {
   await app.inject({
     method: 'POST',
-    url: `/api/admin/projects/${projectId}/flags/${flagKey}/environments/${envSlug}/enable`,
+    url: `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${envSlug}/enable`,
     headers: { authorization: key },
   })
 }
@@ -63,7 +63,7 @@ async function createOverride(
 ) {
   await app.inject({
     method: 'POST',
-    url: `/api/admin/projects/${projectId}/flags/${flagKey}/environments/${envSlug}/overrides`,
+    url: `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${envSlug}/overrides`,
     headers: { authorization: key },
     payload: { contextKey, contextValue, enabled },
   })
@@ -77,7 +77,7 @@ describeIfDb('client eval', () => {
     await truncateAll(db!)
   })
 
-  describe('GET /api/client/features', () => {
+  describe('GET /api/v1/client/features', () => {
     it('returns empty features array when no flags exist', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -89,7 +89,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features',
+        url: '/api/v1/client/features',
         headers: { authorization: clientKey },
       })
 
@@ -113,7 +113,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features',
+        url: '/api/v1/client/features',
         headers: { authorization: clientKey },
       })
 
@@ -140,7 +140,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features',
+        url: '/api/v1/client/features',
         headers: { authorization: clientKey },
       })
 
@@ -165,7 +165,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features',
+        url: '/api/v1/client/features',
         headers: { authorization: clientKey },
       })
 
@@ -192,12 +192,12 @@ describeIfDb('client eval', () => {
 
       const devRes = await app.inject({
         method: 'GET',
-        url: '/api/client/features',
+        url: '/api/v1/client/features',
         headers: { authorization: devClient },
       })
       const productionRes = await app.inject({
         method: 'GET',
-        url: '/api/client/features',
+        url: '/api/v1/client/features',
         headers: { authorization: productionClient },
       })
 
@@ -237,12 +237,12 @@ describeIfDb('client eval', () => {
 
       const matchRes = await app.inject({
         method: 'GET',
-        url: '/api/client/features?userId=user_abc',
+        url: '/api/v1/client/features?userId=user_abc',
         headers: { authorization: clientKey },
       })
       const noMatchRes = await app.inject({
         method: 'GET',
-        url: '/api/client/features?userId=user_xyz',
+        url: '/api/v1/client/features?userId=user_xyz',
         headers: { authorization: clientKey },
       })
 
@@ -274,7 +274,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features',
+        url: '/api/v1/client/features',
         headers: { authorization: clientKey },
       })
 
@@ -290,7 +290,7 @@ describeIfDb('client eval', () => {
     })
   })
 
-  describe('GET /api/client/features/:flagKey', () => {
+  describe('GET /api/v1/client/features/:flagKey', () => {
     it('returns enabled false with reason default for a disabled flag', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
@@ -304,7 +304,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features/off-flag',
+        url: '/api/v1/client/features/off-flag',
         headers: { authorization: clientKey },
       })
 
@@ -327,7 +327,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features/on-flag',
+        url: '/api/v1/client/features/on-flag',
         headers: { authorization: clientKey },
       })
 
@@ -359,7 +359,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features/beta-flag?userId=tester_1',
+        url: '/api/v1/client/features/beta-flag?userId=tester_1',
         headers: { authorization: clientKey },
       })
 
@@ -392,7 +392,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features/global-on?userId=blocked_user',
+        url: '/api/v1/client/features/global-on?userId=blocked_user',
         headers: { authorization: clientKey },
       })
 
@@ -424,7 +424,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features/selective?userId=other_user',
+        url: '/api/v1/client/features/selective?userId=other_user',
         headers: { authorization: clientKey },
       })
 
@@ -444,7 +444,7 @@ describeIfDb('client eval', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/client/features/nonexistent-flag',
+        url: '/api/v1/client/features/nonexistent-flag',
         headers: { authorization: clientKey },
       })
 
@@ -476,12 +476,12 @@ describeIfDb('client eval', () => {
 
       const proRes = await app.inject({
         method: 'GET',
-        url: '/api/client/features/pro-feature?userId=u1&plan=pro',
+        url: '/api/v1/client/features/pro-feature?userId=u1&plan=pro',
         headers: { authorization: clientKey },
       })
       const freeRes = await app.inject({
         method: 'GET',
-        url: '/api/client/features/pro-feature?userId=u1&plan=free',
+        url: '/api/v1/client/features/pro-feature?userId=u1&plan=free',
         headers: { authorization: clientKey },
       })
 
