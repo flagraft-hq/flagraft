@@ -29,6 +29,9 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/swagger": "^8.15.0",
+    "@fastify/swagger-ui": "^4.2.0",
     "bentocache": "^1.6.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.36.4",

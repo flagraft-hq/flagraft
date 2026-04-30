@@ -68,6 +68,13 @@ async function authPlugin(fastify: FastifyInstance) {
   fastify.addHook('preHandler', async (request) => {
     if (request.routeOptions.config?.skipAuth) return
 
+    /**
+     * @fastify/swagger-ui registers its routes internally and provides no way to
+     * set `config.skipAuth` on them, so the skipAuth flag check above cannot
+     * reach those routes. A URL prefix guard is the correct escape hatch.
+     */
+    if (request.url.startsWith('/docs')) return
+
     const authorization = request.headers.authorization
     if (!authorization) {
       throw new AppError('Missing authorization header', 401, 'Unauthorized')

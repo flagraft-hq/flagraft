@@ -7,6 +7,8 @@ const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.string().default('info'),
   CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(30),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 })
 
 export type AppConfig = Readonly<z.infer<typeof configSchema>>

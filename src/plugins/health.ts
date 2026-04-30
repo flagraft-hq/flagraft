@@ -9,18 +9,39 @@ import fp from 'fastify-plugin'
  * - /ready: Returns "ok" only if the server can also connect to the database.
  */
 async function healthPlugin(fastify: FastifyInstance) {
-  fastify.get('/health', { config: { skipAuth: true } }, (_request, reply) => {
-    return reply.send({ status: 'ok', uptime: process.uptime() })
-  })
+  fastify.get(
+    '/health',
+    {
+      config: { skipAuth: true },
+      schema: {
+        tags: ['health'],
+        description: 'Liveness check. Returns 200 if the server process is running.',
+      },
+    },
+    (_request, reply) => {
+      return reply.send({ status: 'ok', uptime: process.uptime() })
+    },
+  )
 
-  fastify.get('/ready', { config: { skipAuth: true } }, async (_request, reply) => {
-    try {
-      await fastify.db.execute(sql`SELECT 1`)
-      return reply.send({ status: 'ok' })
-    } catch {
-      return reply.status(503).send({ status: 'unavailable' })
-    }
-  })
+  fastify.get(
+    '/ready',
+    {
+      config: { skipAuth: true },
+      schema: {
+        tags: ['health'],
+        description:
+          'Readiness check. Returns 200 if the server can reach the database, 503 otherwise.',
+      },
+    },
+    async (_request, reply) => {
+      try {
+        await fastify.db.execute(sql`SELECT 1`)
+        return reply.send({ status: 'ok' })
+      } catch {
+        return reply.status(503).send({ status: 'unavailable' })
+      }
+    },
+  )
 }
 
 export default fp(healthPlugin, { name: 'health', dependencies: ['db'] })

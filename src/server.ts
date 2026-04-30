@@ -15,6 +15,7 @@ import dbPlugin from './plugins/db.js'
 import errorHandlerPlugin from './plugins/errorHandler.js'
 import healthPlugin from './plugins/health.js'
 import requestIdPlugin from './plugins/requestId.js'
+import swaggerPlugin from './plugins/swagger.js'
 
 /**
  * Options for configuring the server build
@@ -35,6 +36,10 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   const fastify = Fastify({
     logger: { level: config.LOG_LEVEL },
   })
+
+  if (config.NODE_ENV !== 'production') {
+    await fastify.register(swaggerPlugin)
+  }
 
   await fastify.register(dbPlugin, { db: opts.db, connectionString: config.DATABASE_URL })
   await fastify.register(cachePlugin, { cache: opts.cache, ttlSeconds: config.CACHE_TTL_SECONDS })
@@ -60,6 +65,15 @@ export async function start() {
   const config = loadConfig()
   const server = await buildServer()
   await server.listen({ port: config.PORT, host: '0.0.0.0' })
+
+  const shutdown = async (signal: string) => {
+    server.log.info({ signal }, 'shutting down')
+    await server.close()
+    process.exit(0)
+  }
+
+  process.once('SIGTERM', () => void shutdown('SIGTERM'))
+  process.once('SIGINT', () => void shutdown('SIGINT'))
 }
 
 const entrypoint = process.argv[1]?.replace(/\\/g, '/')

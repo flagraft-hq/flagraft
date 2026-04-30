@@ -29,6 +29,18 @@ Pass any key/value context at evaluation time -- user ID, tenant, plan, region -
 **In-memory caching**
 Flag state is cached per `projectId + environmentId` using BentoCache. Any write (flag update, override create/delete, environment delete) invalidates the relevant cache entries automatically. TTL is configurable via `CACHE_TTL_SECONDS`.
 
+**Rate limiting**
+Client evaluation routes (`/api/v1/client/*`) are rate-limited per IP. The limit and window are configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`. Breaches return a `429` with the standard error envelope.
+
+**Health and readiness endpoints**
+`GET /health` returns server uptime. `GET /ready` checks database connectivity and returns `503` if the DB is unreachable. Both endpoints skip auth.
+
+**Graceful shutdown**
+The server listens for `SIGTERM` and `SIGINT`, drains in-flight requests via `fastify.close()`, and ends the DB pool before exiting.
+
+**OpenAPI docs**
+Swagger UI is served at `/docs` and the OpenAPI JSON spec at `/docs/json`. Both are disabled in production (`NODE_ENV=production`).
+
 ---
 
 ## Quickstart
@@ -83,37 +95,43 @@ Flag state is cached per `projectId + environmentId` using BentoCache. Any write
 
 All config is read from environment variables. See `.env.example` for the full list.
 
-| Variable            | Default       | Description                                                                                                          |
-| ------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`      | --            | Postgres connection string                                                                                           |
-| `PORT`              | `3000`        | Port the server listens on                                                                                           |
-| `NODE_ENV`          | `development` | Set to `production` in deployments                                                                                   |
-| `LOG_LEVEL`         | `info`        | Pino log level                                                                                                       |
-| `CACHE_TTL_SECONDS` | `30`          | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
+| Variable               | Default       | Description                                                                                                          |
+| ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`         | --            | Postgres connection string                                                                                           |
+| `PORT`                 | `3000`        | Port the server listens on                                                                                           |
+| `NODE_ENV`             | `development` | Set to `production` in deployments                                                                                   |
+| `LOG_LEVEL`            | `info`        | Pino log level                                                                                                       |
+| `CACHE_TTL_SECONDS`    | `30`          | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
+| `RATE_LIMIT_MAX`       | `100`         | Maximum requests per window per IP on client evaluation routes.                                                      |
+| `RATE_LIMIT_WINDOW_MS` | `60000`       | Rate limit sliding window duration in milliseconds.                                                                  |
 
 ---
 
 ## API overview
 
-All routes are under `/api/v1`. Admin routes require a root or project admin key. The client evaluation route requires a client key.
+All routes are under `/api/v1`. Admin routes require a root or project admin key. Client evaluation routes require a client key. Health routes require no auth.
 
-| Method   | Path                                                                 | Auth    | Description                      |
-| -------- | -------------------------------------------------------------------- | ------- | -------------------------------- |
-| `GET`    | `/api/v1/admin/projects`                                                | Root    | List all projects                |
-| `POST`   | `/api/v1/admin/projects`                                                | Root    | Create a project                 |
-| `GET`    | `/api/v1/admin/projects/:projectId/environments`                        | Project | List environments                |
-| `POST`   | `/api/v1/admin/projects/:projectId/environments`                        | Project | Create an environment            |
-| `GET`    | `/api/v1/admin/projects/:projectId/flags`                               | Project | List feature flags               |
-| `POST`   | `/api/v1/admin/projects/:projectId/flags`                               | Project | Create a flag                    |
-| `PATCH`  | `/api/v1/admin/projects/:projectId/flags/:flagId/environments/:envId`   | Project | Enable or disable a flag         |
-| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagId/overrides`             | Project | Create an override               |
-| `DELETE` | `/api/v1/admin/projects/:projectId/flags/:flagId/overrides/:overrideId` | Project | Delete an override               |
-| `GET`    | `/api/v1/admin/projects/:projectId/keys`                                | Project | List API keys                    |
-| `POST`   | `/api/v1/admin/projects/:projectId/keys`                                | Project | Create an API key                |
-| `DELETE` | `/api/v1/admin/projects/:projectId/keys/:keyId`                         | Project | Revoke an API key                |
-| `GET`    | `/api/v1/client/features`                                                  | Client  | Evaluate all flags for a context |
+| Method   | Path                                                                                           | Auth    | Description                          |
+| -------- | ---------------------------------------------------------------------------------------------- | ------- | ------------------------------------ |
+| `GET`    | `/health`                                                                                      | None    | Liveness check                       |
+| `GET`    | `/ready`                                                                                       | None    | Readiness check (verifies DB)        |
+| `GET`    | `/api/v1/admin/projects`                                                                       | Root    | List all projects                    |
+| `POST`   | `/api/v1/admin/projects`                                                                       | Root    | Create a project                     |
+| `GET`    | `/api/v1/admin/projects/:projectId/environments`                                               | Project | List environments                    |
+| `POST`   | `/api/v1/admin/projects/:projectId/environments`                                               | Project | Create an environment                |
+| `GET`    | `/api/v1/admin/projects/:projectId/flags`                                                      | Project | List feature flags                   |
+| `POST`   | `/api/v1/admin/projects/:projectId/flags`                                                      | Project | Create a flag                        |
+| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/enable`                | Project | Enable a flag in an environment      |
+| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/disable`               | Project | Disable a flag in an environment     |
+| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/overrides`             | Project | Create an override                   |
+| `DELETE` | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/overrides/:overrideId` | Project | Delete an override                   |
+| `GET`    | `/api/v1/admin/projects/:projectId/keys`                                                       | Project | List API keys                        |
+| `POST`   | `/api/v1/admin/projects/:projectId/keys`                                                       | Project | Create an API key                    |
+| `DELETE` | `/api/v1/admin/projects/:projectId/keys/:keyId`                                                | Project | Revoke an API key                    |
+| `GET`    | `/api/v1/client/features`                                                                      | Client  | Evaluate all flags for a context     |
+| `GET`    | `/api/v1/client/features/:flagKey`                                                             | Client  | Evaluate a single flag for a context |
 
-Pass context as query params on the client evaluation endpoint: `?userId=123&plan=pro`.
+Pass context as query params on client evaluation endpoints: `?userId=123&plan=pro`.
 
 ---
 

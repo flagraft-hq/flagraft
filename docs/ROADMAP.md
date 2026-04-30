@@ -79,16 +79,16 @@ Phase 1 is complete. The core service is working:
 
 **Health and Observability**
 
-- [ ] Add `GET /health` route -- no auth, returns `{ status: 'ok', uptime: process.uptime() }`
-- [ ] Add `GET /ready` route -- checks DB connectivity with a `SELECT 1`, returns 200 or 503
-- [ ] Add request-level logging via pino's built-in Fastify integration (log method, url, statusCode, responseTime)
-- [ ] Add `X-Request-Id` header to all responses using `@fastify/request-context` or `fastify.genReqId`
+- [x] Add `GET /health` route -- no auth, returns `{ status: 'ok', uptime: process.uptime() }`
+- [x] Add `GET /ready` route -- checks DB connectivity with a `SELECT 1`, returns 200 or 503
+- [x] Add request-level logging via pino's built-in Fastify integration (log method, url, statusCode, responseTime)
+- [x] Add `X-Request-Id` header to all responses using `@fastify/request-context` or `fastify.genReqId`
 
 **Graceful Shutdown**
 
-- [ ] Handle `SIGTERM` and `SIGINT` in `src/server.ts`
-- [ ] Call `fastify.close()` on signal to drain in-flight requests
-- [ ] End DB pool after server closes
+- [x] Handle `SIGTERM` and `SIGINT` in `src/server.ts`
+- [x] Call `fastify.close()` on signal to drain in-flight requests
+- [x] End DB pool after server closes
 
 **Rate Limiting**
 

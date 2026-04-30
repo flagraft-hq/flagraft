@@ -12,7 +12,18 @@ import * as service from './flag.service.js'
 export async function flagRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/admin/projects/:projectId/flags',
-    { preHandler: fastify.requireAdminKey },
+    {
+      preHandler: fastify.requireAdminKey,
+      schema: {
+        tags: ['admin'],
+        description: 'Create a new feature flag within a project.',
+        params: {
+          type: 'object',
+          properties: { projectId: { type: 'string' } },
+          required: ['projectId'],
+        },
+      },
+    },
     async (request, reply) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
       const flag = await service.createFlag(
@@ -27,7 +38,18 @@ export async function flagRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     '/admin/projects/:projectId/flags',
-    { preHandler: fastify.requireAdminKey },
+    {
+      preHandler: fastify.requireAdminKey,
+      schema: {
+        tags: ['admin'],
+        description: 'List all feature flags within a project.',
+        params: {
+          type: 'object',
+          properties: { projectId: { type: 'string' } },
+          required: ['projectId'],
+        },
+      },
+    },
     async (request) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
       return service.listFlags(fastify.db, params.projectId)
@@ -36,7 +58,21 @@ export async function flagRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     '/admin/projects/:projectId/flags/:flagKey',
-    { preHandler: fastify.requireAdminKey },
+    {
+      preHandler: fastify.requireAdminKey,
+      schema: {
+        tags: ['admin'],
+        description: 'Get a feature flag by key.',
+        params: {
+          type: 'object',
+          properties: {
+            projectId: { type: 'string' },
+            flagKey: { type: 'string' },
+          },
+          required: ['projectId', 'flagKey'],
+        },
+      },
+    },
     async (request) => {
       const params = flagParamsSchema.parse(request.params)
       return service.getFlag(fastify.db, params.projectId, params.flagKey)
@@ -45,7 +81,21 @@ export async function flagRoutes(fastify: FastifyInstance) {
 
   fastify.patch(
     '/admin/projects/:projectId/flags/:flagKey',
-    { preHandler: fastify.requireAdminKey },
+    {
+      preHandler: fastify.requireAdminKey,
+      schema: {
+        tags: ['admin'],
+        description: 'Update a feature flag (name or description).',
+        params: {
+          type: 'object',
+          properties: {
+            projectId: { type: 'string' },
+            flagKey: { type: 'string' },
+          },
+          required: ['projectId', 'flagKey'],
+        },
+      },
+    },
     async (request) => {
       const params = flagParamsSchema.parse(request.params)
       return service.patchFlag(
@@ -59,7 +109,21 @@ export async function flagRoutes(fastify: FastifyInstance) {
 
   fastify.delete(
     '/admin/projects/:projectId/flags/:flagKey',
-    { preHandler: fastify.requireAdminKey },
+    {
+      preHandler: fastify.requireAdminKey,
+      schema: {
+        tags: ['admin'],
+        description: 'Delete a feature flag and its overrides.',
+        params: {
+          type: 'object',
+          properties: {
+            projectId: { type: 'string' },
+            flagKey: { type: 'string' },
+          },
+          required: ['projectId', 'flagKey'],
+        },
+      },
+    },
     async (request, reply) => {
       const params = flagParamsSchema.parse(request.params)
       await service.deleteFlag(fastify.db, params.projectId, params.flagKey)
@@ -74,7 +138,22 @@ export async function flagRoutes(fastify: FastifyInstance) {
   ] as const) {
     fastify.post(
       `/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/${action}`,
-      { preHandler: fastify.requireAdminKey },
+      {
+        preHandler: fastify.requireAdminKey,
+        schema: {
+          tags: ['admin'],
+          description: `${action === 'enable' ? 'Enable' : 'Disable'} a feature flag in a specific environment.`,
+          params: {
+            type: 'object',
+            properties: {
+              projectId: { type: 'string' },
+              flagKey: { type: 'string' },
+              environmentSlug: { type: 'string' },
+            },
+            required: ['projectId', 'flagKey', 'environmentSlug'],
+          },
+        },
+      },
       async (request) => {
         const params = flagEnvironmentParamsSchema.parse(request.params)
         const row = await service.setFlagEnabled(
