@@ -23,7 +23,9 @@ describe('loadConfig', () => {
   })
 
   it('defaults CACHE_TTL_SECONDS to 30', () => {
-    const config = loadConfig({ DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft' })
+    const config = loadConfig({
+      DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
+    })
     expect(config.CACHE_TTL_SECONDS).toBe(30)
   })
 
