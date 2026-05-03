@@ -16,9 +16,12 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsup",
+    "build:all": "pnpm -r --parallel build",
     "start": "node dist/server.cjs",
     "typecheck": "tsc --noEmit",
+    "typecheck:all": "pnpm -r --parallel typecheck",
     "test": "vitest run",
+    "test:all": "pnpm -r --parallel test",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

@@ -115,47 +115,47 @@ Phase 1 is complete. The core service is working:
 
 **Workspace Setup**
 
-- [ ] Convert the repo to a pnpm workspace (`pnpm-workspace.yaml`)
-- [ ] Create `packages/sdk-js/` with its own `package.json` (name: `@flagraft/sdk`)
-- [ ] Configure `tsup` in `packages/sdk-js/` for dual CJS + ESM output with declaration files
-- [ ] Add `packages/sdk-js` to the root CI workflow
+- [x] Convert the repo to a pnpm workspace (`pnpm-workspace.yaml`)
+- [x] Create `packages/sdk-js/` with its own `package.json` (name: `@flagraft/sdk`)
+- [x] Configure `tsup` in `packages/sdk-js/` for dual CJS + ESM output with declaration files
+- [x] Add `packages/sdk-js` to the root CI workflow
 
 **Client Core**
 
-- [ ] Implement `FlagraftClient` class in `packages/sdk-js/src/client.ts`
+- [x] Implement `FlagraftClient` class in `packages/sdk-js/src/client.ts`
   - Constructor accepts `{ baseUrl: string, apiKey: string, ttl?: number }`
   - `isEnabled(flagKey: string, context?: Record<string, string>): Promise<boolean>`
   - `getFeatures(context?: Record<string, string>): Promise<Record<string, boolean>>`
   - `getAllFeatures(context?: Record<string, string>): Promise<Array<{ name: string, enabled: boolean }>>`
-- [ ] Typed `EvaluationContext` re-exported from the SDK for consumer use
+- [x] Typed `EvaluationContext` re-exported from the SDK for consumer use
 
 **Local Cache**
 
-- [ ] Implement a simple TTL map cache in `packages/sdk-js/src/cache.ts`
-- [ ] Cache key: `${flagKey}:${JSON.stringify(sortedContext)}`
-- [ ] Default TTL: 30 seconds, configurable at construction
-- [ ] `getFeatures` caches the full response keyed by context
-- [ ] Cache bypassed when TTL is set to 0
+- [x] Implement a simple TTL map cache in `packages/sdk-js/src/cache.ts`
+- [x] Cache key: `${flagKey}:${JSON.stringify(sortedContext)}`
+- [x] Default TTL: 30 seconds, configurable at construction
+- [x] `getFeatures` caches the full response keyed by context
+- [x] Cache bypassed when TTL is set to 0
 
 **Error Handling**
 
-- [ ] Network failures return `false` (never throw) -- safe default for flag checks
-- [ ] Log warning to `console.warn` on network failure so developers notice during development
-- [ ] 4xx responses from the server surface as typed `FlagraftError` (not swallowed)
+- [x] Network failures return `false` (never throw) -- safe default for flag checks
+- [x] Log warning to `console.warn` on network failure so developers notice during development
+- [x] 4xx responses from the server surface as typed `FlagraftError` (not swallowed)
 
 **Tests**
 
-- [ ] Set up `msw` for mocking the Flagraft server in SDK tests
-- [ ] Test: `isEnabled` returns `true` / `false` correctly from server response
-- [ ] Test: second call within TTL returns cached value without hitting the network
-- [ ] Test: cache miss after TTL expiry issues a new network request
-- [ ] Test: network failure returns `false` without throwing
-- [ ] Test: `getFeatures` maps the response to a plain object
+- [x] Set up `msw` for mocking the Flagraft server in SDK tests
+- [x] Test: `isEnabled` returns `true` / `false` correctly from server response
+- [x] Test: second call within TTL returns cached value without hitting the network
+- [x] Test: cache miss after TTL expiry issues a new network request
+- [x] Test: network failure returns `false` without throwing
+- [x] Test: `getFeatures` maps the response to a plain object
 
 **Documentation**
 
-- [ ] Write `packages/sdk-js/README.md` with install, quickstart, and API reference
-- [ ] Add SDK usage to the root `README.md` under a "Client SDKs" section
+- [x] Write `packages/sdk-js/README.md` with install, quickstart, and API reference
+- [x] Add SDK usage to the root `README.md` under a "Client SDKs" section
 
 ---
 
