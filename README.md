@@ -135,6 +135,12 @@ Pass context as query params on client evaluation endpoints: `?userId=123&plan=p
 
 ---
 
+## Client SDKs
+
+- **TypeScript / JavaScript:** [`@flagraft/sdk`](packages/sdk-js/README.md)
+
+---
+
 ## Testing
 
 Unit tests run without a database:
