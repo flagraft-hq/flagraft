@@ -1,6 +1,14 @@
+<p align="center">
+  <img src="./assets/FR_logo_hd.png" alt="Flagraft Logo" width="300" />
+</p>
+
 # Flagraft
 
 Self-hosted feature flag service. Run it on your own infrastructure, point your apps at it, and toggle features without redeploying.
+
+<p align="center">
+  <img src="./assets/FR_banner_hd.png" alt="Flagraft Banner" width="800" />
+</p>
 
 Built with Node 20, Fastify, Drizzle ORM, and Postgres.
 
