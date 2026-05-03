@@ -75,13 +75,13 @@ After installation, run `node -e "import('bentocache/drivers/memory').then(() =>
 
 ```typescript
 it('defaults CACHE_TTL_SECONDS to 30', () => {
-  const config = loadConfig({ DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra' })
+  const config = loadConfig({ DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft' })
   expect(config.CACHE_TTL_SECONDS).toBe(30)
 })
 
 it('accepts a custom CACHE_TTL_SECONDS', () => {
   const config = loadConfig({
-    DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra',
+    DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
     CACHE_TTL_SECONDS: '60',
   })
   expect(config.CACHE_TTL_SECONDS).toBe(60)
@@ -90,7 +90,7 @@ it('accepts a custom CACHE_TTL_SECONDS', () => {
 it('rejects a non-numeric CACHE_TTL_SECONDS', () => {
   expect(() =>
     loadConfig({
-      DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra',
+      DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
       CACHE_TTL_SECONDS: 'bad',
     }),
   ).toThrow()

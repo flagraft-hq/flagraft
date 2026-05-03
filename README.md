@@ -1,4 +1,4 @@
-# Veltra
+# Flagraft
 
 Self-hosted feature flag service. Run it on your own infrastructure, point your apps at it, and toggle features without redeploying.
 
@@ -8,7 +8,7 @@ Built with Node 20, Fastify, Drizzle ORM, and Postgres.
 
 ## Why self-host feature flags?
 
-SaaS flag services work fine until you hit their pricing tiers, need flags available in an air-gapped environment, or can't send user context to a third party. Veltra runs on a single Postgres instance and a Node process with no external runtime dependencies.
+SaaS flag services work fine until you hit their pricing tiers, need flags available in an air-gapped environment, or can't send user context to a third party. Flagraft runs on a single Postgres instance and a Node process with no external runtime dependencies.
 
 ---
 
@@ -143,11 +143,11 @@ Unit tests run without a database:
 pnpm test
 ```
 
-Integration tests run when `TEST_DATABASE_URL` is set. With the bundled compose file, the `veltra_test` database is created automatically on first container startup.
+Integration tests run when `TEST_DATABASE_URL` is set. With the bundled compose file, the `flagraft_test` database is created automatically on first container startup.
 
 ```sh
-DATABASE_URL=postgres://veltra:veltra@localhost:5432/veltra_test pnpm db:migrate
-TEST_DATABASE_URL=postgres://veltra:veltra@localhost:5432/veltra_test pnpm test
+DATABASE_URL=postgres://flagraft:flagraft@localhost:5432/flagraft_test pnpm db:migrate
+TEST_DATABASE_URL=postgres://flagraft:flagraft@localhost:5432/flagraft_test pnpm test
 ```
 
 ---

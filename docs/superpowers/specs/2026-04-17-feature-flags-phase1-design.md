@@ -8,7 +8,7 @@
 
 ## 1. Architecture
 
-Node 20 / Fastify 4 / Drizzle / Postgres monolith, living at the root of the `veltra` repo.
+Node 20 / Fastify 4 / Drizzle / Postgres monolith, living at the root of the `flagraft` repo.
 
 Three layers:
 
@@ -24,7 +24,7 @@ request → auth plugin (SHA-256 lookup on `api_keys`, attaches `keyContext`) �
 ### 1.1 Project layout
 
 ```
-veltra/
+flagraft/
 ├── src/
 │   ├── cli/
 │   │   └── create-root-key.ts        # bootstrap script

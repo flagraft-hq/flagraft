@@ -9,11 +9,11 @@ describe('loadConfig', () => {
 
   it('returns a frozen config with defaults', () => {
     const config = loadConfig({
-      DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra',
+      DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
     })
 
     expect(config).toMatchObject({
-      DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra',
+      DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
       PORT: 3000,
       NODE_ENV: 'development',
       LOG_LEVEL: 'info',
@@ -23,13 +23,13 @@ describe('loadConfig', () => {
   })
 
   it('defaults CACHE_TTL_SECONDS to 30', () => {
-    const config = loadConfig({ DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra' })
+    const config = loadConfig({ DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft' })
     expect(config.CACHE_TTL_SECONDS).toBe(30)
   })
 
   it('accepts a custom CACHE_TTL_SECONDS', () => {
     const config = loadConfig({
-      DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra',
+      DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
       CACHE_TTL_SECONDS: '60',
     })
     expect(config.CACHE_TTL_SECONDS).toBe(60)
@@ -38,7 +38,7 @@ describe('loadConfig', () => {
   it('rejects a non-numeric CACHE_TTL_SECONDS', () => {
     expect(() =>
       loadConfig({
-        DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra',
+        DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
         CACHE_TTL_SECONDS: 'bad',
       }),
     ).toThrow('Invalid configuration')
@@ -47,7 +47,7 @@ describe('loadConfig', () => {
   it('rejects CACHE_TTL_SECONDS of 0', () => {
     expect(() =>
       loadConfig({
-        DATABASE_URL: 'postgres://veltra:veltra@localhost:5432/veltra',
+        DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
         CACHE_TTL_SECONDS: '0',
       }),
     ).toThrow('Invalid configuration')

@@ -1,4 +1,4 @@
-# Veltra Roadmap
+# Flagraft Roadmap
 
 **Period:** May 2026 - June 2026
 **Status:** Living document -- updated as priorities shift
@@ -92,18 +92,18 @@ Phase 1 is complete. The core service is working:
 
 **Rate Limiting**
 
-- [ ] Add `@fastify/rate-limit` as a dependency
-- [ ] Apply rate limiting to `/api/client/*` routes only (eval hot path)
-- [ ] Configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` env vars
-- [ ] Return 429 with the standard error envelope shape on breach
+- [x] Add `@fastify/rate-limit` as a dependency
+- [x] Apply rate limiting to `/api/client/*` routes only (eval hot path)
+- [x] Configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` env vars
+- [x] Return 429 with the standard error envelope shape on breach
 
 **OpenAPI Documentation**
 
-- [ ] Add `@fastify/swagger` and `@fastify/swagger-ui` as dependencies
-- [ ] Serve OpenAPI JSON at `/docs/json`
-- [ ] Serve Swagger UI at `/docs`
-- [ ] Annotate all route schemas with `description` and `tags` fields
-- [ ] Disable docs route in production via `NODE_ENV` check
+- [x] Add `@fastify/swagger` and `@fastify/swagger-ui` as dependencies
+- [x] Serve OpenAPI JSON at `/docs/json`
+- [x] Serve Swagger UI at `/docs`
+- [x] Annotate all route schemas with `description` and `tags` fields
+- [x] Disable docs route in production via `NODE_ENV` check
 
 ---
 
@@ -116,13 +116,13 @@ Phase 1 is complete. The core service is working:
 **Workspace Setup**
 
 - [ ] Convert the repo to a pnpm workspace (`pnpm-workspace.yaml`)
-- [ ] Create `packages/sdk-js/` with its own `package.json` (name: `@veltra/sdk`)
+- [ ] Create `packages/sdk-js/` with its own `package.json` (name: `@flagraft/sdk`)
 - [ ] Configure `tsup` in `packages/sdk-js/` for dual CJS + ESM output with declaration files
 - [ ] Add `packages/sdk-js` to the root CI workflow
 
 **Client Core**
 
-- [ ] Implement `VeltraClient` class in `packages/sdk-js/src/client.ts`
+- [ ] Implement `FlagraftClient` class in `packages/sdk-js/src/client.ts`
   - Constructor accepts `{ baseUrl: string, apiKey: string, ttl?: number }`
   - `isEnabled(flagKey: string, context?: Record<string, string>): Promise<boolean>`
   - `getFeatures(context?: Record<string, string>): Promise<Record<string, boolean>>`
@@ -141,11 +141,11 @@ Phase 1 is complete. The core service is working:
 
 - [ ] Network failures return `false` (never throw) -- safe default for flag checks
 - [ ] Log warning to `console.warn` on network failure so developers notice during development
-- [ ] 4xx responses from the server surface as typed `VeltraError` (not swallowed)
+- [ ] 4xx responses from the server surface as typed `FlagraftError` (not swallowed)
 
 **Tests**
 
-- [ ] Set up `msw` for mocking the Veltra server in SDK tests
+- [ ] Set up `msw` for mocking the Flagraft server in SDK tests
 - [ ] Test: `isEnabled` returns `true` / `false` correctly from server response
 - [ ] Test: second call within TTL returns cached value without hitting the network
 - [ ] Test: cache miss after TTL expiry issues a new network request

@@ -7,7 +7,7 @@ async function swaggerPlugin(fastify: FastifyInstance) {
   await fastify.register(swagger, {
     openapi: {
       info: {
-        title: 'Veltra',
+        title: 'Flagraft',
         description: 'Feature flag management API',
         version: '1.0.0',
       },

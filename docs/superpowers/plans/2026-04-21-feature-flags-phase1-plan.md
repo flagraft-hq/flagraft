@@ -64,11 +64,11 @@ Matches spec §1.1 exactly. Key files and their responsibilities:
 
 - [ ] **Step 4: Create `vitest.config.ts`** — `test.environment: 'node'`, `test.include: ['tests/**/*.test.ts']`, `test.poolOptions.threads.singleThread: true` (integration tests share a DB — avoid races).
 
-- [ ] **Step 5: Create `.env.example`** with `DATABASE_URL=postgres://veltra:veltra@localhost:5432/veltra`, `PORT=3000`, `NODE_ENV=development`, `LOG_LEVEL=info`, and a commented `# TEST_DATABASE_URL=postgres://veltra:veltra@localhost:5432/veltra_test` (consumed by tests only, not app config). Add comment pointing to `pnpm admin:create-root-key`.
+- [ ] **Step 5: Create `.env.example`** with `DATABASE_URL=postgres://flagraft:flagraft@localhost:5432/flagraft`, `PORT=3000`, `NODE_ENV=development`, `LOG_LEVEL=info`, and a commented `# TEST_DATABASE_URL=postgres://flagraft:flagraft@localhost:5432/flagraft_test` (consumed by tests only, not app config). Add comment pointing to `pnpm admin:create-root-key`.
 
 - [ ] **Step 6: Create `.gitignore`** — `node_modules`, `dist`, `.env`, `coverage`, `*.log`.
 
-- [ ] **Step 7: Create `docker-compose.yml`** — single Postgres 15 service `veltra-pg`, expose 5432, volume for data, create two DBs via init script (or document creating `veltra_test` manually in README).
+- [ ] **Step 7: Create `docker-compose.yml`** — single Postgres 15 service `flagraft-pg`, expose 5432, volume for data, create two DBs via init script (or document creating `flagraft_test` manually in README).
 
 - [ ] **Step 8: Create `drizzle.config.ts`** — `schema: './src/db/schema.ts'`, `out: './src/db/migrations'`, `dialect: 'postgresql'`, `dbCredentials: { url: process.env.DATABASE_URL! }`.
 
@@ -341,7 +341,7 @@ Flags is the biggest module. Split internally but keep in one directory for co-l
 ## Notes for the executor
 
 - **No git.** User handles all commits. "Checkpoint" = stop and report; do not `git add`/`commit`/`push`.
-- **Test DB.** Integration tests require `TEST_DATABASE_URL` pointing at a migrated Postgres. `docker-compose.yml` provides one; README documents how to create `veltra_test` and migrate it.
+- **Test DB.** Integration tests require `TEST_DATABASE_URL` pointing at a migrated Postgres. `docker-compose.yml` provides one; README documents how to create `flagraft_test` and migrate it.
 - **Serial tests.** Vitest is configured `singleThread: true` to avoid DB state races. If tests later need isolation, use a transaction-per-test pattern instead of TRUNCATE — but not in Phase 1.
 - **Spec is authoritative.** When this plan is terse, read the spec section referenced.
 - **No BentoCache.** Deferred to Phase 3; keep service boundaries so caching can wrap `loadFlagState` later without touching the engine.
