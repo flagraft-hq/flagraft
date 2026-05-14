@@ -559,3 +559,12 @@ body {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+.select-wrapper.error .select-input {
+  border-color: var(--danger);
+}
+
+.select-error {
+  font-size: 12px;
+  color: var(--danger);
+}
