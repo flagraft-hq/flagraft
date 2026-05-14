@@ -474,3 +474,88 @@ body {
   padding: var(--s-6);
   border-top: 1px solid var(--border);
 }
+
+.text-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.text-field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.text-field-input {
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-1);
+  background-color: var(--bg-elev);
+  transition: all 0.2s ease;
+}
+
+.text-field-input:focus {
+  outline: none;
+  border-color: var(--pri);
+  box-shadow: var(--focus);
+}
+
+.text-field-input:disabled {
+  background-color: var(--bg-subtle);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.text-field.error .text-field-input {
+  border-color: var(--danger);
+}
+
+.text-field-hint {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.text-field-error {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.select-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.select-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.select-input {
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-1);
+  background-color: var(--bg-elev);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: var(--pri);
+  box-shadow: var(--focus);
+}
+
+.select-input:disabled {
+  background-color: var(--bg-subtle);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
