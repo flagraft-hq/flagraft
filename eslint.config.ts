@@ -10,6 +10,7 @@ export default tseslint.config(
       'coverage/',
       'packages/*/dist/',
       'packages/*/node_modules/',
+      'packages/admin-ui/',
     ],
   },
   js.configs.recommended,
