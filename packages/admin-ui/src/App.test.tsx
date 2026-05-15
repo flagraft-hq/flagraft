@@ -10,6 +10,6 @@ describe('App', () => {
         <App />
       </MemoryRouter>,
     )
-    expect(screen.getByRole('heading', { name: /flagraft admin/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /welcome to flagraft/i })).toBeInTheDocument()
   })
 })
