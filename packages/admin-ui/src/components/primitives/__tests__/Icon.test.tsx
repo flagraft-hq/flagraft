@@ -1,23 +1,23 @@
-import { render } from '@testing-library/react';
-import { Icon } from '../Icon';
+import { render } from '@testing-library/react'
+import { Icon } from '../Icon'
 
 describe('Icon', () => {
   it('renders SVG with correct size', () => {
-    const { container } = render(<Icon name="check" size={24} />);
-    const svg = container.querySelector('svg');
-    expect(svg).toHaveAttribute('width', '24');
-    expect(svg).toHaveAttribute('height', '24');
-  });
+    const { container } = render(<Icon name="check" size={24} />)
+    const svg = container.querySelector('svg')
+    expect(svg).toHaveAttribute('width', '24')
+    expect(svg).toHaveAttribute('height', '24')
+  })
 
   it('applies custom className', () => {
-    const { container } = render(<Icon name="flag" className="text-red-600" />);
-    const svg = container.querySelector('svg');
-    expect(svg).toHaveClass('text-red-600');
-  });
+    const { container } = render(<Icon name="flag" className="text-red-600" />)
+    const svg = container.querySelector('svg')
+    expect(svg).toHaveClass('text-red-600')
+  })
 
   it('renders with rest props', () => {
-    const { container } = render(<Icon name="flag" data-testid="icon" />);
-    const svg = container.querySelector('[data-testid="icon"]');
-    expect(svg).toBeTruthy();
-  });
-});
+    const { container } = render(<Icon name="flag" data-testid="icon" />)
+    const svg = container.querySelector('[data-testid="icon"]')
+    expect(svg).toBeTruthy()
+  })
+})

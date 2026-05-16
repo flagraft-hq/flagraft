@@ -1,27 +1,27 @@
-import React, { ReactNode, useEffect } from 'react';
-import { Icon } from './Icon';
+import { ReactNode, useEffect } from 'react'
+import { Icon } from './Icon'
 
 interface ModalProps {
-  open: boolean;
-  onClose: () => void;
-  children: ReactNode;
+  open: boolean
+  onClose: () => void
+  children: ReactNode
 }
 
 interface ModalComponentProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 function Modal({ open, onClose, children }: ModalProps) {
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden'
       return () => {
-        document.body.style.overflow = 'auto';
-      };
+        document.body.style.overflow = 'auto'
+      }
     }
-  }, [open]);
+  }, [open])
 
-  if (!open) return null;
+  if (!open) return null
 
   return (
     <>
@@ -30,18 +30,10 @@ function Modal({ open, onClose, children }: ModalProps) {
         <div className="modal-content">{children}</div>
       </div>
     </>
-  );
+  )
 }
 
 function ModalHeader({ children }: ModalComponentProps) {
-  const handleClose = () => {
-    const modalDialog = document.querySelector('[role="dialog"]');
-    const closeButton = modalDialog?.querySelector('.modal-close');
-    if (closeButton instanceof HTMLElement) {
-      closeButton.dispatchEvent(new Event('close-modal'));
-    }
-  };
-
   return (
     <div className="modal-header">
       {children}
@@ -49,29 +41,29 @@ function ModalHeader({ children }: ModalComponentProps) {
         className="modal-close"
         aria-label="Close"
         onClick={() => {
-          const backdrop = document.querySelector('.modal-backdrop');
+          const backdrop = document.querySelector('.modal-backdrop')
           if (backdrop instanceof HTMLElement) {
-            backdrop.click();
+            backdrop.click()
           }
         }}
       >
         <Icon name="x" size={16} />
       </button>
     </div>
-  );
+  )
 }
 
 function ModalBody({ children }: ModalComponentProps) {
-  return <div className="modal-body">{children}</div>;
+  return <div className="modal-body">{children}</div>
 }
 
 function ModalFooter({ children }: ModalComponentProps) {
-  return <div className="modal-footer">{children}</div>;
+  return <div className="modal-footer">{children}</div>
 }
 
-Modal.Header = ModalHeader;
-Modal.Body = ModalBody;
-Modal.Footer = ModalFooter;
+Modal.Header = ModalHeader
+Modal.Body = ModalBody
+Modal.Footer = ModalFooter
 
-export { Modal };
-export type { ModalProps, ModalComponentProps };
+export { Modal }
+export type { ModalProps, ModalComponentProps }

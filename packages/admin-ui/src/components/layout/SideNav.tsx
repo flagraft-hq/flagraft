@@ -1,25 +1,25 @@
-import React from 'react';
-import { Icon, IconName } from '../primitives/Icon';
-import { Kbd } from '../primitives/Kbd';
+import React from 'react'
+import { Icon, IconName } from '../primitives/Icon'
+import { Kbd } from '../primitives/Kbd'
 
-export type NavItemId = 'flags' | 'overrides' | 'audit' | 'environments' | 'keys' | 'settings';
+export type NavItemId = 'flags' | 'overrides' | 'audit' | 'environments' | 'keys' | 'settings'
 
 export interface SideNavProps {
-  current: NavItemId;
-  onNav: (id: NavItemId) => void;
+  current: NavItemId
+  onNav: (id: NavItemId) => void
 }
 
 interface NavItem {
-  id: NavItemId;
-  label: string;
-  icon: IconName;
-  shortcut?: string[];
-  count?: number;
+  id: NavItemId
+  label: string
+  icon: IconName
+  shortcut?: string[]
+  count?: number
 }
 
 interface NavGroup {
-  group: string;
-  items: NavItem[];
+  group: string
+  items: NavItem[]
 }
 
 const NAV: NavGroup[] = [
@@ -39,7 +39,7 @@ const NAV: NavGroup[] = [
       { id: 'settings', label: 'Project settings', icon: 'settings' },
     ],
   },
-];
+]
 
 export function SideNav({ current, onNav }: SideNavProps) {
   return (
@@ -56,9 +56,7 @@ export function SideNav({ current, onNav }: SideNavProps) {
             >
               <Icon name={it.icon} size={16} />
               <span>{it.label}</span>
-              {it.count !== undefined ? (
-                <span className="badge-count num">{it.count}</span>
-              ) : null}
+              {it.count !== undefined ? <span className="badge-count num">{it.count}</span> : null}
               {it.shortcut ? (
                 <span className="kbd-hint">
                   <Kbd keys={it.shortcut} />
@@ -77,5 +75,5 @@ export function SideNav({ current, onNav }: SideNavProps) {
         <Icon name="chevronDown" size={14} className="muted" />
       </div>
     </nav>
-  );
+  )
 }

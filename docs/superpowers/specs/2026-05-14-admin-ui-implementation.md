@@ -15,7 +15,7 @@ Implement a production admin UI for Flagraft feature flag management based on th
 - **Filtering**: Search by name/key/description, tag-based filtering, state-based filtering (on/off/overrides/kill-switches)
 - **Sorting**: Clickable column headers (Flag, Last Edited) with ascending/descending toggle
 - **Bulk Actions**: Select multiple flags, enable in dev/staging, production toggle with confirmation, add tags, archive
-- **Visual Hierarchy**: 
+- **Visual Hierarchy**:
   - Flag name (primary), dotted key (secondary), tag cluster (hover-revealed)
   - Author avatar with name and relative date ("today", "2d ago", etc.)
   - State pills per environment showing ON/OFF + override count
@@ -28,6 +28,7 @@ Implement a production admin UI for Flagraft feature flag management based on th
 New section in flag detail view for managing per-environment rules.
 
 **Components:**
+
 - **Environment tabs**: Development, Staging, Production with default state indicator and override count
 - **Override form** (inline add/edit):
   - Context key dropdown (filtered from registry)
@@ -50,6 +51,7 @@ New section in flag detail view for managing per-environment rules.
 ### 3. Design System
 
 **Components to implement:**
+
 - Icon (24px SVG library with 30+ icons)
 - Button (variants: primary, ghost, danger; sizes: default, sm)
 - Toggle (switch with production variant requiring confirmation)
@@ -64,6 +66,7 @@ New section in flag detail view for managing per-environment rules.
 - Toast (success/warning/error notifications)
 
 **Theming:**
+
 - Light and dark modes (CSS variables)
 - Accent color customization (teal, indigo, violet, rose)
 - Density toggle (comfortable, compact) affects font-size and row heights
@@ -73,12 +76,14 @@ New section in flag detail view for managing per-environment rules.
 - Shadow tokens (--shadow-1, --shadow-2, --shadow-3)
 
 **Fonts:**
+
 - Sans: Inter (400, 500, 600, 700)
 - Mono: JetBrains Mono (400, 500, 600)
 
 ### 4. Data Model & API Integration
 
 **Contexts:**
+
 - `Project` state (current project selection)
 - `ActiveEnv` state (current environment: development, staging, production)
 - `Route` state (current screen: flags, flag-detail, settings, etc.)
@@ -86,12 +91,14 @@ New section in flag detail view for managing per-environment rules.
 - `Tweaks` state (density, accent, annotations visibility)
 
 **Data structures:**
+
 - **Flag**: key, name, description, tags, state (per environment: on, overrides count), author, updated
 - **Override**: id, flag, env, contextKey, contextOp, contextValue, result, note, created
 - **ContextField** (registry): key, type (string|enum|boolean|number|version|date), source, enumValues?, example?
 - **Author**: id, name, initials, color, role
 
 **API endpoints** (existing backend):
+
 - GET `/api/projects` - list projects
 - GET `/api/flags` - list flags
 - POST/PUT `/api/flags/:key` - create/update flag
@@ -101,6 +108,7 @@ New section in flag detail view for managing per-environment rules.
 - GET `/api/context-fields` - list registered context fields
 
 **Local state management:**
+
 - React Context for theme, tweaks, current project/environment
 - Component-level state for filtering, sorting, selection, modals
 - Toast provider for notifications
@@ -129,6 +137,7 @@ New section in flag detail view for managing per-environment rules.
 ### 7. Testing Strategy
 
 **Unit tests:**
+
 - Component rendering (flags list, override form, state pill)
 - Filter/sort logic
 - Operator selection based on field type
@@ -136,12 +145,14 @@ New section in flag detail view for managing per-environment rules.
 - Date formatting (relative dates)
 
 **Integration tests:**
+
 - Flag list with filtering + sorting + bulk actions
 - Override CRUD (create, read, update, delete)
 - Theme + density switching
 - Keyboard shortcuts
 
 **Manual testing:**
+
 - All happy paths (create/edit/delete flag, override)
 - All error cases (duplicate, conflict, unregistered field, API error)
 - Theme switching + accent customization
@@ -150,6 +161,7 @@ New section in flag detail view for managing per-environment rules.
 ## Architecture
 
 **File structure:**
+
 ```
 packages/admin-ui/src/
 ├── components/
@@ -191,6 +203,7 @@ packages/admin-ui/src/
 ```
 
 **Component patterns:**
+
 - Functional components with hooks
 - Props interface for each component
 - Compound component pattern for complex UI (e.g., Modal with Modal.Header, Modal.Body, Modal.Footer)

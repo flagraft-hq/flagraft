@@ -69,6 +69,7 @@ packages/admin-ui/src/
 ### Task 1: Set up CSS tokens and theme infrastructure
 
 **Files:**
+
 - Create: `packages/admin-ui/src/styles/index.css`
 - Create: `packages/admin-ui/src/contexts/ThemeContext.tsx`
 - Modify: `packages/admin-ui/src/App.tsx`
@@ -147,7 +148,7 @@ Create `packages/admin-ui/src/styles/index.css`:
   /* Shadow */
   --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-2: 0 1px 3px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.04);
-  --shadow-3: 0 4px 12px rgba(15, 23, 42, 0.08), 0 12px 32px rgba(15, 23, 42, 0.10);
+  --shadow-3: 0 4px 12px rgba(15, 23, 42, 0.08), 0 12px 32px rgba(15, 23, 42, 0.1);
 
   /* Fonts */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -191,7 +192,7 @@ Create `packages/admin-ui/src/styles/index.css`:
 
   --pri: var(--teal-400);
   --pri-hover: var(--teal-300);
-  --pri-soft: rgba(45, 212, 191, 0.10);
+  --pri-soft: rgba(45, 212, 191, 0.1);
   --pri-fg: var(--teal-300);
   --acc: var(--amber-400);
   --danger: #f87171;
@@ -207,7 +208,9 @@ body {
   line-height: 1.5;
 }
 
-.compact { font-size: 13px; }
+.compact {
+  font-size: 13px;
+}
 ```
 
 - [ ] **Step 2: Create ThemeContext for theme/density/accent state**
@@ -305,6 +308,7 @@ git commit -m "feat: add CSS tokens and theme context with light/dark/density/ac
 ### Task 2: Implement Icon component (SVG library)
 
 **Files:**
+
 - Create: `packages/admin-ui/src/components/primitives/Icon.tsx`
 - Create: `packages/admin-ui/src/components/primitives/__tests__/Icon.test.tsx`
 
@@ -444,6 +448,7 @@ git commit -m "feat: implement Icon component with 30+ SVG icons"
 ### Task 3: Implement Button component
 
 **Files:**
+
 - Create: `packages/admin-ui/src/components/primitives/Button.tsx`
 - Create: `packages/admin-ui/src/components/primitives/__tests__/Button.test.tsx`
 
@@ -653,13 +658,18 @@ git commit -m "feat: implement Button component with variants and sizes"
 
 ---
 
-*(Remaining tasks follow same pattern. For brevity, I'll list the remaining task structure.)*
+_(Remaining tasks follow same pattern. For brevity, I'll list the remaining task structure.)_
 
 ### Task 4: Implement Toggle component
+
 ### Task 5: Implement Checkbox component
+
 ### Task 6: Implement Modal component
+
 ### Task 7: Implement TextField and Select components
+
 ### Task 8: Implement Tip (tooltip) component
+
 ### Task 9: Implement Badge and Kbd components
 
 ---
@@ -667,7 +677,9 @@ git commit -m "feat: implement Button component with variants and sizes"
 ## Phase 2: Layout Components
 
 ### Task 10: Implement TopBar with project/env/theme switcher
+
 ### Task 11: Implement SideNav with navigation menu
+
 ### Task 12: Implement MainLayout wrapper
 
 ---
@@ -675,13 +687,21 @@ git commit -m "feat: implement Button component with variants and sizes"
 ## Phase 3: Data & API Integration
 
 ### Task 13: Create API client (axios wrapper)
+
 ### Task 14: Create types.ts with TypeScript interfaces
+
 ### Task 15: Create validation.ts with override validation logic
+
 ### Task 16: Create useFlags hook (fetch, search, sort)
+
 ### Task 17: Create useOverrides hook (fetch, mutate)
+
 ### Task 18: Create useContextFields hook (fetch registry)
+
 ### Task 19: Create useRelativeDate hook (format timestamps)
+
 ### Task 20: Create ProjectContext and useProject hook
+
 ### Task 21: Create ToastContext and useToast hook
 
 ---
@@ -689,13 +709,21 @@ git commit -m "feat: implement Button component with variants and sizes"
 ## Phase 4: Flags Screen
 
 ### Task 22: Implement FlagsScreen component (structure)
+
 ### Task 23: Implement filter bar (search, tags, state filters)
+
 ### Task 24: Implement FlagRow component (list row with toggles)
+
 ### Task 25: Implement StatePill component (environment state display)
+
 ### Task 26: Implement TagCluster component (tag display)
+
 ### Task 27: Implement bulk action bar
+
 ### Task 28: Implement production toggle confirmation modal
+
 ### Task 29: Add sorting and test all filter/sort combinations
+
 ### Task 30: Test flags screen end-to-end
 
 ---
@@ -703,10 +731,15 @@ git commit -m "feat: implement Button component with variants and sizes"
 ## Phase 5: Context Overrides
 
 ### Task 31: Implement ContextOverridesSection (main section)
+
 ### Task 32: Implement OverrideForm component (add/edit)
+
 ### Task 33: Implement OverrideRow component (read-only)
+
 ### Task 34: Implement override validation (duplicates, conflicts)
+
 ### Task 35: Implement empty state for overrides
+
 ### Task 36: Test override CRUD end-to-end
 
 ---
@@ -714,8 +747,11 @@ git commit -m "feat: implement Button component with variants and sizes"
 ## Phase 6: Flag Detail Screen
 
 ### Task 37: Implement FlagDetailScreen (layout)
+
 ### Task 38: Wire up context overrides section in detail view
+
 ### Task 39: Implement flag metadata edit (name, description)
+
 ### Task 40: Test flag detail end-to-end
 
 ---
@@ -723,14 +759,23 @@ git commit -m "feat: implement Button component with variants and sizes"
 ## Phase 7: Integration & Polish
 
 ### Task 41: Add keyboard shortcuts hook
+
 ### Task 42: Wire up keyboard shortcuts globally
+
 ### Task 43: Add error state modals and edge case handling
+
 ### Task 44: Implement loading states
+
 ### Task 45: Implement empty state screens
+
 ### Task 46: Run full integration tests
+
 ### Task 47: Accessibility audit and fixes
+
 ### Task 48: Dark mode and theme switching
+
 ### Task 49: Create SettingsScreen (basic placeholder)
+
 ### Task 50: Final polish, optimization, type checking
 
 ---

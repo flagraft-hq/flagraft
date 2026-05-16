@@ -1,31 +1,30 @@
-import React from 'react';
-import { Icon } from '../primitives/Icon';
-import { Tip } from '../primitives/Tip';
-import { Kbd } from '../primitives/Kbd';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Icon } from '../primitives/Icon'
+import { Tip } from '../primitives/Tip'
+import { Kbd } from '../primitives/Kbd'
+import { useTheme } from '../../contexts/ThemeContext'
 
-export type EnvSlug = 'development' | 'staging' | 'production';
+export type EnvSlug = 'development' | 'staging' | 'production'
 
 export interface ProjectInfo {
-  id: string;
-  name: string;
-  slug: string;
+  id: string
+  name: string
+  slug: string
 }
 
 export interface TopBarProps {
-  project: ProjectInfo;
-  onSwitchProject: () => void;
-  activeEnv: EnvSlug;
-  onChangeEnv: (env: EnvSlug) => void;
-  onOpenSearch: () => void;
-  onShowHelp: () => void;
+  project: ProjectInfo
+  onSwitchProject: () => void
+  activeEnv: EnvSlug
+  onChangeEnv: (env: EnvSlug) => void
+  onOpenSearch: () => void
+  onShowHelp: () => void
 }
 
 const ENVS: Array<{ slug: EnvSlug; name: string }> = [
   { slug: 'development', name: 'Development' },
   { slug: 'staging', name: 'Staging' },
   { slug: 'production', name: 'Production' },
-];
+]
 
 export function TopBar({
   project,
@@ -35,10 +34,10 @@ export function TopBar({
   onOpenSearch,
   onShowHelp,
 }: TopBarProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme()
 
   function handleToggleTheme() {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(theme === 'dark' ? 'light' : 'dark')
   }
 
   return (
@@ -50,11 +49,7 @@ export function TopBar({
       </div>
 
       {/* Project switcher */}
-      <button
-        className="project-switcher"
-        onClick={onSwitchProject}
-        aria-label="Switch project"
-      >
+      <button className="project-switcher" onClick={onSwitchProject} aria-label="Switch project">
         <Icon name="layers" size={14} className="muted" />
         <span className="proj-name">{project.name}</span>
         <span className="proj-slug mono">/{project.slug}</span>
@@ -100,22 +95,14 @@ export function TopBar({
           <span className="muted">- admin</span>
         </span>
         <Tip tip="Keyboard shortcuts (?)">
-          <button
-            className="icon-btn"
-            onClick={onShowHelp}
-            aria-label="Keyboard shortcuts"
-          >
+          <button className="icon-btn" onClick={onShowHelp} aria-label="Keyboard shortcuts">
             <Icon name="keyboard" size={16} />
           </button>
         </Tip>
-        <button
-          className="icon-btn"
-          onClick={handleToggleTheme}
-          aria-label="Toggle theme"
-        >
+        <button className="icon-btn" onClick={handleToggleTheme} aria-label="Toggle theme">
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
         </button>
       </div>
     </header>
-  );
+  )
 }

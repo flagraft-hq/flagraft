@@ -1,29 +1,35 @@
-import React, { useState } from 'react';
+import { useState } from 'react'
 
 interface ToggleProps {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label?: string;
-  disabled?: boolean;
-  variant?: 'default' | 'production';
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label?: string
+  disabled?: boolean
+  variant?: 'default' | 'production'
 }
 
-export function Toggle({ checked, onChange, label, disabled = false, variant = 'default' }: ToggleProps) {
-  const [showConfirm, setShowConfirm] = useState(false);
+export function Toggle({
+  checked,
+  onChange,
+  label,
+  disabled = false,
+  variant = 'default',
+}: ToggleProps) {
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const handleToggle = () => {
     if (variant === 'production' && !checked) {
-      setShowConfirm(true);
+      setShowConfirm(true)
     } else {
-      onChange(!checked);
-      setShowConfirm(false);
+      onChange(!checked)
+      setShowConfirm(false)
     }
-  };
+  }
 
   const handleConfirm = () => {
-    onChange(true);
-    setShowConfirm(false);
-  };
+    onChange(true)
+    setShowConfirm(false)
+  }
 
   return (
     <div className="toggle-wrapper">
@@ -44,10 +50,14 @@ export function Toggle({ checked, onChange, label, disabled = false, variant = '
       {showConfirm && (
         <div className="toggle-confirm">
           <span>Enable production toggle?</span>
-          <button className="confirm-yes" onClick={handleConfirm}>Yes</button>
-          <button className="confirm-no" onClick={() => setShowConfirm(false)}>No</button>
+          <button className="confirm-yes" onClick={handleConfirm}>
+            Yes
+          </button>
+          <button className="confirm-no" onClick={() => setShowConfirm(false)}>
+            No
+          </button>
         </div>
       )}
     </div>
-  );
+  )
 }

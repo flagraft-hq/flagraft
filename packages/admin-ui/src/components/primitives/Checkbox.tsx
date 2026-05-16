@@ -1,11 +1,9 @@
-import React from 'react';
-
 interface CheckboxProps {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  indeterminate?: boolean;
-  label?: string;
-  disabled?: boolean;
+  checked: boolean
+  onChange: (checked: boolean) => void
+  indeterminate?: boolean
+  label?: string
+  disabled?: boolean
 }
 
 export function Checkbox({
@@ -16,10 +14,10 @@ export function Checkbox({
   disabled = false,
 }: CheckboxProps) {
   const handleChange = () => {
-    onChange(!checked);
-  };
+    onChange(!checked)
+  }
 
-  const ariaChecked = indeterminate ? 'mixed' : checked ? 'true' : 'false';
+  const ariaChecked = indeterminate ? 'mixed' : checked ? 'true' : 'false'
 
   return (
     <div className="checkbox-wrapper">
@@ -38,5 +36,5 @@ export function Checkbox({
         {label && <span className="checkbox-label">{label}</span>}
       </button>
     </div>
-  );
+  )
 }

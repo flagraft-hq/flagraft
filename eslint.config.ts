@@ -2,7 +2,7 @@ import js from '@eslint/js'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 
-export default tseslint.config(
+export default [
   {
     ignores: [
       'dist/',
@@ -10,7 +10,6 @@ export default tseslint.config(
       'coverage/',
       'packages/*/dist/',
       'packages/*/node_modules/',
-      'packages/admin-ui/',
     ],
   },
   js.configs.recommended,
@@ -19,7 +18,7 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        project: true,
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -43,4 +42,4 @@ export default tseslint.config(
       'no-console': 'off',
     },
   },
-)
+]
