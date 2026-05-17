@@ -1378,3 +1378,158 @@ body {
   color: var(--pri-fg);
   border-color: var(--pri);
 }
+.override-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.override-form-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: var(--s-1);
+}
+.override-form-row {
+  display: flex;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+.override-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 140px;
+  flex: 1;
+}
+.override-form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.override-form-error {
+  font-size: 12px;
+  color: var(--danger);
+}
+.override-form-actions {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: flex-end;
+}
+
+.override-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.override-key {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-1);
+  font-weight: 600;
+}
+.override-op {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.override-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.override-result {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 600;
+}
+.override-result-on {
+  background: var(--teal-50);
+  color: var(--teal-700);
+}
+.override-result-off {
+  background: var(--ink-100);
+  color: var(--ink-500);
+}
+.override-note {
+  font-size: 12px;
+  color: var(--text-3);
+  font-style: italic;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.override-age {
+  font-size: 12px;
+  color: var(--text-4);
+  white-space: nowrap;
+  margin-left: auto;
+}
+.overrides-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  padding: var(--s-12) var(--s-8);
+  text-align: center;
+}
+.overrides-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.overrides-empty-desc {
+  font-size: 13px;
+  color: var(--text-3);
+  max-width: 320px;
+}
+.overrides-section {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.overrides-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-4) var(--s-4);
+  border-bottom: 1px solid var(--border);
+}
+.overrides-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.overrides-form-container {
+  padding: var(--s-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+.overrides-list {
+  display: flex;
+  flex-direction: column;
+}
+.overrides-loading {
+  padding: var(--s-8);
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.overrides-error {
+  padding: var(--s-4);
+  color: var(--danger);
+  font-size: 13px;
+}

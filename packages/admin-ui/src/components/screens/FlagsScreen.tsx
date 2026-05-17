@@ -150,7 +150,9 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
             envNames={ENV_NAMES}
             selected={selectedKeys.includes(flag.key)}
             onSelect={handleSelect}
-            onToggle={(key, env, enabled) => { void handleToggle(key, env, enabled) }}
+            onToggle={(key, env, enabled) => {
+              void handleToggle(key, env, enabled)
+            }}
             onClick={(key) => navigate(`/flags/${key}`)}
           />
         ))}

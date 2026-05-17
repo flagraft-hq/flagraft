@@ -52,10 +52,24 @@ export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone }: Bu
   return (
     <div className="bulk-bar">
       <span className="bulk-count">{selectedKeys.length} selected</span>
-      <Button variant="ghost" size="sm" onClick={() => { void handleEnableAll() }} disabled={loading}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          void handleEnableAll()
+        }}
+        disabled={loading}
+      >
         Enable All
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => { void handleDisableAll() }} disabled={loading}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          void handleDisableAll()
+        }}
+        disabled={loading}
+      >
         Disable All
       </Button>
       <Button
@@ -78,7 +92,14 @@ export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone }: Bu
           >
             Cancel
           </Button>
-          <Button variant="danger" size="sm" onClick={() => { void handleConfirmDelete() }} disabled={loading}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => {
+              void handleConfirmDelete()
+            }}
+            disabled={loading}
+          >
             Confirm Delete
           </Button>
         </Modal.Footer>
