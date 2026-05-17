@@ -1,13 +1,19 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
 import { MainLayout } from '../MainLayout'
 
-function renderMainLayout(children: React.ReactNode = <div>Test Content</div>) {
+function renderMainLayout(
+  children: React.ReactNode = <div>Test Content</div>,
+  initialPath = '/flags',
+) {
   return render(
-    <ThemeProvider>
-      <MainLayout>{children}</MainLayout>
-    </ThemeProvider>,
+    <MemoryRouter initialEntries={[initialPath]}>
+      <ThemeProvider>
+        <MainLayout>{children}</MainLayout>
+      </ThemeProvider>
+    </MemoryRouter>,
   )
 }
 

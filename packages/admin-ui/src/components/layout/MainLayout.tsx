@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { TopBar } from './TopBar'
 import { SideNav } from './SideNav'
 import type { EnvSlug, ProjectInfo } from './TopBar'
@@ -16,8 +17,11 @@ export interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const [current, setCurrent] = useState<NavItemId>('flags')
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [activeEnv, setActiveEnv] = useState<EnvSlug>('development')
+
+  const current = (pathname.split('/')[1] || 'flags') as NavItemId
 
   return (
     <div className="app-shell">
@@ -29,7 +33,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         onOpenSearch={() => {}}
         onShowHelp={() => {}}
       />
-      <SideNav current={current} onNav={setCurrent} />
+      <SideNav current={current} onNav={(id) => navigate(`/${id}`)} />
       <main className="main">{children}</main>
     </div>
   )

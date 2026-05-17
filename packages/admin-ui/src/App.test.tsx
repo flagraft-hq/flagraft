@@ -4,12 +4,12 @@ import { describe, it, expect } from 'vitest'
 import { App } from './App'
 
 describe('App', () => {
-  it('renders the placeholder landing screen', () => {
+  it('redirects root path to /flags and renders flags screen', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     )
-    expect(screen.getByRole('heading', { name: /welcome to flagraft/i })).toBeInTheDocument()
+    expect(screen.getByText('Flags')).toBeInTheDocument()
   })
 })
