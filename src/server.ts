@@ -1,4 +1,5 @@
 import Fastify from 'fastify'
+import cors from '@fastify/cors'
 
 import { loadConfig } from './config.js'
 import type { Cache } from './cache/index.js'
@@ -35,6 +36,11 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   const config = loadConfig()
   const fastify = Fastify({
     logger: { level: config.LOG_LEVEL },
+  })
+
+  await fastify.register(cors, {
+    origin: config.NODE_ENV === 'production' ? false : true,
+    credentials: true,
   })
 
   if (config.NODE_ENV !== 'production') {

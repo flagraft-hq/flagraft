@@ -28,6 +28,11 @@ const mockProjects: Project[] = [
 describe('ProjectContext', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    sessionStorage.setItem('flagraft_api_key', 'test-key')
+  })
+
+  afterEach(() => {
+    sessionStorage.clear()
   })
 
   it('shows loading=true initially before fetch resolves', () => {

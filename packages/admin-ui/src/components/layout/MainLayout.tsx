@@ -4,15 +4,11 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { TopBar } from './TopBar'
 import { SideNav } from './SideNav'
 import { ShortcutsHelpModal } from './ShortcutsHelpModal'
+import { ProjectSwitcherModal } from './ProjectSwitcherModal'
+import { useProject } from '../../contexts/ProjectContext'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
-import type { EnvSlug, ProjectInfo } from './TopBar'
+import type { EnvSlug } from './TopBar'
 import type { NavItemId } from './SideNav'
-
-const PLACEHOLDER_PROJECT: ProjectInfo = {
-  id: 'proj-1',
-  name: 'Flagraft Demo',
-  slug: 'flagraft-demo',
-}
 
 export interface MainLayoutProps {
   children: ReactNode
@@ -21,8 +17,9 @@ export interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const [activeEnv, setActiveEnv] = useState<EnvSlug>('development')
+  const { activeProject, activeEnv, setActiveEnv } = useProject()
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showSwitcher, setShowSwitcher] = useState(false)
 
   const current = (pathname.split('/')[1] || 'flags') as NavItemId
 
@@ -40,26 +37,25 @@ export function MainLayout({ children }: MainLayoutProps) {
     },
   })
 
+  const project = activeProject ?? { id: '', name: 'No project', slug: '' }
+
   return (
     <>
-      <a href="#main-content" className="skip-link">
-        Skip to content
-      </a>
+      <a href="#main-content" className="skip-link">Skip to content</a>
       <div className="app-shell">
         <TopBar
-          project={PLACEHOLDER_PROJECT}
-          onSwitchProject={() => {}}
-          activeEnv={activeEnv}
+          project={project}
+          onSwitchProject={() => setShowSwitcher(true)}
+          activeEnv={(activeEnv as EnvSlug) ?? 'development'}
           onChangeEnv={setActiveEnv}
           onOpenSearch={focusSearch}
           onShowHelp={() => setShowShortcuts(true)}
         />
         <SideNav current={current} onNav={(id) => navigate(`/${id}`)} />
-        <main className="main" id="main-content">
-          {children}
-        </main>
+        <main className="main" id="main-content">{children}</main>
       </div>
       <ShortcutsHelpModal open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      <ProjectSwitcherModal open={showSwitcher} onClose={() => setShowSwitcher(false)} />
     </>
   )
 }

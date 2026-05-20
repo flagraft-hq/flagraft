@@ -9,6 +9,7 @@ import { Icon } from '../primitives/Icon'
 import { FilterBar } from './FilterBar'
 import { FlagRow } from './FlagRow'
 import { BulkActionBar } from './BulkActionBar'
+import { CreateFlagModal } from './CreateFlagModal'
 import { flagsApi } from '../../lib/api'
 
 const ENV_NAMES = ['development', 'staging', 'production']
@@ -39,6 +40,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [toggleError, setToggleError] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
 
   const {
     flags: rawFlags,
@@ -100,7 +102,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
     <div className="flags-screen">
       <div className="flags-header">
         <h1>Feature Flags</h1>
-        <Button variant="primary" leftIcon="plus">
+        <Button variant="primary" leftIcon="plus" onClick={() => setShowCreate(true)}>
           New Flag
         </Button>
       </div>
@@ -185,6 +187,11 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           ))}
         </div>
       )}
+      <CreateFlagModal
+        open={showCreate}
+        projectId={projectId}
+        onClose={() => setShowCreate(false)}
+      />
     </div>
   )
 }

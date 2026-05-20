@@ -24,6 +24,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!sessionStorage.getItem('flagraft_api_key')) {
+      window.location.replace('/login')
+      return
+    }
+
     let cancelled = false
     setLoading(true)
     projectsApi

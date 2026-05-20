@@ -12,11 +12,8 @@ interface UseOverridesResult {
   overrides: Override[]
   loading: boolean
   error: string | null
-  createOverride: (data: Omit<Override, 'id' | 'flag' | 'created'>) => Promise<void>
-  updateOverride: (
-    id: string,
-    data: Partial<Omit<Override, 'id' | 'flag' | 'created'>>,
-  ) => Promise<void>
+  createOverride: (data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => Promise<void>
+  updateOverride: (id: string, data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => Promise<void>
   deleteOverride: (id: string) => Promise<void>
   refetch: () => void
 }
@@ -54,27 +51,32 @@ export function useOverrides({ projectId, flagKey, env }: UseOverridesOptions): 
   const refetch = useCallback(() => setTick((n) => n + 1), [])
 
   const createOverride = useCallback(
-    async (data: Omit<Override, 'id' | 'flag' | 'created'>) => {
-      await overridesApi.create(projectId, flagKey, data)
+    async (data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => {
+      await overridesApi.create(projectId, flagKey, env, data)
       refetch()
     },
-    [projectId, flagKey, refetch],
+    [projectId, flagKey, env, refetch],
   )
 
+  /**
+   * The backend has no PATCH override route.
+   * Edit is implemented as delete + create so the override gets a new ID.
+   */
   const updateOverride = useCallback(
-    async (id: string, data: Partial<Omit<Override, 'id' | 'flag' | 'created'>>) => {
-      await overridesApi.update(projectId, flagKey, id, data)
+    async (id: string, data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => {
+      await overridesApi.delete(projectId, flagKey, env, id)
+      await overridesApi.create(projectId, flagKey, env, data)
       refetch()
     },
-    [projectId, flagKey, refetch],
+    [projectId, flagKey, env, refetch],
   )
 
   const deleteOverride = useCallback(
     async (id: string) => {
-      await overridesApi.delete(projectId, flagKey, id)
+      await overridesApi.delete(projectId, flagKey, env, id)
       refetch()
     },
-    [projectId, flagKey, refetch],
+    [projectId, flagKey, env, refetch],
   )
 
   return { overrides, loading, error, createOverride, updateOverride, deleteOverride, refetch }

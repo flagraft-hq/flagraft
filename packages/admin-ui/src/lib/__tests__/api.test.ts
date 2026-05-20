@@ -28,12 +28,10 @@ describe('flagsApi', () => {
 })
 
 describe('overridesApi', () => {
-  it('exports list, create, update, delete, reorder', () => {
+  it('exports list, create, delete', () => {
     expect(typeof overridesApi.list).toBe('function')
     expect(typeof overridesApi.create).toBe('function')
-    expect(typeof overridesApi.update).toBe('function')
     expect(typeof overridesApi.delete).toBe('function')
-    expect(typeof overridesApi.reorder).toBe('function')
   })
 })
 
@@ -47,5 +45,13 @@ describe('projectsApi', () => {
   it('exports list and get', () => {
     expect(typeof projectsApi.list).toBe('function')
     expect(typeof projectsApi.get).toBe('function')
+  })
+
+  it('create posts to /api/v1/admin/projects', () => {
+    expect(typeof projectsApi.create).toBe('function')
+    const spy = vi.spyOn(http, 'post').mockResolvedValueOnce({ data: {} } as any)
+    projectsApi.create({ name: 'New', slug: 'new' })
+    expect(spy).toHaveBeenCalledWith('/api/v1/admin/projects', { name: 'New', slug: 'new' })
+    spy.mockRestore()
   })
 })

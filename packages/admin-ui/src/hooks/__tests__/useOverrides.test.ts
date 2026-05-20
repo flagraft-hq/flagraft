@@ -6,7 +6,6 @@ vi.mock('../../lib/api', () => ({
   overridesApi: {
     list: vi.fn(),
     create: vi.fn(),
-    update: vi.fn(),
     delete: vi.fn(),
   },
 }))
@@ -63,7 +62,6 @@ describe('useOverrides', () => {
     const callCountBefore = (overridesApi.list as ReturnType<typeof vi.fn>).mock.calls.length
     await act(async () => {
       await result.current.createOverride({
-        env: 'staging',
         key: 'userId',
         op: 'equals',
         val: 'new-user',
@@ -71,7 +69,12 @@ describe('useOverrides', () => {
         note: '',
       })
     })
-    expect(overridesApi.create).toHaveBeenCalledTimes(1)
+    expect(overridesApi.create).toHaveBeenCalledWith(
+      'proj-1',
+      'my-flag',
+      'staging',
+      { key: 'userId', op: 'equals', val: 'new-user', result: true, note: '' },
+    )
     await waitFor(() =>
       expect((overridesApi.list as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
         callCountBefore,
@@ -90,7 +93,7 @@ describe('useOverrides', () => {
     await act(async () => {
       await result.current.deleteOverride('ov-1')
     })
-    expect(overridesApi.delete).toHaveBeenCalledWith('proj-1', 'my-flag', 'ov-1')
+    expect(overridesApi.delete).toHaveBeenCalledWith('proj-1', 'my-flag', 'staging', 'ov-1')
     await waitFor(() =>
       expect((overridesApi.list as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
         callCountBefore,
@@ -98,21 +101,35 @@ describe('useOverrides', () => {
     )
   })
 
-  it('updateOverride calls API and refetches', async () => {
+  it('updateOverride calls delete then create and refetches', async () => {
     ;(overridesApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockOverrides })
-    ;(overridesApi.update as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockOverrides[0] })
+    ;(overridesApi.delete as ReturnType<typeof vi.fn>).mockResolvedValue({})
+    ;(overridesApi.create as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockOverrides[0] })
     const { result } = renderHook(() =>
       useOverrides({ projectId: 'proj-1', flagKey: 'my-flag', env: 'staging' }),
     )
     await waitFor(() => expect(result.current.loading).toBe(false))
     const callCountBefore = (overridesApi.list as ReturnType<typeof vi.fn>).mock.calls.length
     await act(async () => {
-      await result.current.updateOverride('ov-1', { val: 'updated-user', note: 'updated' })
+      await result.current.updateOverride('ov-1', {
+        key: 'userId',
+        op: 'equals',
+        val: 'updated-user',
+        result: true,
+        note: 'updated',
+      })
     })
-    expect(overridesApi.update).toHaveBeenCalledWith('proj-1', 'my-flag', 'ov-1', {
+    expect(overridesApi.delete).toHaveBeenCalledWith('proj-1', 'my-flag', 'staging', 'ov-1')
+    expect(overridesApi.create).toHaveBeenCalledWith('proj-1', 'my-flag', 'staging', {
+      key: 'userId',
+      op: 'equals',
       val: 'updated-user',
+      result: true,
       note: 'updated',
     })
+    const deleteOrder = (overridesApi.delete as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]
+    const createOrder = (overridesApi.create as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]
+    expect(deleteOrder).toBeLessThan(createOrder)
     await waitFor(() =>
       expect((overridesApi.list as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
         callCountBefore,

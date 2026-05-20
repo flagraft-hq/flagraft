@@ -18,7 +18,6 @@ vi.mock('../../../lib/api', () => ({
   overridesApi: {
     list: vi.fn().mockResolvedValue({ data: [] }),
     create: vi.fn(),
-    update: vi.fn(),
     delete: vi.fn(),
   },
   contextFieldsApi: {

@@ -4,6 +4,21 @@ import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
 import { MainLayout } from '../MainLayout'
 
+vi.mock('../../../hooks/useToast', () => ({
+  useToast: () => ({ push: vi.fn(), dismiss: vi.fn(), toasts: [] }),
+}))
+
+vi.mock('../../../contexts/ProjectContext', () => ({
+  useProject: () => ({
+    activeProject: { id: 'p1', name: 'Flagraft Demo', slug: 'flagraft-demo', flagCount: 0 },
+    activeEnv: 'development',
+    setActiveEnv: vi.fn(),
+    projects: [],
+    loading: false,
+    error: null,
+  }),
+}))
+
 function renderMainLayout(
   children: React.ReactNode = <div>Test Content</div>,
   initialPath = '/flags',

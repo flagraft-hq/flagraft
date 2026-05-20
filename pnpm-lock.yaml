@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fastify/cors':
+        specifier: ^9.0.1
+        version: 9.0.1
       '@fastify/rate-limit':
         specifier: ^9.1.0
         version: 9.1.0
@@ -1067,6 +1070,9 @@ packages:
 
   '@fastify/ajv-compiler@3.6.0':
     resolution: {integrity: sha512-LwdXQJjmMD+GwLOkP7TVC68qa+pSSogeWWmznRJ/coyTcfe9qA05AHFSe1eZFwK6q+xVRpChnvFUkf1iYaSZsQ==}
+
+  '@fastify/cors@9.0.1':
+    resolution: {integrity: sha512-YY9Ho3ovI+QHIL2hW+9X4XqQjXLjJqsU+sMV/xFsxZkE8p3GNnYVFpoOxF7SsP5ZL76gwvbo3V9L+FIekBGU4Q==}
 
   '@fastify/error@3.4.1':
     resolution: {integrity: sha512-wWSvph+29GR783IhmvdwWnN4bUxTD01Vm5Xad4i7i1VuAOItLvbPAb69sb0IQ2N57yprvhNIwAP5B6xfKTmjmQ==}
@@ -2505,6 +2511,9 @@ packages:
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
 
+  mnemonist@0.39.6:
+    resolution: {integrity: sha512-A/0v5Z59y63US00cRSLiloEIw3t5G+MiKz4BhX21FI+YBJXBOGW0ohFxTxO08dsOYlzxo87T7vGfZKYp2bcAWA==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -2550,6 +2559,9 @@ packages:
   object-hash@3.0.0:
     resolution: {integrity: sha512-RSn9F68PjH9HqtltsSnqYC1XXoWe9Bju5+213R98cNGttag9q9yAOTzdbsqvIa7aNm5WffBZFpWYr2aWrklWAw==}
     engines: {node: '>= 6'}
+
+  obliterator@2.0.5:
+    resolution: {integrity: sha512-42CPE9AhahZRsMNslczq0ctAEtqk8Eka26QofnqC346BZdHDySk3LWka23LI7ULIw11NmltpiLagIq8gBozxTw==}
 
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
@@ -3937,6 +3949,11 @@ snapshots:
       ajv: 8.18.0
       ajv-formats: 2.1.1(ajv@8.18.0)
       fast-uri: 2.4.0
+
+  '@fastify/cors@9.0.1':
+    dependencies:
+      fastify-plugin: 4.5.1
+      mnemonist: 0.39.6
 
   '@fastify/error@3.4.1': {}
 
@@ -5411,6 +5428,10 @@ snapshots:
       pkg-types: 1.3.1
       ufo: 1.6.3
 
+  mnemonist@0.39.6:
+    dependencies:
+      obliterator: 2.0.5
+
   ms@2.1.3: {}
 
   msw@2.14.2(@types/node@22.19.17)(typescript@5.9.3):
@@ -5459,6 +5480,8 @@ snapshots:
   object-assign@4.1.1: {}
 
   object-hash@3.0.0: {}
+
+  obliterator@2.0.5: {}
 
   on-exit-leak-free@2.1.2: {}
 

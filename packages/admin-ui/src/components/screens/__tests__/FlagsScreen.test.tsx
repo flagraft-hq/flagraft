@@ -35,6 +35,11 @@ vi.mock('../BulkActionBar', () => ({
     ) : null,
 }))
 
+vi.mock('../CreateFlagModal', () => ({
+  CreateFlagModal: ({ open }: { open: boolean }) =>
+    open ? <div role="dialog">New feature flag</div> : null,
+}))
+
 import { useFlags } from '../../../hooks/useFlags'
 import { useProject } from '../../../contexts/ProjectContext'
 
@@ -125,6 +130,21 @@ describe('FlagsScreen', () => {
   it('has a "New Flag" button', () => {
     render(<FlagsScreen />)
     expect(screen.getByRole('button', { name: /new flag/i })).toBeInTheDocument()
+  })
+
+  it('opens CreateFlagModal when New Flag is clicked', async () => {
+    mockUseFlags.mockReturnValue({
+      flags: defaultFlags,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+
+    render(<FlagsScreen />)
+    const newFlagBtn = await screen.findByRole('button', { name: /new flag/i })
+    fireEvent.click(newFlagBtn)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('New feature flag')).toBeInTheDocument()
   })
 
   it('shows the flag count', () => {

@@ -6,6 +6,7 @@ import { MainLayout } from './components/layout/MainLayout'
 import { FlagsScreen } from './components/screens/FlagsScreen'
 import { FlagDetailScreen } from './components/screens/FlagDetailScreen'
 import { SettingsScreen } from './components/screens/SettingsScreen'
+import { SetupScreen } from './components/screens/SetupScreen'
 import './styles/index.css'
 
 function Placeholder({ title }: { title: string }) {
@@ -21,67 +22,27 @@ export function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <ProjectProvider>
-          <Routes>
-            <Route path="/" element={<Navigate to="/flags" replace />} />
-            <Route
-              path="/flags"
-              element={
-                <MainLayout>
-                  <FlagsScreen />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/flags/:key"
-              element={
-                <MainLayout>
-                  <FlagDetailScreen />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/overrides"
-              element={
-                <MainLayout>
-                  <Placeholder title="Overrides" />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/audit"
-              element={
-                <MainLayout>
-                  <Placeholder title="Audit log" />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/environments"
-              element={
-                <MainLayout>
-                  <Placeholder title="Environments" />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/keys"
-              element={
-                <MainLayout>
-                  <Placeholder title="API keys" />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <MainLayout>
-                  <SettingsScreen />
-                </MainLayout>
-              }
-            />
-          </Routes>
-        </ProjectProvider>
+        <Routes>
+          {/* /login is outside ProjectProvider so fetching projects does not trigger a redirect loop */}
+          <Route path="/login" element={<SetupScreen />} />
+          <Route
+            path="/*"
+            element={
+              <ProjectProvider>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/flags" replace />} />
+                  <Route path="/flags" element={<MainLayout><FlagsScreen /></MainLayout>} />
+                  <Route path="/flags/:key" element={<MainLayout><FlagDetailScreen /></MainLayout>} />
+                  <Route path="/overrides" element={<MainLayout><Placeholder title="Overrides" /></MainLayout>} />
+                  <Route path="/audit" element={<MainLayout><Placeholder title="Audit log" /></MainLayout>} />
+                  <Route path="/environments" element={<MainLayout><Placeholder title="Environments" /></MainLayout>} />
+                  <Route path="/keys" element={<MainLayout><Placeholder title="API keys" /></MainLayout>} />
+                  <Route path="/settings" element={<MainLayout><SettingsScreen /></MainLayout>} />
+                </Routes>
+              </ProjectProvider>
+            }
+          />
+        </Routes>
       </ToastProvider>
     </ThemeProvider>
   )
