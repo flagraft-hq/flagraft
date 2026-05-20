@@ -4,6 +4,8 @@ import { useProject } from '../../contexts/ProjectContext'
 import { useFlags } from '../../hooks/useFlags'
 import type { SortField, SortDir } from '../../hooks/useFlags'
 import { Button } from '../primitives/Button'
+import { ErrorState } from '../primitives/ErrorState'
+import { Icon } from '../primitives/Icon'
 import { FilterBar } from './FilterBar'
 import { FlagRow } from './FlagRow'
 import { BulkActionBar } from './BulkActionBar'
@@ -60,7 +62,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   }
 
   if (error) {
-    return <div className="flags-error">{error}</div>
+    return <ErrorState title="Failed to load flags" message={error} onRetry={refetch} />
   }
 
   const availableTags = Array.from(new Set(rawFlags.flatMap((f) => f.tags)))
@@ -72,6 +74,12 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           const on = f.state[activeEnv]?.on ?? false
           return stateFilter === 'on' ? on : !on
         })
+
+  function clearFilters() {
+    setSearch('')
+    setSelectedTags([])
+    setStateFilter('all')
+  }
 
   function handleSelect(key: string, selected: boolean) {
     setSelectedKeys((prev) =>
@@ -141,22 +149,42 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           </button>
         </div>
       )}
-      <div className="flags-list">
-        {filteredFlags.map((flag) => (
-          <FlagRow
-            key={flag.key}
-            flag={flag}
-            activeEnv={activeEnv}
-            envNames={ENV_NAMES}
-            selected={selectedKeys.includes(flag.key)}
-            onSelect={handleSelect}
-            onToggle={(key, env, enabled) => {
-              void handleToggle(key, env, enabled)
-            }}
-            onClick={(key) => navigate(`/flags/${key}`)}
-          />
-        ))}
-      </div>
+      {rawFlags.length === 0 &&
+      search === '' &&
+      selectedTags.length === 0 &&
+      stateFilter === 'all' ? (
+        <div className="flags-empty">
+          <Icon name="flag" size={48} className="flags-empty-icon" />
+          <h2 className="flags-empty-title">No flags yet</h2>
+          <p className="flags-empty-message">Create your first feature flag to get started.</p>
+        </div>
+      ) : rawFlags.length > 0 && filteredFlags.length === 0 ? (
+        <div className="flags-empty">
+          <Icon name="search" size={48} className="flags-empty-icon" />
+          <h2 className="flags-empty-title">No flags match your filters</h2>
+          <p className="flags-empty-message">Try adjusting your search or filters.</p>
+          <Button variant="ghost" onClick={clearFilters}>
+            Clear filters
+          </Button>
+        </div>
+      ) : (
+        <div className="flags-list">
+          {filteredFlags.map((flag) => (
+            <FlagRow
+              key={flag.key}
+              flag={flag}
+              activeEnv={activeEnv}
+              envNames={ENV_NAMES}
+              selected={selectedKeys.includes(flag.key)}
+              onSelect={handleSelect}
+              onToggle={(key, env, enabled) => {
+                void handleToggle(key, env, enabled)
+              }}
+              onClick={(key) => navigate(`/flags/${key}`)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

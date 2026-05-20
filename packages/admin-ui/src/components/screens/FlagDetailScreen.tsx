@@ -5,6 +5,7 @@ import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import type { Flag } from '../../lib/types'
 import { Button } from '../primitives/Button'
+import { ErrorState } from '../primitives/ErrorState'
 import { Icon } from '../primitives/Icon'
 import { Toggle } from '../primitives/Toggle'
 import { Modal } from '../primitives/Modal'
@@ -167,7 +168,7 @@ export function FlagDetailScreen() {
   }
 
   if (error) {
-    return <div className="flag-detail-error">{error}</div>
+    return <ErrorState title="Failed to load flag" message={error} onRetry={() => void fetchFlag} />
   }
 
   if (!flag) return null

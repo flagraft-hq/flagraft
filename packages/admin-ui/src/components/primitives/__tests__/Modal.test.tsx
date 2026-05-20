@@ -134,6 +134,32 @@ describe('Modal', () => {
     expect(svg).toBeInTheDocument()
   })
 
+  it('focuses first focusable element when modal opens', () => {
+    render(
+      <Modal open={true} onClose={() => {}}>
+        <Modal.Body>
+          <button>Action</button>
+        </Modal.Body>
+      </Modal>,
+    )
+
+    const actionButton = screen.getByRole('button', { name: 'Action' })
+    expect(document.activeElement).toBe(actionButton)
+  })
+
+  it('sets aria-labelledby on the dialog when titleId is supplied', () => {
+    const { container } = render(
+      <Modal open={true} onClose={() => {}} titleId="my-title">
+        <Modal.Header id="my-title">Titled Modal</Modal.Header>
+      </Modal>,
+    )
+
+    const dialog = container.querySelector('[role="dialog"]')
+    expect(dialog).toHaveAttribute('aria-labelledby', 'my-title')
+    const header = container.querySelector('#my-title')
+    expect(header).toBeInTheDocument()
+  })
+
   it('renders all compound components together', () => {
     const { container } = render(
       <Modal open={true} onClose={() => {}}>

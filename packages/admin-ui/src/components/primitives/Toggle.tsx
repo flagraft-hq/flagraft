@@ -36,7 +36,7 @@ export function Toggle({
       <button
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        aria-label={label ?? (checked ? 'Enabled' : 'Disabled')}
         disabled={disabled}
         className={`toggle toggle-${checked ? 'on' : 'off'}`}
         data-variant={variant}

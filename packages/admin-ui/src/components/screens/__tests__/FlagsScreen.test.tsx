@@ -140,6 +140,78 @@ describe('FlagsScreen', () => {
   })
 })
 
+describe('FlagsScreen empty states', () => {
+  it('shows no-data empty state when flags list is empty and no filters active', () => {
+    mockUseFlags.mockReturnValue({ flags: [], loading: false, error: null, refetch: vi.fn() })
+
+    render(<FlagsScreen />)
+    expect(screen.getByText('No flags yet')).toBeInTheDocument()
+    expect(screen.getByText('Create your first feature flag to get started.')).toBeInTheDocument()
+    expect(document.querySelector('.flags-list')).not.toBeInTheDocument()
+  })
+
+  it('shows no-results empty state when filters produce empty list', () => {
+    /** All flags are "on" so clicking the "Off" filter yields zero results */
+    const allOnFlags = [
+      {
+        key: 'flag-x',
+        name: 'Flag X',
+        description: '',
+        tags: [],
+        created: '2024-01-01',
+        updated: '2024-01-02',
+        state: { development: { on: true, overrides: 0 } },
+        author: 'user',
+      },
+    ]
+    mockUseFlags.mockReturnValue({
+      flags: allOnFlags,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+
+    render(<FlagsScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /^off$/i }))
+
+    expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
+    expect(screen.getByText('Try adjusting your search or filters.')).toBeInTheDocument()
+    expect(document.querySelector('.flags-list')).not.toBeInTheDocument()
+  })
+
+  it('clear filters button resets search, tags, and state filter and shows the list again', () => {
+    /** Same all-on setup as above */
+    const allOnFlags = [
+      {
+        key: 'flag-x',
+        name: 'Flag X',
+        description: '',
+        tags: [],
+        created: '2024-01-01',
+        updated: '2024-01-02',
+        state: { development: { on: true, overrides: 0 } },
+        author: 'user',
+      },
+    ]
+    mockUseFlags.mockReturnValue({
+      flags: allOnFlags,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+
+    render(<FlagsScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /^off$/i }))
+
+    expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /clear filters/i }))
+
+    expect(screen.queryByText('No flags match your filters')).not.toBeInTheDocument()
+    expect(document.querySelector('.flags-list')).toBeInTheDocument()
+  })
+})
+
 describe('FlagsScreen integration', () => {
   const multipleFlags = [
     {

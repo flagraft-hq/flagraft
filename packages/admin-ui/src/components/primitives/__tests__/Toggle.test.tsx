@@ -28,6 +28,14 @@ describe('Toggle', () => {
     expect(screen.getByText('Enable feature')).toBeTruthy()
   })
 
+  it('has aria-label based on checked state when no label prop given', () => {
+    const { rerender } = render(<Toggle checked={true} onChange={vi.fn()} />)
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-label', 'Enabled')
+
+    rerender(<Toggle checked={false} onChange={vi.fn()} />)
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-label', 'Disabled')
+  })
+
   it('renders production variant', () => {
     const { container } = render(
       <Toggle checked={false} onChange={() => {}} variant="production" />,

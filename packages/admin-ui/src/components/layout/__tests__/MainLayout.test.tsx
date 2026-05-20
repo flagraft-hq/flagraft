@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
 import { MainLayout } from '../MainLayout'
@@ -56,5 +56,23 @@ describe('MainLayout', () => {
     const main = screen.getByRole('main')
     expect(main).toBeInTheDocument()
     expect(main).toHaveClass('main')
+  })
+})
+
+describe('keyboard shortcuts', () => {
+  it('pressing ? opens the shortcuts modal', () => {
+    renderMainLayout()
+    fireEvent.keyDown(document, { key: '?' })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('pressing Escape closes the shortcuts modal', async () => {
+    renderMainLayout()
+
+    fireEvent.keyDown(document, { key: '?' })
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 })

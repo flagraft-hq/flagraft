@@ -5,6 +5,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { MainLayout } from './components/layout/MainLayout'
 import { FlagsScreen } from './components/screens/FlagsScreen'
 import { FlagDetailScreen } from './components/screens/FlagDetailScreen'
+import { SettingsScreen } from './components/screens/SettingsScreen'
 import './styles/index.css'
 
 function Placeholder({ title }: { title: string }) {
@@ -75,7 +76,7 @@ export function App() {
               path="/settings"
               element={
                 <MainLayout>
-                  <Placeholder title="Project settings" />
+                  <SettingsScreen />
                 </MainLayout>
               }
             />

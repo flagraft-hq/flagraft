@@ -1289,6 +1289,31 @@ body {
   padding: var(--s-6);
   color: var(--text-3);
 }
+.flags-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-16) var(--s-8);
+  gap: var(--s-3);
+  text-align: center;
+  color: var(--text-3);
+}
+.flags-empty-icon {
+  color: var(--text-4);
+  margin-bottom: var(--s-2);
+}
+.flags-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0;
+}
+.flags-empty-message {
+  font-size: 14px;
+  margin: 0;
+  max-width: 360px;
+}
 
 /* FilterBar */
 .filter-bar {
@@ -1637,4 +1662,164 @@ body {
 .flag-detail-no-project {
   padding: 24px;
   color: var(--text-3);
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--pri);
+  color: white;
+  padding: var(--s-2) var(--s-4);
+  z-index: 100;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 500;
+  transition: top 0.15s;
+}
+.skip-link:focus {
+  top: var(--s-2);
+}
+
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shortcuts-table td {
+  padding: var(--s-2) var(--s-3);
+  vertical-align: middle;
+}
+
+.shortcuts-table td:first-child {
+  width: 40%;
+}
+
+.shortcuts-table td:last-child {
+  color: var(--text-2);
+}
+
+.shortcuts-or {
+  margin: 0 var(--s-2);
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-16) var(--s-8);
+  gap: var(--s-3);
+  text-align: center;
+  color: var(--text-3);
+}
+
+.error-state-icon {
+  color: var(--danger);
+  margin-bottom: var(--s-2);
+}
+
+.error-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.error-state-message {
+  font-size: 14px;
+  margin: 0;
+  max-width: 360px;
+}
+
+.error-state-action {
+  margin-top: var(--s-2);
+}
+
+/* SettingsScreen */
+
+.settings-screen {
+  padding: var(--s-8);
+  max-width: 640px;
+}
+
+.settings-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 var(--s-8);
+}
+
+.settings-section {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  margin-bottom: var(--s-6);
+}
+
+.settings-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0 0 var(--s-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-field:last-child {
+  border-bottom: none;
+}
+
+.settings-field-label {
+  width: 120px;
+  font-size: 13px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.settings-field-value {
+  font-size: 14px;
+  color: var(--text-1);
+}
+
+.settings-envs {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.settings-env-chip {
+  padding: var(--s-1) var(--s-3);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.settings-danger-zone {
+  border-color: var(--danger);
+}
+
+.settings-danger-desc {
+  font-size: 14px;
+  color: var(--text-3);
+  margin: 0 0 var(--s-4);
+}
+
+.settings-no-project {
+  padding: var(--s-8);
+  color: var(--text-3);
+  font-size: 14px;
 }
