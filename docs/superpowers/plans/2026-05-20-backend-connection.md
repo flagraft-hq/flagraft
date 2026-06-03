@@ -51,6 +51,7 @@ packages/admin-ui/src/
 ## Task 1: Fix API client paths and endpoint shapes
 
 **Files:**
+
 - Modify: `packages/admin-ui/src/lib/api.ts`
 - Modify: `packages/admin-ui/src/lib/__tests__/api.test.ts`
 
@@ -107,8 +108,7 @@ http.interceptors.response.use(
 export { http }
 
 export const flagsApi = {
-  list: (projectId: string) =>
-    http.get<Flag[]>(`/admin/projects/${projectId}/flags`),
+  list: (projectId: string) => http.get<Flag[]>(`/admin/projects/${projectId}/flags`),
 
   get: (projectId: string, key: string) =>
     http.get<Flag>(`/admin/projects/${projectId}/flags/${key}`),
@@ -188,6 +188,7 @@ Expected: all existing api tests pass. If any test mocks a path like `/api/v1/..
 ## Task 2: Fix useOverrides to match new API shapes
 
 **Files:**
+
 - Modify: `packages/admin-ui/src/hooks/useOverrides.ts`
 - Modify: `packages/admin-ui/src/hooks/__tests__/useOverrides.test.ts`
 
@@ -213,7 +214,10 @@ interface UseOverridesResult {
   loading: boolean
   error: string | null
   createOverride: (data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => Promise<void>
-  updateOverride: (id: string, data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => Promise<void>
+  updateOverride: (
+    id: string,
+    data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>,
+  ) => Promise<void>
   deleteOverride: (id: string) => Promise<void>
   refetch: () => void
 }
@@ -298,13 +302,21 @@ it('updateOverride calls delete then create', async () => {
 
   await act(async () => {
     await result.current.updateOverride('override-id', {
-      key: 'userId', op: 'equals', val: '42', result: true, note: '',
+      key: 'userId',
+      op: 'equals',
+      val: '42',
+      result: true,
+      note: '',
     })
   })
 
   expect(overridesApi.delete).toHaveBeenCalledWith('p1', 'flag-a', 'development', 'override-id')
   expect(overridesApi.create).toHaveBeenCalledWith('p1', 'flag-a', 'development', {
-    key: 'userId', op: 'equals', val: '42', result: true, note: '',
+    key: 'userId',
+    op: 'equals',
+    val: '42',
+    result: true,
+    note: '',
   })
 })
 ```
@@ -322,6 +334,7 @@ Expected: all tests pass.
 ## Task 3: Wire MainLayout to real ProjectContext
 
 **Files:**
+
 - Modify: `packages/admin-ui/src/components/layout/MainLayout.tsx`
 - Modify: `packages/admin-ui/src/components/layout/__tests__/MainLayout.test.tsx`
 
@@ -425,6 +438,7 @@ Expected: all tests pass.
 ## Task 4: API key input in SettingsScreen
 
 **Files:**
+
 - Modify: `packages/admin-ui/src/components/screens/SettingsScreen.tsx`
 - Modify: `packages/admin-ui/src/components/screens/__tests__/SettingsScreen.test.tsx`
 
@@ -540,6 +554,7 @@ Expected: all tests pass including 3 new API key tests.
 ## Task 5: ProjectSwitcherModal and CreateProjectModal
 
 **Files:**
+
 - Create: `packages/admin-ui/src/components/layout/ProjectSwitcherModal.tsx`
 - Create: `packages/admin-ui/src/components/layout/CreateProjectModal.tsx`
 - Create: `packages/admin-ui/src/components/layout/__tests__/ProjectSwitcherModal.test.tsx`
@@ -953,6 +968,7 @@ Expected: all tests pass.
 ## Task 6: Create Flag modal and wire New Flag button
 
 **Files:**
+
 - Create: `packages/admin-ui/src/components/screens/CreateFlagModal.tsx`
 - Create: `packages/admin-ui/src/components/screens/__tests__/CreateFlagModal.test.tsx`
 - Modify: `packages/admin-ui/src/components/screens/FlagsScreen.tsx`
@@ -1184,16 +1200,19 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
 In `packages/admin-ui/src/components/screens/FlagsScreen.tsx`:
 
 Add import:
+
 ```typescript
 import { CreateFlagModal } from './CreateFlagModal'
 ```
 
 Add state inside `FlagsScreenInner` (after existing state declarations):
+
 ```typescript
 const [showCreate, setShowCreate] = useState(false)
 ```
 
 Update the "New Flag" button in the JSX (it currently has no `onClick`):
+
 ```tsx
 <Button variant="primary" leftIcon="plus" onClick={() => setShowCreate(true)}>
   New Flag
@@ -1201,12 +1220,9 @@ Update the "New Flag" button in the JSX (it currently has no `onClick`):
 ```
 
 Add `CreateFlagModal` just before the closing `</div>` of `flags-screen`:
+
 ```tsx
-<CreateFlagModal
-  open={showCreate}
-  projectId={projectId}
-  onClose={() => setShowCreate(false)}
-/>
+<CreateFlagModal open={showCreate} projectId={projectId} onClose={() => setShowCreate(false)} />
 ```
 
 - [ ] **Step 5: Add a test to FlagsScreen.test.tsx**

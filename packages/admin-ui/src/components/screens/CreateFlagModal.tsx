@@ -78,12 +78,7 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
     <Modal open={open} onClose={onClose} titleId="create-flag-modal-title">
       <Modal.Header id="create-flag-modal-title">New feature flag</Modal.Header>
       <Modal.Body>
-        <TextField
-          label="Name"
-          value={name}
-          onChange={handleNameChange}
-          placeholder="My Feature"
-        />
+        <TextField label="Name" value={name} onChange={handleNameChange} placeholder="My Feature" />
         <TextField
           label="Key"
           value={key}
@@ -102,7 +97,7 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
         <Button variant="ghost" onClick={onClose} disabled={saving}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={disabled}>
+        <Button variant="primary" onClick={() => void handleSubmit()} disabled={disabled}>
           Create flag
         </Button>
       </Modal.Footer>

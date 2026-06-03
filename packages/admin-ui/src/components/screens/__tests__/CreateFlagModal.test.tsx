@@ -23,8 +23,9 @@ vi.mock('../../../hooks/useToast', () => ({
   useToast: () => ({ push: mockToastPush }),
 }))
 
+const mockNavigate = vi.fn()
 vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn(),
+  useNavigate: () => mockNavigate,
 }))
 
 import { flagsApi } from '../../../lib/api'
@@ -32,13 +33,12 @@ import { flagsApi } from '../../../lib/api'
 const mockCreate = flagsApi.create as ReturnType<typeof vi.fn>
 
 function renderModal(open = true) {
-  return render(
-    <CreateFlagModal open={open} projectId="p1" onClose={vi.fn()} />,
-  )
+  return render(<CreateFlagModal open={open} projectId="p1" onClose={vi.fn()} />)
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockNavigate.mockClear()
 })
 
 describe('CreateFlagModal', () => {
@@ -53,7 +53,7 @@ describe('CreateFlagModal', () => {
     renderModal()
     const nameInput = screen.getByLabelText(/name/i)
     fireEvent.change(nameInput, { target: { value: 'My Feature' } })
-    const keyInput = screen.getByLabelText(/key/i) as HTMLInputElement
+    const keyInput = screen.getByLabelText<HTMLInputElement>(/key/i)
     expect(keyInput.value).toBe('my-feature')
   })
 
@@ -91,10 +91,37 @@ describe('CreateFlagModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /create flag/i }))
 
     await waitFor(() => {
-      expect(mockToastPush).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: 'error' }),
-      )
+      expect(mockToastPush).toHaveBeenCalledWith(expect.objectContaining({ variant: 'error' }))
     })
+  })
+
+  it('shows the exact server error message in the toast title', async () => {
+    mockCreate.mockRejectedValue(new Error('A flag with this key already exists'))
+
+    renderModal()
+
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Duplicate' } })
+    fireEvent.click(screen.getByRole('button', { name: /create flag/i }))
+
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'A flag with this key already exists',
+          variant: 'error',
+        }),
+      ),
+    )
+  })
+
+  it('navigates to /flags/<key> after successful create', async () => {
+    mockCreate.mockResolvedValue({ data: { key: 'my-feature' } })
+
+    renderModal()
+
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'My Feature' } })
+    fireEvent.click(screen.getByRole('button', { name: /create flag/i }))
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/flags/my-feature'))
   })
 })
 

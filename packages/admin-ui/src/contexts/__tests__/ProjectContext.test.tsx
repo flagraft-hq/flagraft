@@ -5,6 +5,13 @@ import { ProjectProvider, useProject } from '../ProjectContext'
 import * as api from '../../lib/api'
 import type { Project } from '../../lib/types'
 
+vi.mock('../AuthContext', () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: 'u1', email: 'admin@flagraft.local', role: 'owner', name: 'Admin' },
+    loading: false,
+  })),
+}))
+
 function TestConsumer() {
   const ctx = useProject()
   return (
@@ -28,11 +35,6 @@ const mockProjects: Project[] = [
 describe('ProjectContext', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    sessionStorage.setItem('flagraft_api_key', 'test-key')
-  })
-
-  afterEach(() => {
-    sessionStorage.clear()
   })
 
   it('shows loading=true initially before fetch resolves', () => {

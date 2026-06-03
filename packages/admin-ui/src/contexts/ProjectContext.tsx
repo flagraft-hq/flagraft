@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react'
 import { projectsApi } from '../lib/api'
 import type { Project } from '../lib/types'
+import { useAuth } from './AuthContext'
 
 export type EnvSlug = 'development' | 'staging' | 'production'
 
@@ -22,10 +23,13 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [activeEnv, setActiveEnv] = useState<EnvSlug>('development')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
 
   useEffect(() => {
-    if (!sessionStorage.getItem('flagraft_api_key')) {
-      window.location.replace('/login')
+    if (!user) {
+      setProjects([])
+      setActiveProject(null)
+      setLoading(false)
       return
     }
 
@@ -49,7 +53,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [user?.id])
 
   return (
     <ProjectContext.Provider

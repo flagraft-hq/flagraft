@@ -142,6 +142,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           setSelectedKeys([])
           refetch()
         }}
+        onCancel={() => setSelectedKeys([])}
       />
       {toggleError && (
         <div className="flags-toggle-error">

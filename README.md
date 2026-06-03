@@ -144,6 +144,36 @@ Pick Flagraft when you want a minimal, auditable, self-hosted feature flag servi
 
 ---
 
+## First Setup
+
+When the server starts with an empty database, it automatically creates:
+
+- A default admin account
+- A default project named **Default** with Development and Production environments
+
+### Default admin credentials
+
+| Field    | Default value          |
+| -------- | ---------------------- |
+| Email    | `admin@flagraft.local` |
+| Password | `flagraft-admin`       |
+
+**Change the password immediately after your first login.**
+
+Override any defaults with environment variables before first boot:
+
+```env
+DEFAULT_ADMIN_EMAIL=you@yourcompany.com
+DEFAULT_ADMIN_PASSWORD=your-secure-password
+DEFAULT_ADMIN_NAME=Your Name
+DEFAULT_PROJECT_NAME=My Project
+DEFAULT_PROJECT_SLUG=my-project
+```
+
+The seed only runs when the database is empty. Restarting the server later will not overwrite anything.
+
+---
+
 ## Configuration
 
 All config is read from environment variables. See `.env.example` for the full list.

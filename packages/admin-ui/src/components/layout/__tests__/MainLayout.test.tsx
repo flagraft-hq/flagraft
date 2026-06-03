@@ -8,6 +8,15 @@ vi.mock('../../../hooks/useToast', () => ({
   useToast: () => ({ push: vi.fn(), dismiss: vi.fn(), toasts: [] }),
 }))
 
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'u1', email: 'a@b.com', name: 'Admin User', role: 'owner' },
+    loading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+  }),
+}))
+
 vi.mock('../../../contexts/ProjectContext', () => ({
   useProject: () => ({
     activeProject: { id: 'p1', name: 'Flagraft Demo', slug: 'flagraft-demo', flagCount: 0 },
@@ -89,5 +98,51 @@ describe('keyboard shortcuts', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('pressing / focuses the search input', () => {
+    renderMainLayout()
+    const searchInput = document.querySelector('.topbar-search input') as HTMLElement
+    const focusSpy = vi.spyOn(searchInput, 'focus')
+    fireEvent.keyDown(document, { key: '/' })
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('pressing Cmd+K focuses the search input', () => {
+    renderMainLayout()
+    const searchInput = document.querySelector('.topbar-search input') as HTMLElement
+    const focusSpy = vi.spyOn(searchInput, 'focus')
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('pressing Ctrl+K focuses the search input', () => {
+    renderMainLayout()
+    const searchInput = document.querySelector('.topbar-search input') as HTMLElement
+    const focusSpy = vi.spyOn(searchInput, 'focus')
+    fireEvent.keyDown(document, { key: 'k', ctrlKey: true })
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('pressing ? while an input is focused does not open the shortcuts modal', () => {
+    renderMainLayout(<input type="text" data-testid="some-input" />)
+    screen.getByTestId('some-input').focus()
+    expect(document.activeElement).toBe(screen.getByTestId('some-input'))
+    fireEvent.keyDown(document, { key: '?' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('MainLayout skip link and accessibility', () => {
+  it('renders a skip-to-content link targeting #main-content', () => {
+    renderMainLayout()
+    const skipLink = document.querySelector('.skip-link') as HTMLAnchorElement
+    expect(skipLink).toBeInTheDocument()
+    expect(skipLink.getAttribute('href')).toBe('#main-content')
+  })
+
+  it('main content area has id "main-content"', () => {
+    renderMainLayout(<span>Content</span>)
+    expect(document.getElementById('main-content')).toBeInTheDocument()
   })
 })

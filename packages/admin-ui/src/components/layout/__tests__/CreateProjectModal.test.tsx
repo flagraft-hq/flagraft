@@ -3,11 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { CreateProjectModal } from '../CreateProjectModal'
 import type { Project } from '../../../lib/types'
 
-vi.mock('../../../lib/api', () => ({
-  projectsApi: {
-    create: vi.fn(),
-  },
-}))
+vi.mock('../../../lib/api', async (importActual) => {
+  const actual = await importActual<typeof import('../../../lib/api')>()
+  return {
+    projectsApi: { create: vi.fn() },
+    ApiError: actual.ApiError,
+  }
+})
+
+import { ApiError } from '../../../lib/api'
 
 const mockToastPush = vi.fn()
 vi.mock('../../../hooks/useToast', () => ({
@@ -30,9 +34,7 @@ beforeEach(() => {
 })
 
 function renderModal() {
-  return render(
-    <CreateProjectModal open={true} onClose={mockOnClose} onCreated={mockOnCreated} />,
-  )
+  return render(<CreateProjectModal open={true} onClose={mockOnClose} onCreated={mockOnCreated} />)
 }
 
 describe('CreateProjectModal', () => {
@@ -65,12 +67,8 @@ describe('CreateProjectModal', () => {
     expect(mockOnCreated).toHaveBeenCalledWith(createdProject)
   })
 
-  it('shows 403 toast message on 403 error', async () => {
-    const err = Object.assign(new Error('Forbidden'), {
-      isAxiosError: true,
-      response: { status: 403 },
-    })
-    mockCreate.mockRejectedValue(err)
+  it('shows root-key toast on 403', async () => {
+    mockCreate.mockRejectedValue(new ApiError('Forbidden', 403))
     renderModal()
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Locked' } })
@@ -84,5 +82,66 @@ describe('CreateProjectModal', () => {
         }),
       ),
     )
+  })
+
+  it('shows conflict message toast on 409', async () => {
+    mockCreate.mockRejectedValue(new ApiError('Resource already exists', 409))
+    renderModal()
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'default' } })
+    fireEvent.click(screen.getByRole('button', { name: /create project/i }))
+
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Resource already exists', variant: 'error' }),
+      ),
+    )
+  })
+
+  it('shows the server error message in the toast for generic errors', async () => {
+    mockCreate.mockRejectedValue(new Error('Something went wrong on the server'))
+    renderModal()
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Broken' } })
+    fireEvent.click(screen.getByRole('button', { name: /create project/i }))
+
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Something went wrong on the server',
+          variant: 'error',
+        }),
+      ),
+    )
+  })
+
+  it('edit slug manually stops auto-derivation', () => {
+    renderModal()
+
+    /** Step 1: type a name and confirm slug is auto-derived */
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'First Project' } })
+    expect(screen.getByLabelText('Slug')).toHaveValue('first-project')
+
+    /** Step 2: manually edit the Slug field — slugTouched becomes true */
+    fireEvent.change(screen.getByLabelText('Slug'), { target: { value: 'custom-slug' } })
+    expect(screen.getByLabelText('Slug')).toHaveValue('custom-slug')
+
+    /** Step 3: change the Name field again — slug must NOT update */
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Second Project' } })
+    expect(screen.getByLabelText('Slug')).toHaveValue('custom-slug')
+  })
+
+  it('after successful create, calls onCreated with the returned project and shows success toast', async () => {
+    mockCreate.mockResolvedValue({ data: createdProject })
+    renderModal()
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'My App' } })
+    fireEvent.click(screen.getByRole('button', { name: /create project/i }))
+
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith({ title: 'Project created', variant: 'success' }),
+    )
+    expect(mockOnCreated).toHaveBeenCalledWith(createdProject)
   })
 })

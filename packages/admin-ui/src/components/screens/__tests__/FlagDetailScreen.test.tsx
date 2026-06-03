@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { FlagDetailScreen } from '../FlagDetailScreen'
@@ -95,6 +96,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockFlagsApi.get.mockResolvedValue({ data: mockFlag })
   mockFlagsApi.delete.mockResolvedValue({})
+  mockFlagsApi.toggle.mockResolvedValue({})
   mockUseProject.mockReturnValue(defaultProjectContext)
 })
 
@@ -145,6 +147,78 @@ describe('FlagDetailScreen', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent(/delete flag/i)
   })
 
+  it('confirming delete navigates back to /flags and shows success toast', async () => {
+    renderScreen()
+    const deleteButton = await screen.findByRole('button', { name: /delete/i })
+    fireEvent.click(deleteButton)
+    const modal = screen.getByRole('dialog')
+    const confirmBtn = within(modal).getByRole('button', { name: /^delete$/i })
+    fireEvent.click(confirmBtn)
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith({ title: 'Flag deleted', variant: 'success' }),
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('flags-list-page')).toBeInTheDocument(),
+    )
+  })
+
+  it('cancelling delete closes the modal and stays on the detail page', async () => {
+    renderScreen()
+    const deleteButton = await screen.findByRole('button', { name: /delete/i })
+    fireEvent.click(deleteButton)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.queryByTestId('flags-list-page')).not.toBeInTheDocument()
+    expect(mockFlagsApi.delete).not.toHaveBeenCalled()
+  })
+
+  it('Copy key button shows "Key copied" success toast', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    })
+    renderScreen()
+    const copyBtn = await screen.findByRole('button', { name: /copy key/i })
+    fireEvent.click(copyBtn)
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith({ title: 'Key copied', variant: 'success' }),
+    )
+  })
+
+  it('History tab shows "coming soon" placeholder', async () => {
+    renderScreen()
+    await waitFor(() => expect(screen.getByRole('tab', { name: /history/i })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('tab', { name: /history/i }))
+    expect(screen.getByText(/history coming soon/i)).toBeInTheDocument()
+  })
+
+  it('Environments tab shows a card per environment with enabled/disabled state', async () => {
+    renderScreen()
+    await waitFor(() => expect(screen.getAllByText('Enabled').length).toBeGreaterThan(0))
+    // development is on, staging and production are off
+    expect(screen.getAllByText('Enabled').length).toBe(1)
+    expect(screen.getAllByText('Disabled').length).toBe(2)
+  })
+
+  it('toggling an environment calls flagsApi.toggle and shows a success toast', async () => {
+    const user = userEvent.setup()
+    mockFlagsApi.toggle.mockResolvedValue({})
+    renderScreen()
+    await waitFor(() => expect(screen.getAllByRole('switch').length).toBeGreaterThan(0))
+    const switches = screen.getAllByRole('switch')
+    // development is on (index 0) — clicking disables it
+    await user.click(switches[0])
+    await waitFor(() =>
+      expect(mockFlagsApi.toggle).toHaveBeenCalledWith('p1', 'my-flag', 'development', false),
+    )
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'development toggled', variant: 'success' }),
+      ),
+    )
+  })
+
   it('no project state shows "No project selected"', () => {
     mockUseProject.mockReturnValueOnce({
       activeProject: null,
@@ -156,6 +230,52 @@ describe('FlagDetailScreen', () => {
     })
     renderScreen()
     expect(screen.getByText('No project selected')).toBeInTheDocument()
+  })
+
+  it('clicking the production env toggle shows a confirmation before enabling', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+    await waitFor(() => expect(screen.getAllByRole('switch').length).toBeGreaterThan(0))
+    const switches = screen.getAllByRole('switch')
+    // production is at index 2 (dev=0, staging=1, production=2); it starts off (checked=false)
+    await user.click(switches[2])
+    expect(mockFlagsApi.toggle).not.toHaveBeenCalled()
+    expect(screen.getByText(/enable production toggle/i)).toBeInTheDocument()
+  })
+
+  it('confirming the production toggle calls flagsApi.toggle', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+    await waitFor(() => expect(screen.getAllByRole('switch').length).toBeGreaterThan(0))
+    const switches = screen.getAllByRole('switch')
+    await user.click(switches[2])
+    // confirmation UI is now visible; click the Yes button to confirm
+    await user.click(screen.getByRole('button', { name: /^yes$/i }))
+    await waitFor(() =>
+      expect(mockFlagsApi.toggle).toHaveBeenCalledWith('p1', 'my-flag', 'production', true),
+    )
+  })
+
+  it('disabling production toggle fires immediately without confirmation', async () => {
+    const user = userEvent.setup()
+    // Override the flag so production starts enabled (on: true)
+    const productionOnFlag: Flag = {
+      ...mockFlag,
+      state: {
+        ...mockFlag.state,
+        production: { on: true, overrides: 1 },
+      },
+    }
+    mockFlagsApi.get.mockResolvedValue({ data: productionOnFlag })
+    renderScreen()
+    await waitFor(() => expect(screen.getAllByRole('switch').length).toBeGreaterThan(0))
+    const switches = screen.getAllByRole('switch')
+    // production is at index 2; it is now on (checked=true), so clicking disables immediately
+    await user.click(switches[2])
+    await waitFor(() =>
+      expect(mockFlagsApi.toggle).toHaveBeenCalledWith('p1', 'my-flag', 'production', false),
+    )
+    expect(screen.queryByText(/enable production toggle/i)).not.toBeInTheDocument()
   })
 })
 
@@ -234,6 +354,17 @@ describe('Edit flag modal', () => {
     })
   })
 
+  it('cancelling edit closes the modal without calling update', async () => {
+    renderScreen()
+    const editButton = await screen.findByRole('button', { name: /edit/i })
+    fireEvent.click(editButton)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(mockFlagsApi.update).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: 'My Feature Flag' })).toBeInTheDocument()
+  })
+
   it('keeps modal open on save error', async () => {
     mockFlagsApi.update.mockRejectedValue(new Error('Network error'))
     renderScreen()
@@ -245,5 +376,21 @@ describe('Edit flag modal', () => {
       expect(mockToastPush).toHaveBeenCalledWith({ title: 'Network error', variant: 'error' })
     })
     expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('after save, the detail page heading updates to the new flag name', async () => {
+    mockFlagsApi.update.mockResolvedValue({ data: { ...mockFlag, name: 'Updated Name' } })
+    const user = userEvent.setup()
+    renderScreen()
+    const editButton = await screen.findByRole('button', { name: /edit/i })
+    await user.click(editButton)
+    const nameInput = screen.getByRole('textbox', { name: /name/i })
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Updated Name')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Updated Name' })).toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('heading', { name: 'My Feature Flag' })).not.toBeInTheDocument()
   })
 })

@@ -9,6 +9,12 @@ const configSchema = z.object({
   CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(30),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  JWT_SECRET: z.string().min(32),
+  DEFAULT_ADMIN_EMAIL: z.string().email().default('admin@flagraft.local'),
+  DEFAULT_ADMIN_PASSWORD: z.string().min(8).default('flagraft-admin'),
+  DEFAULT_ADMIN_NAME: z.string().default('Admin'),
+  DEFAULT_PROJECT_NAME: z.string().default('Default'),
+  DEFAULT_PROJECT_SLUG: z.string().default('default'),
 })
 
 export type AppConfig = Readonly<z.infer<typeof configSchema>>

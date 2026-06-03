@@ -30,16 +30,27 @@ export function SetupScreen() {
         <p className="setup-sub">
           Enter your admin API key to get started. Find it in your server configuration.
         </p>
-        {error && <div className="login-error" role="alert">{error}</div>}
+        {error && (
+          <div className="login-error" role="alert">
+            {error}
+          </div>
+        )}
         <div className="setup-field">
-          <label htmlFor="setup-key" className="setup-label">Admin API key</label>
+          <label htmlFor="setup-key" className="setup-label">
+            Admin API key
+          </label>
           <input
             id="setup-key"
             className="input"
             type="password"
             value={key}
-            onChange={(e) => { setKey(e.target.value); setError(null) }}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleConnect() }}
+            onChange={(e) => {
+              setKey(e.target.value)
+              setError(null)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleConnect()
+            }}
             placeholder="ff_..."
             autoFocus
           />

@@ -1,8 +1,16 @@
 import React from 'react'
 import { Icon, IconName } from '../primitives/Icon'
 import { Kbd } from '../primitives/Kbd'
+import { useAuth } from '../../contexts/AuthContext'
 
-export type NavItemId = 'flags' | 'overrides' | 'audit' | 'environments' | 'keys' | 'settings'
+export type NavItemId =
+  | 'flags'
+  | 'overrides'
+  | 'audit'
+  | 'environments'
+  | 'keys'
+  | 'users'
+  | 'settings'
 
 export interface SideNavProps {
   current: NavItemId
@@ -36,12 +44,14 @@ const NAV: NavGroup[] = [
     items: [
       { id: 'environments', label: 'Environments', icon: 'layers', shortcut: ['g', 'e'] },
       { id: 'keys', label: 'API keys', icon: 'key', shortcut: ['g', 'k'] },
+      { id: 'users', label: 'Users', icon: 'user' as const },
       { id: 'settings', label: 'Project settings', icon: 'settings' },
     ],
   },
 ]
 
 export function SideNav({ current, onNav }: SideNavProps) {
+  const { user, logout } = useAuth()
   return (
     <nav className="sidenav">
       {NAV.map((g) => (
@@ -66,14 +76,18 @@ export function SideNav({ current, onNav }: SideNavProps) {
           ))}
         </React.Fragment>
       ))}
-      <div className="sidenav-footer">
-        <div className="user-avatar">KS</div>
-        <div className="user-info">
-          <div className="user-name">Kochar S.</div>
-          <div className="user-role">root</div>
+      {user && (
+        <div className="sidenav-footer">
+          <div className="sidenav-user-avatar">{user.name.slice(0, 2).toUpperCase()}</div>
+          <div className="sidenav-user-info">
+            <div className="sidenav-user-name">{user.name}</div>
+            <div className="sidenav-user-role mono">{user.role}</div>
+          </div>
+          <button className="icon-btn" onClick={() => void logout()} aria-label="Sign out">
+            <Icon name="arrowRight" size={14} />
+          </button>
         </div>
-        <Icon name="chevronDown" size={14} className="muted" />
-      </div>
+      )}
     </nav>
   )
 }

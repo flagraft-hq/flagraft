@@ -168,6 +168,15 @@ describe('FlagRow', () => {
     expect(container.querySelector('.flag-row')).toBeTruthy()
   })
 
+  it('renders without tag chips and does not crash when flag has no tags', () => {
+    const flag = { ...baseFlag, tags: [] }
+    render(<FlagRow {...defaultProps} flag={flag} />)
+    expect(screen.queryByText('tag-a')).toBeNull()
+    expect(screen.queryByText('tag-b')).toBeNull()
+    // Row itself must still render
+    expect(screen.getByText('My Feature')).toBeTruthy()
+  })
+
   it('renders with envs missing from flag state gracefully', () => {
     const flag = { ...baseFlag, state: {} }
     const { container } = render(<FlagRow {...defaultProps} flag={flag} />)

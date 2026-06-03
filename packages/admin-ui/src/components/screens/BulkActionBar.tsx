@@ -2,17 +2,20 @@ import { useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Modal } from '../primitives/Modal'
 import { flagsApi } from '../../lib/api'
+import { useToast } from '../../hooks/useToast'
 
 interface BulkActionBarProps {
   selectedKeys: string[]
   projectId: string
   activeEnv: string
   onDone: () => void
+  onCancel?: () => void
 }
 
-export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone }: BulkActionBarProps) {
+export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone, onCancel }: BulkActionBarProps) {
   const [loading, setLoading] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const toast = useToast()
 
   if (selectedKeys.length === 0) return null
 
@@ -20,6 +23,7 @@ export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone }: Bu
     setLoading(true)
     try {
       await Promise.all(selectedKeys.map((key) => flagsApi.toggle(projectId, key, activeEnv, true)))
+      toast.push({ title: 'Flags enabled', variant: 'success' })
       onDone()
     } finally {
       setLoading(false)
@@ -32,6 +36,7 @@ export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone }: Bu
       await Promise.all(
         selectedKeys.map((key) => flagsApi.toggle(projectId, key, activeEnv, false)),
       )
+      toast.push({ title: 'Flags disabled', variant: 'success' })
       onDone()
     } finally {
       setLoading(false)
@@ -80,6 +85,17 @@ export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone }: Bu
       >
         Delete
       </Button>
+
+      {onCancel && (
+        <button
+          className="bulk-close"
+          onClick={onCancel}
+          aria-label="Clear selection"
+          disabled={loading}
+        >
+          ×
+        </button>
+      )}
 
       <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
         <Modal.Header>Delete {selectedKeys.length} flags?</Modal.Header>

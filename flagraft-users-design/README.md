@@ -26,16 +26,17 @@ Where the prototype uses ad-hoc helpers (`Icon`, `Button`, `Badge`, `Modal`, `To
 ### 1. Login screen
 
 **Purpose:** Authenticate a user into the Flagraft workspace. Supports three modes:
+
 - Password (default)
 - Magic link (passwordless, one-time email link)
 - SSO redirect (Google, SAML)
 
 **Layout:** Full-viewport, two-column split, `grid-template-columns: 1fr 1.05fr`.
 
-| Region | Width | Notes |
-|---|---|---|
-| Brand panel (left) | flex 1 | Hidden below 880px |
-| Form column (right) | flex 1.05 | Always visible |
+| Region              | Width     | Notes              |
+| ------------------- | --------- | ------------------ |
+| Brand panel (left)  | flex 1    | Hidden below 880px |
+| Form column (right) | flex 1.05 | Always visible     |
 
 #### Brand panel (left)
 
@@ -48,13 +49,14 @@ Where the prototype uses ad-hoc helpers (`Icon`, `Button`, `Badge`, `Modal`, `To
 - Rows: `auto 1fr auto auto` (brand mark / pitch / stats / status pill)
 
 Contents top-to-bottom:
+
 1. **Brand mark + wordmark.** 40×40 `FR` square (teal gradient, white inset highlight, large outer glow), and `Flagraft` text, 17px / 700 / -0.01em letter-spacing.
 2. **Pitch.** `h1` at 40px / 700 / -0.02em / line-height 1.08, two lines: `Feature flags / without the ceremony.` (use a `<br/>` not the soft-hyphen the prototype uses for the nbsp). Subhead at 15px, line-height 1.55, opacity ~78%: "Self-hosted. Three environments out of the box. Sub-50ms evaluations from any region."
 3. **Stats row.** 3 columns, `gap: 18px`, with a 1px white-alpha top border at 28px padding-top:
    - `24` flags · this project
    - `98%` cache hit · last 24h
    - `42ms` p99 eval · prod
-   Numerals at 26px / 700, units inline at 14px / 500. Labels at 11.5px, 55% white alpha, 0.01em tracking.
+     Numerals at 26px / 700, units inline at 14px / 500. Labels at 11.5px, 55% white alpha, 0.01em tracking.
 4. **Status pill.** "All systems operational" + version stamp `v1.4.2`. Pill: black 20% bg, white 8% border, 999px radius, 10px×14px padding. Status dot is a 8px green circle (`#4ade80`) with a pulsing `livepulse` animation (2.4s ease-out infinite).
 
 #### Form column (right)
@@ -63,6 +65,7 @@ Contents top-to-bottom:
 - Rows: `auto 1fr` (top bar, form area)
 
 **Top bar:** right-aligned, 16×28 padding, bottom border `1px solid var(--border)`.
+
 - "New to Flagraft?" (12.5px, muted)
 - Ghost button "Create workspace" with right arrow icon
 
@@ -98,6 +101,7 @@ Structure (in order):
 9. **Footer.** Dashed top border. Self-hosted hostname stamp `flagraft.kocharsoft.internal` in mono. Right side: Docs / Status / Privacy links.
 
 **Magic-link sent state:** replaces the form with a centered confirmation:
+
 - 48px circle, `var(--pri-soft)` background, teal-fg check icon
 - `Check kochar@kocharsoft.com` heading
 - Muted body: "If an account exists, you'll receive a sign-in link shortly. The link expires in 10 minutes."
@@ -140,12 +144,12 @@ Structure (in order):
 
 Grid: `repeat(4, 1fr)` desktop, `repeat(2, 1fr)` below 1100px. Cards are `display: grid; grid-template-columns: 32px 1fr; gap: 12px` with a 32px tinted icon square on the left and label/value/sub stacked on the right.
 
-| Card | Value | Sub | Icon | Tone |
-|---|---|---|---|---|
-| Total users | 12 | "10 active · 2 service" | user | teal |
-| Pending invites | 2 | "Expires in **7 days**" | sparkles | amber, with left-edge accent bar |
-| 2FA enforced | 80% (computed) | "2 without 2FA" | shield | teal |
-| Seats | 12/25 | "13 remaining" | layers | slate |
+| Card            | Value          | Sub                     | Icon     | Tone                             |
+| --------------- | -------------- | ----------------------- | -------- | -------------------------------- |
+| Total users     | 12             | "10 active · 2 service" | user     | teal                             |
+| Pending invites | 2              | "Expires in **7 days**" | sparkles | amber, with left-edge accent bar |
+| 2FA enforced    | 80% (computed) | "2 without 2FA"         | shield   | teal                             |
+| Seats           | 12/25          | "13 remaining"          | layers   | slate                            |
 
 Value typography: 22px / 700 / -0.02em / tabular nums. Unit suffix (e.g. `/25`) at 13px / 500 / text-4.
 
@@ -170,19 +174,20 @@ Chips reuse the existing `.chip` class from the Flags v2 redesign. Pressed state
 
 Columns (left to right):
 
-| Header | Width hint | Content |
-|---|---|---|
-| (checkbox) | 40px | Per-row checkbox; header is select-all with mixed/indeterminate state |
-| Person | flex | Avatar (28px) + name + status badges + monospace email below |
-| Role | auto | RoleBadge — colored dot pill: `owner=amber, admin=teal, editor/viewer=slate` |
-| Project access | flex | Up to 2 project chips + "+N" overflow if more |
-| 2FA | auto | TwoFA pill: ok=teal (shield/key/info icon + label), none=amber alert |
-| Last active | auto | Mono 12px; "never" italicized in text-4 |
-| (actions) | auto | Icon buttons: edit + suspend/reinstate for active/suspended, refresh + cancel for invited |
+| Header         | Width hint | Content                                                                                   |
+| -------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| (checkbox)     | 40px       | Per-row checkbox; header is select-all with mixed/indeterminate state                     |
+| Person         | flex       | Avatar (28px) + name + status badges + monospace email below                              |
+| Role           | auto       | RoleBadge — colored dot pill: `owner=amber, admin=teal, editor/viewer=slate`              |
+| Project access | flex       | Up to 2 project chips + "+N" overflow if more                                             |
+| 2FA            | auto       | TwoFA pill: ok=teal (shield/key/info icon + label), none=amber alert                      |
+| Last active    | auto       | Mono 12px; "never" italicized in text-4                                                   |
+| (actions)      | auto       | Icon buttons: edit + suspend/reinstate for active/suspended, refresh + cancel for invited |
 
 Sortable headers (Person, Role, Project access, Last active) use `<button class="sort-head">` with a chevron-down icon that rotates 180° when `dir === 'asc'`. Active sort key shows the chevron in `var(--pri-fg)`.
 
 Row states:
+
 - **Hover:** background `var(--bg-muted)`
 - **Selected (checkbox):** background `var(--pri-soft)`
 - **Active (drawer open):** background `var(--pri-soft)`, inset 3px left teal bar (`box-shadow: inset 3px 0 0 var(--pri)`)
@@ -200,6 +205,7 @@ Footer strip below table: 10×14 padding, `var(--bg-muted)`, top border, shows `
 Floats fixed at `bottom: 18px, left: 50%, translateX(-50%)`. Pill-shaped, dark in light mode (`var(--text-1)` bg, inverse text). Existing `.bulk-bar` class is reused exactly as on the Flags v2 screen.
 
 Contents:
+
 - `{N} selected` counter
 - Separator
 - **Role** section label, "Change role…" button
@@ -236,6 +242,7 @@ Esc key closes the drawer.
 #### Invite modal
 
 Standard `Modal size="lg"`. Sections:
+
 1. **Email addresses** — `textarea.input.textarea.mono`, min-height 76, comma-/whitespace-separated. Hint below shows parsed count: `{N} recipients parsed`.
 2. **Workspace role + Default 2FA** — two-column field row, native selects.
    - Role hint changes with selection (admin / editor / viewer copy)
@@ -243,6 +250,7 @@ Standard `Modal size="lg"`. Sections:
 4. **Info message** — `.form-msg.info` reusing the existing pattern: "Invitees receive a one-time link. Their account is created on first sign-in. SAML SSO users (matching `@kocharsoft.com`) skip the password step."
 
 Footer:
+
 - Ghost "Cancel"
 - Spacer
 - Primary "Send {N} invites" (disabled if 0 emails or 0 projects)
@@ -253,23 +261,23 @@ On send: close modal, toast `Invites sent` with subtitle `{N} emails dispatched.
 
 ## Interactions & behavior
 
-| Event | Effect |
-|---|---|
-| Side nav `Users` | Routes to `users` screen |
-| Side nav `Login screen` | Routes to `login` (replaces shell with full-bleed login) |
-| Command palette `g u` | Same as Users |
-| Click row | Opens detail drawer |
-| Click row checkbox | Toggles selection; reveals bulk bar |
-| Header checkbox | Select-all-filtered (with mixed indicator if partial) |
-| Click sortable header | Cycles sort (asc/desc; new key resets to desc) |
-| Search input | Live-filters by name + email + project list |
-| Status chip | Single-select status filter |
-| Role select | Filter by role |
-| Status `system` filter | Restricts to service accounts only; other filters hide service accounts by default |
-| Esc when drawer open | Closes drawer |
-| Esc when modal open | Closes modal (existing `Modal` behavior) |
-| Invite "Send" | Closes modal + success toast |
-| Reset filters button (empty state) | Clears search + status + role |
+| Event                              | Effect                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| Side nav `Users`                   | Routes to `users` screen                                                           |
+| Side nav `Login screen`            | Routes to `login` (replaces shell with full-bleed login)                           |
+| Command palette `g u`              | Same as Users                                                                      |
+| Click row                          | Opens detail drawer                                                                |
+| Click row checkbox                 | Toggles selection; reveals bulk bar                                                |
+| Header checkbox                    | Select-all-filtered (with mixed indicator if partial)                              |
+| Click sortable header              | Cycles sort (asc/desc; new key resets to desc)                                     |
+| Search input                       | Live-filters by name + email + project list                                        |
+| Status chip                        | Single-select status filter                                                        |
+| Role select                        | Filter by role                                                                     |
+| Status `system` filter             | Restricts to service accounts only; other filters hide service accounts by default |
+| Esc when drawer open               | Closes drawer                                                                      |
+| Esc when modal open                | Closes modal (existing `Modal` behavior)                                           |
+| Invite "Send"                      | Closes modal + success toast                                                       |
+| Reset filters button (empty state) | Clears search + status + role                                                      |
 
 ## State management
 
@@ -302,6 +310,7 @@ showInvite: boolean
 ```
 
 Derived:
+
 - `counts` — totals per status, memoized over USERS
 - `filtered` — filter + sort pipeline, memoized over [q, statusFilter, roleFilter, sortBy]
 - `allChecked`, `someChecked` — for the select-all checkbox
@@ -309,6 +318,7 @@ Derived:
 ### Data fetching
 
 The prototype uses a static `USERS` array (shape documented at the top of `screens-users.jsx`). Replace with your auth/admin API. Suggested endpoints:
+
 - `GET /admin/users` — list (paginated; the prototype assumes ≤25)
 - `GET /admin/users/:id` — drawer detail (incl. recent activity)
 - `POST /admin/users/invite` — body `{ emails: string[], role, projects: string[] }`
@@ -317,6 +327,7 @@ The prototype uses a static `USERS` array (shape documented at the top of `scree
 - `DELETE /admin/users/:id/invites/:inviteId` — cancel pending invite
 
 User shape:
+
 ```ts
 type User = {
   id: string
@@ -325,12 +336,12 @@ type User = {
   role: 'owner' | 'admin' | 'editor' | 'viewer'
   status: 'active' | 'invited' | 'suspended'
   twoFA: 'app' | 'key' | 'sms' | 'none'
-  last: string                  // human-formatted last-active
-  projects: string[]            // project names (real impl: ids w/ separate lookup)
-  joined: string                // date or 'Pending'
-  initials: string              // computed from name; 1–2 chars
-  tone: 'teal' | 'amber' | 'violet' | 'slate'   // for avatar color
-  system?: boolean              // service account
+  last: string // human-formatted last-active
+  projects: string[] // project names (real impl: ids w/ separate lookup)
+  joined: string // date or 'Pending'
+  initials: string // computed from name; 1–2 chars
+  tone: 'teal' | 'amber' | 'violet' | 'slate' // for avatar color
+  system?: boolean // service account
 }
 ```
 
@@ -348,6 +359,7 @@ Red (danger): `--red-500 #ef4444`, `--red-600 #dc2626`, `--red-700 #b91c1c`.
 Neutral ramp: `--ink-50 #f8fafc` → `--ink-900 #0f172a`.
 
 Semantic (light theme):
+
 - `--bg-app #f6f7f9`
 - `--bg-elev #ffffff`
 - `--bg-subtle #f1f5f9`
@@ -421,13 +433,13 @@ All icons are inline SVGs at 1.5px stroke with rounded joins, viewBox 24×24. Ne
 
 ## Files in this bundle
 
-| File | What it is |
-|---|---|
-| `screens-users.jsx` | Both new screens + sub-components. Self-contained module that registers `LoginScreen` and `UsersScreen` on `window`. |
+| File                   | What it is                                                                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `screens-users.jsx`    | Both new screens + sub-components. Self-contained module that registers `LoginScreen` and `UsersScreen` on `window`.                                                                 |
 | `styles-additions.css` | The new CSS sections appended to `styles.css` — `/* Auth / Login screen */` and `/* Users directory */`. Add these to your existing stylesheet, or translate to your styling system. |
-| `app.jsx` | Modified routing — adds `login` and `users` routes; `login` short-circuits before the shell renders so it appears full-bleed. |
-| `shell.jsx` | Modified `NAV` array (adds Users + Login screen entries) and command palette items (adds `g u` to Users, and an "Invite user" action). |
-| `index.html` | Adds `<script type="text/babel" src="screens-users.jsx"></script>`. |
+| `app.jsx`              | Modified routing — adds `login` and `users` routes; `login` short-circuits before the shell renders so it appears full-bleed.                                                        |
+| `shell.jsx`            | Modified `NAV` array (adds Users + Login screen entries) and command palette items (adds `g u` to Users, and an "Invite user" action).                                               |
+| `index.html`           | Adds `<script type="text/babel" src="screens-users.jsx"></script>`.                                                                                                                  |
 
 ### Wiring contract
 

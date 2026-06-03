@@ -111,10 +111,42 @@ export const apiKeys = pgTable(
   ],
 )
 
+export const users = pgTable('users', {
+  id: id(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  name: text('name').notNull(),
+  role: text('role').notNull().default('editor'),
+  status: text('status').notNull().default('active'),
+  twoFa: text('two_fa').notNull().default('none'),
+  isSystem: boolean('is_system').notNull().default(false),
+  initials: text('initials').notNull().default(''),
+  tone: text('tone').notNull().default('teal'),
+  lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+})
+
+export const userProjects = pgTable(
+  'user_projects',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (table) => [unique('user_projects_user_id_project_id_unique').on(table.userId, table.projectId)],
+)
+
 export const projectRelations = relations(projects, ({ many }) => ({
   environments: many(environments),
   flags: many(featureFlags),
   apiKeys: many(apiKeys),
+  members: many(userProjects),
 }))
 
 export const environmentRelations = relations(environments, ({ one, many }) => ({
@@ -154,6 +186,15 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   }),
 }))
 
+export const userRelations = relations(users, ({ many }) => ({
+  projects: many(userProjects),
+}))
+
+export const userProjectRelations = relations(userProjects, ({ one }) => ({
+  user: one(users, { fields: [userProjects.userId], references: [users.id] }),
+  project: one(projects, { fields: [userProjects.projectId], references: [projects.id] }),
+}))
+
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
 export type Environment = typeof environments.$inferSelect
@@ -166,3 +207,6 @@ export type FlagOverride = typeof flagOverrides.$inferSelect
 export type NewFlagOverride = typeof flagOverrides.$inferInsert
 export type ApiKey = typeof apiKeys.$inferSelect
 export type NewApiKey = typeof apiKeys.$inferInsert
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+export type UserProject = typeof userProjects.$inferSelect

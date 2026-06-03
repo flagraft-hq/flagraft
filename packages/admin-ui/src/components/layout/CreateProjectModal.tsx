@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import { Modal } from '../primitives/Modal'
 import { Button } from '../primitives/Button'
 import { TextField } from '../primitives/TextField'
-import { projectsApi } from '../../lib/api'
+import { projectsApi, ApiError } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
 import type { Project } from '../../lib/types'
 
@@ -57,7 +56,7 @@ export function CreateProjectModal({ open, onClose, onCreated }: CreateProjectMo
       toast.push({ title: 'Project created', variant: 'success' })
       onCreated(res.data)
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.status === 403) {
+      if (err instanceof ApiError && err.status === 403) {
         toast.push({ title: 'Project creation requires a root admin key.', variant: 'error' })
       } else {
         const msg = err instanceof Error ? err.message : 'An unknown error occurred'
@@ -74,12 +73,7 @@ export function CreateProjectModal({ open, onClose, onCreated }: CreateProjectMo
     <Modal open={open} onClose={onClose} titleId="create-project-modal-title">
       <Modal.Header id="create-project-modal-title">New project</Modal.Header>
       <Modal.Body>
-        <TextField
-          label="Name"
-          value={name}
-          onChange={handleNameChange}
-          placeholder="My project"
-        />
+        <TextField label="Name" value={name} onChange={handleNameChange} placeholder="My project" />
         <TextField
           label="Slug"
           value={slug}
@@ -92,7 +86,7 @@ export function CreateProjectModal({ open, onClose, onCreated }: CreateProjectMo
         <Button variant="ghost" onClick={onClose} disabled={saving}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={disabled}>
+        <Button variant="primary" onClick={() => void handleSubmit()} disabled={disabled}>
           Create project
         </Button>
       </Modal.Footer>

@@ -3,6 +3,15 @@ import { vi } from 'vitest'
 import { SideNav } from '../SideNav'
 import type { NavItemId } from '../SideNav'
 
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'u1', email: 'a@b.com', name: 'Admin User', role: 'owner' },
+    loading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+  }),
+}))
+
 describe('SideNav', () => {
   const mockOnNav = vi.fn()
 
@@ -23,6 +32,7 @@ describe('SideNav', () => {
     expect(screen.getByText('Audit log')).toBeInTheDocument()
     expect(screen.getByText('Environments')).toBeInTheDocument()
     expect(screen.getByText('API keys')).toBeInTheDocument()
+    expect(screen.getByText('Users')).toBeInTheDocument()
     expect(screen.getByText('Project settings')).toBeInTheDocument()
   })
 
@@ -41,6 +51,7 @@ describe('SideNav', () => {
       ['Audit log', 'audit'],
       ['Environments', 'environments'],
       ['API keys', 'keys'],
+      ['Users', 'users'],
       ['Project settings', 'settings'],
     ]
 
@@ -73,8 +84,19 @@ describe('SideNav', () => {
 
   it('renders the sidenav footer with user info', () => {
     render(<SideNav current="flags" onNav={mockOnNav} />)
-    expect(screen.getByText('KS')).toBeInTheDocument()
-    expect(screen.getByText('Kochar S.')).toBeInTheDocument()
-    expect(screen.getByText('root')).toBeInTheDocument()
+    expect(screen.getByText('AD')).toBeInTheDocument()
+    expect(screen.getByText('Admin User')).toBeInTheDocument()
+    expect(screen.getByText('owner')).toBeInTheDocument()
+  })
+
+  it('renders Users nav item', () => {
+    render(<SideNav current="flags" onNav={vi.fn()} />)
+    expect(screen.getByText('Users')).toBeInTheDocument()
+  })
+
+  it('renders user footer with name and role', () => {
+    render(<SideNav current="flags" onNav={vi.fn()} />)
+    expect(screen.getByText('Admin User')).toBeInTheDocument()
+    expect(screen.getByText('owner')).toBeInTheDocument()
   })
 })

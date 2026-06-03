@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FlagsScreen } from '../FlagsScreen'
 
@@ -10,20 +10,35 @@ vi.mock('../../../contexts/ProjectContext', () => ({
   useProject: vi.fn(),
 }))
 
+const mockNavigate = vi.fn()
 vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn(),
+  useNavigate: () => mockNavigate,
+}))
+
+vi.mock('../../../lib/api', () => ({
+  flagsApi: { toggle: vi.fn() },
 }))
 
 vi.mock('../FlagRow', () => ({
   FlagRow: ({
     flag,
     onSelect,
+    onClick,
+    onToggle,
   }: {
     flag: { key: string; name: string }
     onSelect: (key: string, selected: boolean) => void
+    onClick: (key: string) => void
+    onToggle: (key: string, env: string, enabled: boolean) => void
   }) => (
     <div data-testid={`flag-row-${flag.key}`} onClick={() => onSelect(flag.key, true)}>
       {flag.name}
+      <button data-testid={`nav-${flag.key}`} onClick={() => onClick(flag.key)}>
+        Open
+      </button>
+      <button data-testid={`toggle-${flag.key}`} onClick={() => onToggle(flag.key, 'development', true)}>
+        Toggle
+      </button>
     </div>
   ),
 }))
@@ -42,6 +57,7 @@ vi.mock('../CreateFlagModal', () => ({
 
 import { useFlags } from '../../../hooks/useFlags'
 import { useProject } from '../../../contexts/ProjectContext'
+import { flagsApi } from '../../../lib/api'
 
 const mockUseFlags = useFlags as ReturnType<typeof vi.fn>
 const mockUseProject = useProject as ReturnType<typeof vi.fn>
@@ -61,8 +77,11 @@ const defaultFlags = [
   },
 ]
 
+const mockToggle = flagsApi.toggle as ReturnType<typeof vi.fn>
+
 beforeEach(() => {
   vi.clearAllMocks()
+  mockNavigate.mockReset()
   mockUseFlags.mockReturnValue({ flags: [], loading: false, error: null, refetch: vi.fn() })
   mockUseProject.mockReturnValue({
     activeProject: defaultProject,
@@ -312,5 +331,58 @@ describe('FlagsScreen integration', () => {
   it('flag count updates with filter', () => {
     render(<FlagsScreen />)
     expect(screen.getByText(/3 flags/i)).toBeInTheDocument()
+  })
+
+  it('clicking a flag row name navigates to the flag detail page', () => {
+    render(<FlagsScreen />)
+    fireEvent.click(screen.getByTestId('nav-flag-alpha'))
+    expect(mockNavigate).toHaveBeenCalledWith('/flags/flag-alpha')
+  })
+
+  it('selecting multiple flags updates the bulk bar counter', () => {
+    render(<FlagsScreen />)
+    fireEvent.click(screen.getByTestId('flag-row-flag-alpha'))
+    fireEvent.click(screen.getByTestId('flag-row-flag-beta'))
+    expect(screen.getByText('2 selected')).toBeInTheDocument()
+  })
+
+  it('toggling a flag env calls flagsApi.toggle and triggers refetch', async () => {
+    const mockRefetch = vi.fn()
+    mockUseFlags.mockReturnValue({
+      flags: multipleFlags,
+      loading: false,
+      error: null,
+      refetch: mockRefetch,
+    })
+    mockToggle.mockResolvedValue({})
+    render(<FlagsScreen />)
+    fireEvent.click(screen.getByTestId('toggle-flag-alpha'))
+    await waitFor(() =>
+      expect(mockToggle).toHaveBeenCalledWith('proj-1', 'flag-alpha', 'development', true),
+    )
+    await waitFor(() => expect(mockRefetch).toHaveBeenCalled())
+  })
+
+  it('a toggle error shows an inline error message', async () => {
+    mockToggle.mockRejectedValue(new Error('Toggle failed'))
+    render(<FlagsScreen />)
+    fireEvent.click(screen.getByTestId('toggle-flag-alpha'))
+    await waitFor(() => expect(screen.getByText('Toggle failed')).toBeInTheDocument())
+  })
+})
+
+describe('FlagsScreen retry', () => {
+  it('clicking Retry in the error state calls the refetch function', async () => {
+    const mockRefetch = vi.fn()
+    mockUseFlags.mockReturnValueOnce({
+      flags: [],
+      loading: false,
+      error: 'Network error',
+      refetch: mockRefetch,
+    })
+    render(<FlagsScreen />)
+    const retryButton = await screen.findByRole('button', { name: /try again/i })
+    fireEvent.click(retryButton)
+    expect(mockRefetch).toHaveBeenCalledTimes(1)
   })
 })

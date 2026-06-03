@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 
+import type {} from '@fastify/cookie'
+import type {} from '@fastify/jwt'
 import { and, eq } from 'drizzle-orm'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
@@ -32,6 +34,7 @@ declare module 'fastify' {
     requireAdminKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     requireRootKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     requireClientKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    requireUserSession: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
   }
 }
 
@@ -75,6 +78,31 @@ async function authPlugin(fastify: FastifyInstance) {
      */
     if (request.url.startsWith('/docs')) return
 
+    /**
+     * Try JWT session cookie first -- used by browser clients (admin UI).
+     * If valid, we treat the session as a root admin context.
+     */
+    const sessionCookie = request.cookies?.['flagraft_session']
+    if (sessionCookie) {
+      try {
+        const payload = fastify.jwt.verify<{ sub: string; role: string }>(sessionCookie)
+        request.keyContext = {
+          keyId: payload.sub,
+          projectId: null,
+          environmentId: null,
+          type: 'admin' as ApiKeyType,
+          isRoot: true,
+        }
+        return
+      } catch {
+        throw new AppError('Session expired', 401, 'Unauthorized')
+      }
+    }
+
+    /**
+     * Fall back to API key in the Authorization header -- used by SDK clients
+     * and the CLI. Looks up the hashed key in the database.
+     */
     const authorization = request.headers.authorization
     if (!authorization) {
       throw new AppError('Missing authorization header', 401, 'Unauthorized')
@@ -137,6 +165,21 @@ async function authPlugin(fastify: FastifyInstance) {
     const context = request.keyContext
     if (!context || context.type !== API_KEY_TYPES.CLIENT) {
       throw new AppError('Client key required', 403, 'Forbidden')
+    }
+  })
+
+  /**
+   * Decorator that ensures the request carries a valid JWT session cookie.
+   * Used to protect admin UI routes that should only be accessible to
+   * authenticated browser sessions, not API key holders.
+   */
+  fastify.decorate('requireUserSession', async (request: FastifyRequest) => {
+    const token = request.cookies?.['flagraft_session']
+    if (!token) throw new AppError('Authentication required', 401, 'Unauthorized')
+    try {
+      fastify.jwt.verify(token)
+    } catch {
+      throw new AppError('Session expired', 401, 'Unauthorized')
     }
   })
 }

@@ -103,7 +103,7 @@ describe('useKeyboardShortcuts', () => {
     expect(handler).not.toHaveBeenCalled()
   })
 
-  it('does NOT dispatch Escape when focus is in a contenteditable element (Escape is only exempt from input/textarea)', () => {
+  it('does NOT dispatch non-Escape keys when focus is in a contenteditable element', () => {
     const nonEscapeHandler = vi.fn()
     renderHook(() => useKeyboardShortcuts({ '/': nonEscapeHandler }))
     const div = document.createElement('div')

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ProjectSwitcherModal } from '../ProjectSwitcherModal'
 import type { Project } from '../../../lib/types'
@@ -18,8 +18,10 @@ vi.mock('../../../lib/api', () => ({
 }))
 
 import { useProject } from '../../../contexts/ProjectContext'
+import { projectsApi } from '../../../lib/api'
 
 const mockUseProject = useProject as ReturnType<typeof vi.fn>
+const mockProjectsCreate = projectsApi.create as ReturnType<typeof vi.fn>
 const mockSetActiveProject = vi.fn()
 const mockOnClose = vi.fn()
 
@@ -31,6 +33,7 @@ const projects: Project[] = [
 beforeEach(() => {
   mockSetActiveProject.mockClear()
   mockOnClose.mockClear()
+  mockProjectsCreate.mockClear()
   mockUseProject.mockReturnValue({
     projects,
     activeProject: projects[0],
@@ -84,5 +87,26 @@ describe('ProjectSwitcherModal', () => {
     render(<ProjectSwitcherModal open={true} onClose={mockOnClose} />)
     fireEvent.click(screen.getByRole('button', { name: /new project/i }))
     expect(await screen.findByText('New project')).toBeInTheDocument()
+  })
+
+  it('after creating a new project, setActiveProject is called with the new project and the modal closes', async () => {
+    const newProject: Project = { id: 'p-new', name: 'Gamma', slug: 'gamma', flagCount: 0 }
+    mockProjectsCreate.mockResolvedValue({ data: newProject })
+
+    render(<ProjectSwitcherModal open={true} onClose={mockOnClose} />)
+
+    /** Open the CreateProjectModal */
+    fireEvent.click(screen.getByRole('button', { name: /new project/i }))
+    expect(await screen.findByText('New project')).toBeInTheDocument()
+
+    /** Fill in the name — slug auto-derives to 'gamma' */
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Gamma' } })
+
+    /** Submit */
+    fireEvent.click(screen.getByRole('button', { name: /create project/i }))
+
+    /** handleCreated should call setActiveProject with the new project and close the switcher */
+    await waitFor(() => expect(mockSetActiveProject).toHaveBeenCalledWith(newProject))
+    expect(mockOnClose).toHaveBeenCalledTimes(1)
   })
 })

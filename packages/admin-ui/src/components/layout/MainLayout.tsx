@@ -7,7 +7,6 @@ import { ShortcutsHelpModal } from './ShortcutsHelpModal'
 import { ProjectSwitcherModal } from './ProjectSwitcherModal'
 import { useProject } from '../../contexts/ProjectContext'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
-import type { EnvSlug } from './TopBar'
 import type { NavItemId } from './SideNav'
 
 export interface MainLayoutProps {
@@ -41,18 +40,22 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <>
-      <a href="#main-content" className="skip-link">Skip to content</a>
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <div className="app-shell">
         <TopBar
           project={project}
           onSwitchProject={() => setShowSwitcher(true)}
-          activeEnv={(activeEnv as EnvSlug) ?? 'development'}
+          activeEnv={activeEnv ?? 'development'}
           onChangeEnv={setActiveEnv}
           onOpenSearch={focusSearch}
           onShowHelp={() => setShowShortcuts(true)}
         />
         <SideNav current={current} onNav={(id) => navigate(`/${id}`)} />
-        <main className="main" id="main-content">{children}</main>
+        <main className="main" id="main-content">
+          {children}
+        </main>
       </div>
       <ShortcutsHelpModal open={showShortcuts} onClose={() => setShowShortcuts(false)} />
       <ProjectSwitcherModal open={showSwitcher} onClose={() => setShowSwitcher(false)} />

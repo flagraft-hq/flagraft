@@ -2,6 +2,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { BulkActionBar } from '../BulkActionBar'
 
+const mockToastPush = vi.fn()
+
+vi.mock('../../../hooks/useToast', () => ({
+  useToast: () => ({ push: mockToastPush, dismiss: vi.fn(), toasts: [] }),
+}))
+
 vi.mock('../../../lib/api', () => ({
   flagsApi: {
     toggle: vi.fn(() => Promise.resolve({ data: {} })),
@@ -19,13 +25,16 @@ const defaultProps = {
   projectId: 'proj-1',
   activeEnv: 'development',
   onDone: vi.fn(),
+  onCancel: vi.fn(),
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockToggle.mockResolvedValue({ data: {} })
   mockDelete.mockResolvedValue({ data: {} })
+  mockToastPush.mockClear()
   defaultProps.onDone = vi.fn()
+  defaultProps.onCancel = vi.fn()
 })
 
 describe('BulkActionBar', () => {
@@ -96,5 +105,34 @@ describe('BulkActionBar', () => {
     })
     expect(mockDelete).not.toHaveBeenCalled()
     expect(defaultProps.onDone).not.toHaveBeenCalled()
+  })
+
+  it('clicking Enable All shows a success toast', async () => {
+    render(<BulkActionBar {...defaultProps} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Enable All' }))
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith({ title: 'Flags enabled', variant: 'success' }),
+    )
+  })
+
+  it('clicking Disable All shows a success toast', async () => {
+    render(<BulkActionBar {...defaultProps} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Disable All' }))
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith({ title: 'Flags disabled', variant: 'success' }),
+    )
+  })
+
+  it('clicking the X button calls onCancel', () => {
+    render(<BulkActionBar {...defaultProps} />)
+    fireEvent.click(screen.getByRole('button', { name: /clear selection/i }))
+    expect(defaultProps.onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('X button does not render when onCancel is not provided', () => {
+    render(
+      <BulkActionBar selectedKeys={['a']} projectId="p" activeEnv="dev" onDone={vi.fn()} />,
+    )
+    expect(screen.queryByRole('button', { name: /clear selection/i })).not.toBeInTheDocument()
   })
 })

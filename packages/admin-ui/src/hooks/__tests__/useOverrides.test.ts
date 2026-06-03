@@ -69,12 +69,13 @@ describe('useOverrides', () => {
         note: '',
       })
     })
-    expect(overridesApi.create).toHaveBeenCalledWith(
-      'proj-1',
-      'my-flag',
-      'staging',
-      { key: 'userId', op: 'equals', val: 'new-user', result: true, note: '' },
-    )
+    expect(overridesApi.create).toHaveBeenCalledWith('proj-1', 'my-flag', 'staging', {
+      key: 'userId',
+      op: 'equals',
+      val: 'new-user',
+      result: true,
+      note: '',
+    })
     await waitFor(() =>
       expect((overridesApi.list as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
         callCountBefore,
@@ -127,8 +128,10 @@ describe('useOverrides', () => {
       result: true,
       note: 'updated',
     })
-    const deleteOrder = (overridesApi.delete as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]
-    const createOrder = (overridesApi.create as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]
+    const deleteOrder = (overridesApi.delete as ReturnType<typeof vi.fn>).mock
+      .invocationCallOrder[0]
+    const createOrder = (overridesApi.create as ReturnType<typeof vi.fn>).mock
+      .invocationCallOrder[0]
     expect(deleteOrder).toBeLessThan(createOrder)
     await waitFor(() =>
       expect((overridesApi.list as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(

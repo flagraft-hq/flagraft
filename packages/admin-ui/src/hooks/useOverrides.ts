@@ -13,7 +13,10 @@ interface UseOverridesResult {
   loading: boolean
   error: string | null
   createOverride: (data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => Promise<void>
-  updateOverride: (id: string, data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>) => Promise<void>
+  updateOverride: (
+    id: string,
+    data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>,
+  ) => Promise<void>
   deleteOverride: (id: string) => Promise<void>
   refetch: () => void
 }
