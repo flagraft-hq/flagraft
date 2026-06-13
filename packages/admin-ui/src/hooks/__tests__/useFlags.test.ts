@@ -86,13 +86,24 @@ describe('useFlags', () => {
     expect(result.current.flags[0].key).toBe('flag-charlie')
   })
 
-  it('filters by tags requiring all selected tags to be present', async () => {
+  it('filters by tags matching any selected tag (OR semantics)', async () => {
     ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', tags: ['core', 'beta'] }))
+    const { result } = renderHook(() =>
+      useFlags({ projectId: 'proj-1', tags: ['beta', 'experiment'] }),
+    )
     await waitFor(() => expect(result.current.loading).toBe(false))
-    // Only Alpha has both 'core' and 'beta'
+    // OR semantics (matches the design): alpha + bravo carry 'beta', charlie carries
+    // 'experiment'. No single flag has both tags, so AND semantics would return zero.
+    const keys = result.current.flags.map((f) => f.key).sort()
+    expect(keys).toEqual(['flag-alpha', 'flag-bravo', 'flag-charlie'])
+  })
+
+  it('filters by search term matching flag description', async () => {
+    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
+    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', search: 'second' }))
+    await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.flags).toHaveLength(1)
-    expect(result.current.flags[0].key).toBe('flag-alpha')
+    expect(result.current.flags[0].key).toBe('flag-bravo')
   })
 
   it('sorts by name ascending', async () => {

@@ -23,12 +23,12 @@ describe('useRelativeDate', () => {
     expect(useRelativeDate('')).toBe('—')
   })
 
-  it('returns "just now" for a date less than 1 minute ago', () => {
+  it('returns "Xs ago" for a date less than 1 minute ago', () => {
     setup()
     // Use same-minute timestamp (truncated to HH:mm) so diffSeconds < 60
     const nowDate = new Date(NOW)
     const dateStr = nowDate.toISOString().slice(0, 16).replace('T', ' ')
-    expect(useRelativeDate(dateStr)).toBe('just now')
+    expect(useRelativeDate(dateStr)).toBe('0s ago')
   })
 
   it('returns "X min ago" for a date less than 1 hour ago', () => {
@@ -38,11 +38,11 @@ describe('useRelativeDate', () => {
     expect(useRelativeDate(dateStr)).toBe('5 min ago')
   })
 
-  it('returns "X hours ago" for a date less than 24 hours ago', () => {
+  it('returns "X hr ago" for a date less than 24 hours ago', () => {
     setup()
     const threeHoursAgo = new Date(NOW - 3 * 60 * 60 * 1000)
     const dateStr = threeHoursAgo.toISOString().slice(0, 16).replace('T', ' ')
-    expect(useRelativeDate(dateStr)).toBe('3 hours ago')
+    expect(useRelativeDate(dateStr)).toBe('3 hr ago')
   })
 
   it('returns "X days ago" for a date less than 7 days ago', () => {

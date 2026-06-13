@@ -62,12 +62,15 @@ export function useFlags({
     if (search) {
       const lower = search.toLowerCase()
       result = result.filter(
-        (f) => f.name.toLowerCase().includes(lower) || f.key.toLowerCase().includes(lower),
+        (f) =>
+          f.name.toLowerCase().includes(lower) ||
+          f.key.toLowerCase().includes(lower) ||
+          f.description.toLowerCase().includes(lower),
       )
     }
 
     if (tags.length > 0) {
-      result = result.filter((f) => tags.every((t) => f.tags.includes(t)))
+      result = result.filter((f) => tags.some((t) => f.tags.includes(t)))
     }
 
     result = [...result].sort((a, b) => {
