@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, ReactNode } from 'react'
 import { usersApi } from '../../lib/api'
 import type { WorkspaceUser } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
+import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
 import { Checkbox } from '../primitives/Checkbox'
 import { Icon } from '../primitives/Icon'
@@ -178,7 +179,12 @@ export function UsersScreen() {
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>Users</h1>
           <p className="muted" style={{ margin: '4px 0 0', fontSize: 13 }}>
-            Everyone with access to this workspace, across all projects.
+            Everyone with access to this workspace — across all projects. Project-specific access
+            lives under{' '}
+            <a className="users-settings-link" href="/settings/projects">
+              Project settings → Members
+            </a>
+            .
           </p>
         </div>
         <div style={{ flex: 1 }} />
@@ -194,14 +200,14 @@ export function UsersScreen() {
         <StatCard
           label="Total users"
           value={counts.all}
-          sub={`${counts.active} active, ${counts.system} service`}
+          sub={<>{counts.active} active · {counts.system} service</>}
           icon="user"
           tone="teal"
         />
         <StatCard
           label="Pending invites"
           value={counts.invited}
-          sub={counts.invited > 0 ? 'Expires in 7 days' : 'Nothing pending'}
+          sub={counts.invited > 0 ? <>Expires in <b>7&nbsp;days</b></> : 'Nothing pending'}
           icon="sparkles"
           tone="amber"
           warn={counts.invited > 0}
@@ -333,125 +339,15 @@ export function UsersScreen() {
               </tr>
             ) : (
               filtered.map((u) => (
-                <tr
+                <UserRow
                   key={u.id}
-                  className={
-                    'users-row' +
-                    (selected.has(u.id) ? ' selected' : '') +
-                    (u.status === 'suspended' ? ' suspended' : '') +
-                    (u.status === 'invited' ? ' invited' : '')
-                  }
-                  data-active={detail?.id === u.id ? 'true' : undefined}
-                  onClick={() => setDetail(u)}
-                >
-                  <td className="col-check" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selected.has(u.id)}
-                      onChange={() => toggleOne(u.id)}
-                      label={'Select ' + u.name}
-                    />
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <span className={'avatar sm color-' + u.tone}>{u.initials}</span>
-                      <div style={{ minWidth: 0 }}>
-                        <div className="users-name">
-                          {u.name}
-                          {u.isSystem ? (
-                            <span style={{ marginLeft: 6 }} className="badge badge-tone-slate">
-                              service
-                            </span>
-                          ) : null}
-                          {u.status === 'invited' ? (
-                            <span style={{ marginLeft: 6 }} className="badge badge-tone-amber">
-                              invited
-                            </span>
-                          ) : null}
-                          {u.status === 'suspended' ? (
-                            <span style={{ marginLeft: 6 }} className="badge badge-tone-red">
-                              suspended
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="users-email mono">{u.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <RoleBadge role={u.role} />
-                  </td>
-                  <td>
-                    <div className="users-projects">
-                      {u.projects.slice(0, 2).map((p) => (
-                        <span key={p} className="proj-chip">
-                          {p}
-                        </span>
-                      ))}
-                      {u.projects.length > 2 ? (
-                        <span className="proj-more">+{u.projects.length - 2}</span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td>
-                    <TwoFAPill value={u.twoFa} />
-                  </td>
-                  <td>
-                    <span className={'users-last mono' + (u.lastActiveAt == null ? ' never' : '')}>
-                      {u.lastActiveAt ?? 'never'}
-                    </span>
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <div style={{ display: 'flex', gap: 2 }}>
-                      {u.status === 'invited' ? (
-                        <>
-                          <Tip tip="Resend invite">
-                            <button
-                              className="icon-btn"
-                              aria-label="Resend invite"
-                              onClick={() => toast.push({ title: 'Invite resent', msg: u.email })}
-                            >
-                              <Icon name="refresh" size={13} />
-                            </button>
-                          </Tip>
-                          <Tip tip="Cancel invite">
-                            <button className="icon-btn danger" aria-label="Cancel invite">
-                              <Icon name="x" size={13} />
-                            </button>
-                          </Tip>
-                        </>
-                      ) : (
-                        <>
-                          <Tip tip="Edit user">
-                            <button
-                              className="icon-btn"
-                              aria-label="Edit user"
-                              onClick={() => setDetail(u)}
-                            >
-                              <Icon name="edit" size={13} />
-                            </button>
-                          </Tip>
-                          <Tip
-                            tip={
-                              u.role === 'owner'
-                                ? 'Transfer ownership first'
-                                : u.status === 'suspended'
-                                  ? 'Reinstate'
-                                  : 'Suspend'
-                            }
-                          >
-                            <button
-                              className="icon-btn"
-                              disabled={u.role === 'owner'}
-                              aria-label={u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
-                            >
-                              <Icon name={u.status === 'suspended' ? 'check' : 'minus'} size={13} />
-                            </button>
-                          </Tip>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                  user={u}
+                  selected={selected.has(u.id)}
+                  active={detail?.id === u.id}
+                  onSelect={() => toggleOne(u.id)}
+                  onOpen={() => setDetail(u)}
+                  onResend={() => toast.push({ title: 'Invite resent', msg: u.email })}
+                />
               ))
             )}
           </tbody>
@@ -460,6 +356,10 @@ export function UsersScreen() {
         <div className="users-table-foot">
           <span className="muted" style={{ fontSize: 12 }}>
             {filtered.length} of {users.length} users
+          </span>
+          <span style={{ flex: 1 }} />
+          <span className="muted" style={{ fontSize: 12 }}>
+            Provisioning via <span className="mono" style={{ color: 'var(--text-2)' }}>SCIM 2.0</span> · Okta
           </span>
         </div>
       </div>
@@ -470,13 +370,17 @@ export function UsersScreen() {
             <span className="num">{selected.size}</span> selected
           </span>
           <span className="bulk-sep" />
-          <Button size="sm">Change role...</Button>
+          <span className="bulk-section-label">Role</span>
+          <Button size="sm">Change role…</Button>
+          <span className="bulk-sep" />
+          <span className="bulk-section-label">Access</span>
           <Button size="sm" leftIcon="layers">
             Add to project
           </Button>
           <Button size="sm" leftIcon="shield">
             Require 2FA
           </Button>
+          <span className="bulk-sep" />
           <Button size="sm" variant="danger">
             Suspend
           </Button>
@@ -541,7 +445,12 @@ function StatCard({ label, value, sub, icon, tone, warn }: StatCardProps) {
 
 function RoleBadge({ role }: { role: WorkspaceUser['role'] }) {
   const tone = role === 'owner' ? 'amber' : role === 'admin' ? 'teal' : 'slate'
-  return <span className={'badge badge-tone-' + tone}>{role}</span>
+  return (
+    <span className={'badge badge-tone-' + tone}>
+      <span className="role-dot" />
+      {role}
+    </span>
+  )
 }
 
 function TwoFAPill({ value }: { value: WorkspaceUser['twoFa'] }) {
@@ -566,5 +475,127 @@ function TwoFAPill({ value }: { value: WorkspaceUser['twoFa'] }) {
     <span className="twofa ok">
       <Icon name={icons[value]} size={11} /> {labels[value]}
     </span>
+  )
+}
+
+interface UserRowProps {
+  user: WorkspaceUser
+  selected: boolean
+  active: boolean
+  onSelect: () => void
+  onOpen: () => void
+  onResend: () => void
+}
+
+function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: UserRowProps) {
+  const relativeDate = useRelativeDate(u.lastActiveAt ?? undefined)
+
+  return (
+    <tr
+      className={
+        'users-row' +
+        (selected ? ' selected' : '') +
+        (u.status === 'suspended' ? ' suspended' : '') +
+        (u.status === 'invited' ? ' invited' : '')
+      }
+      data-active={active ? 'true' : undefined}
+      onClick={onOpen}
+    >
+      <td className="col-check" onClick={(e) => e.stopPropagation()}>
+        <Checkbox checked={selected} onChange={onSelect} label={'Select ' + u.name} />
+      </td>
+      <td>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span className={'avatar sm color-' + u.tone}>{u.initials}</span>
+          <div style={{ minWidth: 0 }}>
+            <div className="users-name">
+              {u.name}
+              {u.isSystem ? (
+                <span style={{ marginLeft: 6 }} className="badge badge-tone-slate">
+                  <Icon name="bolt" size={9} /> service
+                </span>
+              ) : null}
+              {u.status === 'invited' ? (
+                <span style={{ marginLeft: 6 }} className="badge badge-tone-amber">
+                  <span className="role-dot" /> invited
+                </span>
+              ) : null}
+              {u.status === 'suspended' ? (
+                <span style={{ marginLeft: 6 }} className="badge badge-tone-red">
+                  <span className="role-dot" /> suspended
+                </span>
+              ) : null}
+            </div>
+            <div className="users-email mono">{u.email}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <RoleBadge role={u.role} />
+      </td>
+      <td>
+        <div className="users-projects">
+          {u.projects.slice(0, 2).map((p) => (
+            <span key={p} className="proj-chip">
+              {p}
+            </span>
+          ))}
+          {u.projects.length > 2 ? (
+            <span className="proj-more">+{u.projects.length - 2}</span>
+          ) : null}
+        </div>
+      </td>
+      <td>
+        <TwoFAPill value={u.twoFa} />
+      </td>
+      <td>
+        <span className={'users-last' + (u.lastActiveAt == null ? ' never' : '')}>
+          {u.lastActiveAt == null ? 'never' : relativeDate}
+        </span>
+      </td>
+      <td onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', gap: 2 }}>
+          {u.status === 'invited' ? (
+            <>
+              <Tip tip="Resend invite">
+                <button className="icon-btn" aria-label="Resend invite" onClick={onResend}>
+                  <Icon name="refresh" size={13} />
+                </button>
+              </Tip>
+              <Tip tip="Cancel invite">
+                <button className="icon-btn danger" aria-label="Cancel invite">
+                  <Icon name="x" size={13} />
+                </button>
+              </Tip>
+            </>
+          ) : (
+            <>
+              <Tip tip="Edit user">
+                <button className="icon-btn" aria-label="Edit user" onClick={onOpen}>
+                  <Icon name="edit" size={13} />
+                </button>
+              </Tip>
+              <Tip
+                tip={
+                  u.role === 'owner'
+                    ? 'Transfer ownership first'
+                    : u.status === 'suspended'
+                      ? 'Reinstate'
+                      : 'Suspend'
+                }
+              >
+                <button
+                  className="icon-btn"
+                  disabled={u.role === 'owner'}
+                  aria-label={u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
+                >
+                  <Icon name={u.status === 'suspended' ? 'check' : 'minus'} size={13} />
+                </button>
+              </Tip>
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
   )
 }

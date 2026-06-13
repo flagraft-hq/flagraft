@@ -33,7 +33,7 @@ export function Checkbox({
           {checked && <span className="checkbox-icon">✓</span>}
           {indeterminate && <span className="checkbox-icon">−</span>}
         </span>
-        {label && <span className="checkbox-label">{label}</span>}
+        {label && <span className="checkbox-label sr-only">{label}</span>}
       </button>
     </div>
   )

@@ -83,7 +83,8 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
         <div>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Invite users</h2>
           <div className="sub muted" style={{ fontSize: 12.5, marginTop: 4 }}>
-            Invitations are created immediately. Share the temporary password with the invitee.
+            Invites expire after <b>7 days</b>. Recipients must verify their email and configure
+            2FA before they can sign in.
           </div>
         </div>
       </Modal.Header>
@@ -109,29 +110,46 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
           </div>
         </div>
 
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label
-            htmlFor="invite-role"
-            style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}
-          >
-            Workspace role
-          </label>
-          <select
-            id="invite-role"
-            className="select"
-            value={role}
-            onChange={(e) => setRole(e.target.value as 'admin' | 'editor' | 'viewer')}
-          >
-            <option value="admin">admin</option>
-            <option value="editor">editor</option>
-            <option value="viewer">viewer</option>
-          </select>
-          <div className="hint muted" style={{ fontSize: 11.5, marginTop: 4 }}>
-            {role === 'admin'
-              ? 'Can manage flags & keys in granted projects.'
-              : role === 'editor'
-                ? 'Can edit flags in dev/staging. Prod requires admin.'
-                : 'Read-only across granted projects.'}
+        <div className="field-row" style={{ marginBottom: 14 }}>
+          <div className="field">
+            <label
+              htmlFor="invite-role"
+              style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}
+            >
+              Workspace role
+            </label>
+            <select
+              id="invite-role"
+              className="select"
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'admin' | 'editor' | 'viewer')}
+            >
+              <option value="admin">admin</option>
+              <option value="editor">editor</option>
+              <option value="viewer">viewer</option>
+            </select>
+            <div className="hint muted" style={{ fontSize: 11.5, marginTop: 4 }}>
+              {role === 'admin'
+                ? 'Can manage flags & keys in granted projects.'
+                : role === 'editor'
+                  ? 'Can edit flags in dev/staging. Prod requires admin.'
+                  : 'Read-only across granted projects.'}
+            </div>
+          </div>
+          <div className="field">
+            <label
+              htmlFor="invite-2fa"
+              style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}
+            >
+              Default 2FA
+            </label>
+            <select id="invite-2fa" className="select" defaultValue="required">
+              <option value="required">Required</option>
+              <option value="optional">Optional</option>
+            </select>
+            <div className="hint muted" style={{ fontSize: 11.5, marginTop: 4 }}>
+              Workspace policy enforces 2FA.
+            </div>
           </div>
         </div>
 
@@ -165,22 +183,11 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
           </div>
         </div>
 
-        <div
-          className="form-msg info"
-          style={{
-            display: 'flex',
-            gap: 8,
-            padding: 10,
-            borderRadius: 8,
-            background: 'var(--pri-soft)',
-            border: '1px solid var(--pri-soft-border)',
-            color: 'var(--pri-fg)',
-            fontSize: 12.5,
-          }}
-        >
+        <div className="form-msg info">
           <Icon name="info" size={13} />
           <div>
-            Invitations are created immediately. Share the temporary password with the invitee.
+            Invitees receive a one-time link. Their account is created on first sign-in. SAML SSO
+            users (matching <span className="mono">@kocharsoft.com</span>) skip the password step.
           </div>
         </div>
       </Modal.Body>

@@ -173,9 +173,9 @@ export function FlagDetailScreen() {
 
   if (!flag) return null
 
-  const envKeys = Object.keys(flag.state)
+  const envKeys = Object.keys(flag.state ?? {})
 
-  const totalOverrides = Object.values(flag.state).reduce(
+  const totalOverrides = Object.values(flag.state ?? {}).reduce(
     (sum, envState) => sum + (envState?.overrides ?? 0),
     0,
   )
@@ -243,7 +243,7 @@ export function FlagDetailScreen() {
           <span>Overrides: {totalOverrides}</span>
           <span>
             Tags:{' '}
-            {flag.tags.length > 0 ? flag.tags.map((tag) => <Badge key={tag}>{tag}</Badge>) : 'None'}
+            {(flag.tags ?? []).length > 0 ? (flag.tags ?? []).map((tag) => <Badge key={tag}>{tag}</Badge>) : 'None'}
           </span>
         </div>
       </div>

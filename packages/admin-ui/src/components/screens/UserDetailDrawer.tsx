@@ -4,6 +4,7 @@ import { usersApi } from '../../lib/api'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
 import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
@@ -23,6 +24,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   const { projects } = useProject()
   const [showAddProject, setShowAddProject] = useState(false)
   const [busy, setBusy] = useState(false)
+  const relativeLastActive = useRelativeDate(user.lastActiveAt ?? undefined)
 
   useKeyboardShortcuts({ Escape: onClose })
 
@@ -141,9 +143,17 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
               className="row"
               style={{ gap: 6, marginTop: 10, flexWrap: 'wrap', display: 'flex' }}
             >
-              <span className={'badge badge-tone-' + roleTone(user.role)}>{user.role}</span>
-              <span className={'badge badge-tone-' + statusTone}>{user.status}</span>
-              {user.isSystem ? <span className="badge badge-tone-slate">service</span> : null}
+              <span className={'badge badge-tone-' + roleTone(user.role)}>
+                <span className="role-dot" /> {user.role}
+              </span>
+              <span className={'badge badge-tone-' + statusTone}>
+                <span className="role-dot" /> {user.status}
+              </span>
+              {user.isSystem ? (
+                <span className="badge badge-tone-slate">
+                  <Icon name="bolt" size={9} /> service
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -155,7 +165,11 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             <DRow label="Joined" value={<span className="mono">{user.createdAt}</span>} />
             <DRow
               label="Last active"
-              value={<span className="mono">{user.lastActiveAt ?? 'never'}</span>}
+              value={
+                <span className="mono">
+                  {user.lastActiveAt == null ? 'never' : relativeLastActive}
+                </span>
+              }
             />
             <DRow label="2FA" value={<TwoFAValue value={user.twoFa} />} />
             <DRow
@@ -253,6 +267,14 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             disabled={busy}
           >
             Reset password
+          </Button>
+          <Button
+            variant="ghost"
+            leftIcon="shield"
+            onClick={() => toast.push({ title: '2FA reset link sent', msg: user.email })}
+            disabled={busy}
+          >
+            Reset 2FA
           </Button>
           <span className="spacer" style={{ flex: 1 }} />
           {user.status === 'suspended' ? (

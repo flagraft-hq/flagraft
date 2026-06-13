@@ -82,12 +82,12 @@ export function FlagRow({
             className={`flag-env-toggle${env === activeEnv ? ' flag-env-toggle-active' : ''}`}
           >
             <StatePill
-              on={flag.state[env]?.on ?? false}
+              on={flag.state?.[env]?.on ?? false}
               envName={env}
-              overrides={flag.state[env]?.overrides ?? 0}
+              overrides={flag.state?.[env]?.overrides ?? 0}
             />
             <Toggle
-              checked={flag.state[env]?.on ?? false}
+              checked={flag.state?.[env]?.on ?? false}
               onChange={(checked) => handleToggleChange(env, checked)}
               variant="default"
               label={env}
@@ -96,7 +96,7 @@ export function FlagRow({
         ))}
       </div>
 
-      <TagCluster tags={flag.tags} />
+      <TagCluster tags={flag.tags ?? []} />
 
       <span className="flag-updated">{relativeDate}</span>
 

@@ -33,9 +33,10 @@ export function useRelativeDate(dateStr: string | undefined): string {
   const diffHours = Math.floor(diffMinutes / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffSeconds < 60) return 'just now'
+  if (diffSeconds < 60) return `${diffSeconds}s ago`
   if (diffMinutes < 60) return `${diffMinutes} min ago`
-  if (diffHours < 24) return `${diffHours} hours ago`
+  if (diffHours < 24) return `${diffHours} hr ago`
+  if (diffDays === 1) return 'yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
 
   const month = MONTH_NAMES[parsed.getUTCMonth()]

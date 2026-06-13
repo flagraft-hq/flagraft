@@ -67,13 +67,13 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
     return <ErrorState title="Failed to load flags" message={error} onRetry={refetch} />
   }
 
-  const availableTags = Array.from(new Set(rawFlags.flatMap((f) => f.tags)))
+  const availableTags = Array.from(new Set(rawFlags.flatMap((f) => f.tags ?? [])))
 
   const filteredFlags =
     stateFilter === 'all'
       ? rawFlags
       : rawFlags.filter((f) => {
-          const on = f.state[activeEnv]?.on ?? false
+          const on = f.state?.[activeEnv]?.on ?? false
           return stateFilter === 'on' ? on : !on
         })
 
