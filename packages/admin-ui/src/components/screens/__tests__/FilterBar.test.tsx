@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
-import { FilterBar, type StateFilter } from '../FilterBar'
+import { FilterBar } from '../FilterBar'
+import type { StateFilter } from '../../../lib/types'
+
 
 const defaultProps = {
   search: '',

@@ -132,3 +132,6 @@ export const OPS_BY_TYPE: Record<FieldType, OperatorOption[]> = {
     { value: 'after', label: 'after' },
   ],
 }
+
+export type StateFilter = null | 'on' | 'off' | 'overrides' | 'kill-switch'
+

@@ -8,12 +8,12 @@ import { Checkbox } from '../primitives/Checkbox'
 import { ErrorState } from '../primitives/ErrorState'
 import { Icon } from '../primitives/Icon'
 import { FilterBar } from './FilterBar'
-import type { StateFilter } from './FilterBar'
 import { FlagRow } from './FlagRow'
 import { BulkActionBar } from './BulkActionBar'
 import { CreateFlagModal } from './CreateFlagModal'
 import { flagsApi } from '../../lib/api'
-import type { Flag } from '../../lib/types'
+import type { Flag, StateFilter } from '../../lib/types'
+
 
 const ENV_NAMES = ['development', 'production']
 

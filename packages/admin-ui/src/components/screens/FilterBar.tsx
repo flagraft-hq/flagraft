@@ -1,7 +1,6 @@
 import { Icon } from '../primitives/Icon'
 import { Kbd } from '../primitives/Kbd'
-
-export type StateFilter = null | 'on' | 'off' | 'overrides' | 'kill-switch'
+import type { StateFilter } from '../../lib/types'
 
 interface FilterBarProps {
   search: string

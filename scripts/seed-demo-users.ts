@@ -113,9 +113,8 @@ async function main() {
     console.log(`  ✓ created  ${u.email}`)
     created++
   }
-
   console.log(`\nDone: ${created} created, ${skipped} skipped`)
-  await (db as any).$pool.end()
+  await db.$pool.end()
 }
 
 main().catch((err) => {
