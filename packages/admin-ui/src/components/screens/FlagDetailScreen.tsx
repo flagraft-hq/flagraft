@@ -70,6 +70,10 @@ function EditFlagModal({ open, flag, projectId, onClose, onSaved }: EditFlagModa
   )
 }
 
+function isProductionEnv(env: string): boolean {
+  return env === 'production' || env.endsWith('-production') || env.endsWith('_production')
+}
+
 function EnvironmentsTab({
   flag,
   projectId,
@@ -86,8 +90,9 @@ function EnvironmentsTab({
   onToggled: () => void
 }) {
   const toast = useToast()
+  const [confirmState, setConfirmState] = useState<{ env: string; checked: boolean } | null>(null)
 
-  const handleToggle = (env: string, newValue: boolean) => {
+  const executeToggle = (env: string, newValue: boolean) => {
     void flagsApi
       .toggle(projectId, flagKey, env, newValue)
       .then(() => {
@@ -97,6 +102,25 @@ function EnvironmentsTab({
       .catch(() => {
         toast.push({ title: 'Failed to toggle environment', variant: 'error' })
       })
+  }
+
+  const handleToggle = (env: string, newValue: boolean) => {
+    if (isProductionEnv(env)) {
+      setConfirmState({ env, checked: newValue })
+    } else {
+      executeToggle(env, newValue)
+    }
+  }
+
+  const handleConfirm = () => {
+    if (confirmState) {
+      executeToggle(confirmState.env, confirmState.checked)
+      setConfirmState(null)
+    }
+  }
+
+  const handleCancel = () => {
+    setConfirmState(null)
   }
 
   return (
@@ -121,6 +145,24 @@ function EnvironmentsTab({
         })}
       </div>
       <ContextOverridesSection projectId={projectId} flagKey={flagKey} env={activeEnv} />
+
+      <Modal open={confirmState !== null} onClose={handleCancel}>
+        <Modal.Header>{confirmState?.checked ? 'Enable' : 'Disable'} in Production?</Modal.Header>
+        <Modal.Body>
+          <p>
+            {confirmState?.checked ? 'Enable' : 'Disable'} <strong>{flag.name}</strong> in <strong>{confirmState?.env}</strong>? This will
+            affect production traffic.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="default" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleConfirm}>
+            {confirmState?.checked ? 'Enable' : 'Disable'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   )
 }
@@ -238,7 +280,7 @@ export function FlagDetailScreen() {
         </span>
         <p className="flag-desc">{flag.description}</p>
         <div className="detail-meta-row">
-          <span>Owner: {flag.author}</span>
+          <span>Owner: {flag.author || 'System'}</span>
           <span>Created: {new Date(flag.created).toLocaleDateString()}</span>
           <span>Overrides: {totalOverrides}</span>
           <span>

@@ -39,6 +39,7 @@ export const featureFlags = pgTable(
     name: text('name').notNull(),
     key: text('key').notNull(),
     description: text('description'),
+    authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

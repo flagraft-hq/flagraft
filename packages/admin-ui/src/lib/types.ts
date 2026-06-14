@@ -31,7 +31,7 @@ export interface Flag {
   created: string
   updated: string
   state: Record<string, FlagEnvState>
-  author: string
+  author?: string
 }
 
 export interface Override {

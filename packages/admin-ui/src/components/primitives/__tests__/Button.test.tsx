@@ -9,28 +9,64 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveTextContent('Click me')
   })
 
+  it('default variant has only the base btn class, no extra variant class', () => {
+    const { container } = render(<Button>Default</Button>)
+    const btn = container.querySelector('button')
+    expect(btn).toHaveClass('btn')
+    expect(btn?.className.trim()).toBe('btn')
+  })
+
   it('renders primary variant', () => {
     const { container } = render(<Button variant="primary">Primary</Button>)
     const btn = container.querySelector('button')
-    expect(btn).toHaveClass('btn-primary')
+    // class scheme: "btn primary" (no prefix), matching design CSS .btn.primary
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('primary')
   })
 
   it('renders ghost variant', () => {
     const { container } = render(<Button variant="ghost">Ghost</Button>)
     const btn = container.querySelector('button')
-    expect(btn).toHaveClass('btn-ghost')
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('ghost')
   })
 
-  it('renders danger variant', () => {
+  it('renders danger variant (outline style)', () => {
     const { container } = render(<Button variant="danger">Danger</Button>)
     const btn = container.querySelector('button')
-    expect(btn).toHaveClass('btn-danger')
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('danger')
+    // outline danger must NOT have the solid class
+    expect(btn).not.toHaveClass('solid')
+  })
+
+  it('renders danger-solid variant (filled red)', () => {
+    const { container } = render(<Button variant="danger-solid">Delete</Button>)
+    const btn = container.querySelector('button')
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('danger')
+    expect(btn).toHaveClass('solid')
   })
 
   it('renders sm size', () => {
     const { container } = render(<Button size="sm">Small</Button>)
     const btn = container.querySelector('button')
-    expect(btn).toHaveClass('btn-sm')
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('sm')
+  })
+
+  it('renders lg size', () => {
+    const { container } = render(<Button size="lg">Large</Button>)
+    const btn = container.querySelector('button')
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('lg')
+  })
+
+  it('renders icon-only square treatment', () => {
+    const { container } = render(<Button iconOnly leftIcon="plus" aria-label="Add" />)
+    const btn = container.querySelector('button')
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('icon-only')
   })
 
   it('calls onClick when clicked', async () => {
@@ -57,5 +93,12 @@ describe('Button', () => {
     const svg = container.querySelector('svg')
     expect(svg).toBeTruthy()
     expect(screen.getByText('Next')).toBeTruthy()
+  })
+
+  it('passes extra className through', () => {
+    const { container } = render(<Button className="my-custom">Btn</Button>)
+    const btn = container.querySelector('button')
+    expect(btn).toHaveClass('btn')
+    expect(btn).toHaveClass('my-custom')
   })
 })

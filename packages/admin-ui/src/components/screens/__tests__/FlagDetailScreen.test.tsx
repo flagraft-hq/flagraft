@@ -251,12 +251,16 @@ describe('FlagDetailScreen', () => {
     await user.click(switches[2])
     // confirmation UI is now visible; click the Yes button to confirm
     await user.click(screen.getByRole('button', { name: /^yes$/i }))
+    // modal confirmation is now open; click the Enable button
+    const modal = screen.getByRole('dialog')
+    const enableBtn = within(modal).getByRole('button', { name: /^enable$/i })
+    await user.click(enableBtn)
     await waitFor(() =>
       expect(mockFlagsApi.toggle).toHaveBeenCalledWith('p1', 'my-flag', 'production', true),
     )
   })
 
-  it('disabling production toggle fires immediately without confirmation', async () => {
+  it('disabling production toggle shows confirmation dialogue and modal, and calling flagsApi.toggle after confirm', async () => {
     const user = userEvent.setup()
     // Override the flag so production starts enabled (on: true)
     const productionOnFlag: Flag = {
@@ -270,12 +274,17 @@ describe('FlagDetailScreen', () => {
     renderScreen()
     await waitFor(() => expect(screen.getAllByRole('switch').length).toBeGreaterThan(0))
     const switches = screen.getAllByRole('switch')
-    // production is at index 2; it is now on (checked=true), so clicking disables immediately
     await user.click(switches[2])
+    expect(mockFlagsApi.toggle).not.toHaveBeenCalled()
+    expect(screen.getByText(/disable production toggle/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^yes$/i }))
+    // modal confirmation is now open; click the Disable button
+    const modal = screen.getByRole('dialog')
+    const disableBtn = within(modal).getByRole('button', { name: /^disable$/i })
+    await user.click(disableBtn)
     await waitFor(() =>
       expect(mockFlagsApi.toggle).toHaveBeenCalledWith('p1', 'my-flag', 'production', false),
     )
-    expect(screen.queryByText(/enable production toggle/i)).not.toBeInTheDocument()
   })
 })
 

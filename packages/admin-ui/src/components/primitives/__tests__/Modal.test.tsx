@@ -180,4 +180,83 @@ describe('Modal', () => {
     const dialog = container.querySelector('[role="dialog"]')
     expect(dialog).toBeInTheDocument()
   })
+
+  it('wraps the header title in an <h2> element', () => {
+    const { container } = render(
+      <Modal open={true} onClose={() => {}}>
+        <Modal.Header>My Title</Modal.Header>
+      </Modal>,
+    )
+
+    const h2 = container.querySelector('.modal-header h2')
+    expect(h2).toBeInTheDocument()
+    expect(h2).toHaveTextContent('My Title')
+  })
+
+  it('renders subtitle when provided', () => {
+    render(
+      <Modal open={true} onClose={() => {}}>
+        <Modal.Header subtitle="A helpful description">My Title</Modal.Header>
+      </Modal>,
+    )
+
+    expect(screen.getByText('A helpful description')).toBeInTheDocument()
+  })
+
+  it('does not render subtitle element when subtitle is omitted', () => {
+    const { container } = render(
+      <Modal open={true} onClose={() => {}}>
+        <Modal.Header>My Title</Modal.Header>
+      </Modal>,
+    )
+
+    const sub = container.querySelector('.modal-header__sub')
+    expect(sub).not.toBeInTheDocument()
+  })
+
+  it('applies no size class to modal-content when size is default', () => {
+    const { container } = render(
+      <Modal open={true} onClose={() => {}} size="default">
+        <Modal.Header>Title</Modal.Header>
+      </Modal>,
+    )
+
+    const content = container.querySelector('.modal-content')
+    expect(content).toBeInTheDocument()
+    expect(content?.className).toBe('modal-content')
+  })
+
+  it('applies modal-content--lg class when size is lg', () => {
+    const { container } = render(
+      <Modal open={true} onClose={() => {}} size="lg">
+        <Modal.Header>Title</Modal.Header>
+      </Modal>,
+    )
+
+    const content = container.querySelector('.modal-content--lg')
+    expect(content).toBeInTheDocument()
+  })
+
+  it('applies modal-content--xl class when size is xl', () => {
+    const { container } = render(
+      <Modal open={true} onClose={() => {}} size="xl">
+        <Modal.Header>Title</Modal.Header>
+      </Modal>,
+    )
+
+    const content = container.querySelector('.modal-content--xl')
+    expect(content).toBeInTheDocument()
+  })
+
+  it('calls onClose when Escape key is pressed', async () => {
+    const onClose = vi.fn()
+    render(
+      <Modal open={true} onClose={onClose}>
+        <Modal.Header>Title</Modal.Header>
+      </Modal>,
+    )
+
+    await userEvent.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })

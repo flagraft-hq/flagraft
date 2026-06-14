@@ -10,6 +10,7 @@ describe('loadConfig', () => {
   it('returns a frozen config with defaults', () => {
     const config = loadConfig({
       DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
+      JWT_SECRET: 'super-secret-key-that-is-at-least-32-characters-long',
     })
 
     expect(config).toMatchObject({
@@ -25,6 +26,7 @@ describe('loadConfig', () => {
   it('defaults CACHE_TTL_SECONDS to 30', () => {
     const config = loadConfig({
       DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
+      JWT_SECRET: 'super-secret-key-that-is-at-least-32-characters-long',
     })
     expect(config.CACHE_TTL_SECONDS).toBe(30)
   })
@@ -32,6 +34,7 @@ describe('loadConfig', () => {
   it('accepts a custom CACHE_TTL_SECONDS', () => {
     const config = loadConfig({
       DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
+      JWT_SECRET: 'super-secret-key-that-is-at-least-32-characters-long',
       CACHE_TTL_SECONDS: '60',
     })
     expect(config.CACHE_TTL_SECONDS).toBe(60)
@@ -41,6 +44,7 @@ describe('loadConfig', () => {
     expect(() =>
       loadConfig({
         DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
+        JWT_SECRET: 'super-secret-key-that-is-at-least-32-characters-long',
         CACHE_TTL_SECONDS: 'bad',
       }),
     ).toThrow('Invalid configuration')
@@ -50,6 +54,7 @@ describe('loadConfig', () => {
     expect(() =>
       loadConfig({
         DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
+        JWT_SECRET: 'super-secret-key-that-is-at-least-32-characters-long',
         CACHE_TTL_SECONDS: '0',
       }),
     ).toThrow('Invalid configuration')

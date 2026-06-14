@@ -30,6 +30,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
         fastify.db,
         params.projectId,
         createFlagSchema.parse(request.body),
+        request.keyContext?.userId,
       )
       await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
       return reply.status(201).send(flag)
@@ -103,6 +104,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
         params.projectId,
         params.flagKey,
         patchFlagSchema.parse(request.body),
+        request.keyContext?.userId,
       )
     },
   )

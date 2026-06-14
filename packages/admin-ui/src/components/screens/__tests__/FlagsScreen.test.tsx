@@ -141,9 +141,9 @@ describe('FlagsScreen', () => {
     expect(document.querySelector('.flags-list')).toBeInTheDocument()
   })
 
-  it('has a "Feature Flags" heading', () => {
+  it('has a "Feature flags" heading', () => {
     render(<FlagsScreen />)
-    expect(screen.getByRole('heading', { name: 'Feature Flags' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Feature flags' })).toBeInTheDocument()
   })
 
   it('has a "New Flag" button', () => {
@@ -211,7 +211,7 @@ describe('FlagsScreen empty states', () => {
     })
 
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByRole('button', { name: /^off$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /off everywhere/i }))
 
     expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
     expect(screen.getByText('Try adjusting your search or filters.')).toBeInTheDocument()
@@ -240,7 +240,7 @@ describe('FlagsScreen empty states', () => {
     })
 
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByRole('button', { name: /^off$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /off everywhere/i }))
 
     expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
 
@@ -304,20 +304,21 @@ describe('FlagsScreen integration', () => {
     expect(screen.getByText('Gamma Flag')).toBeInTheDocument()
   })
 
-  it('sort buttons change active class', () => {
+  it('clicking the Flag column header sorts by name (ascending)', () => {
     render(<FlagsScreen />)
-    const nameBtn = screen.getByRole('button', { name: /^name$/i })
-    expect(nameBtn).not.toHaveClass('sort-btn-active')
-    fireEvent.click(nameBtn)
-    expect(nameBtn).toHaveClass('sort-btn-active')
+    const flagHead = screen.getByRole('button', { name: /^flag$/i })
+    expect(flagHead.getAttribute('aria-sort')).toBe('none')
+    fireEvent.click(flagHead)
+    expect(flagHead.getAttribute('aria-sort')).toBe('ascending')
   })
 
-  it('direction toggle switches between Asc and Desc', () => {
+  it('clicking an already-sorted column header toggles the direction', () => {
     render(<FlagsScreen />)
-    const dirBtn = screen.getByRole('button', { name: /desc/i })
-    expect(dirBtn).toHaveTextContent('Desc')
-    fireEvent.click(dirBtn)
-    expect(screen.getByRole('button', { name: /asc/i })).toHaveTextContent('Asc')
+    const flagHead = screen.getByRole('button', { name: /^flag$/i })
+    fireEvent.click(flagHead)
+    expect(flagHead.getAttribute('aria-sort')).toBe('ascending')
+    fireEvent.click(flagHead)
+    expect(flagHead.getAttribute('aria-sort')).toBe('descending')
   })
 
   it('selecting a flag shows bulk action bar', () => {

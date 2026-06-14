@@ -3,7 +3,7 @@ import { projectsApi } from '../lib/api'
 import type { Project } from '../lib/types'
 import { useAuth } from './AuthContext'
 
-export type EnvSlug = 'development' | 'staging' | 'production'
+export type EnvSlug = 'development' | 'production'
 
 interface ProjectContextType {
   projects: Project[]

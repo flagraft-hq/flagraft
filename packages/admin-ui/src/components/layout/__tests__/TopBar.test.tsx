@@ -53,24 +53,23 @@ describe('TopBar', () => {
     expect(screen.getByText('/my-project')).toBeTruthy()
   })
 
-  it('renders all 3 environment chips', () => {
+  it('renders all environment chips', () => {
     renderTopBar()
     expect(screen.getByRole('tab', { name: /development/i })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: /staging/i })).toBeTruthy()
     expect(screen.getByRole('tab', { name: /production/i })).toBeTruthy()
   })
 
   it('clicking an env chip calls onChangeEnv with correct slug', async () => {
     const onChangeEnv = vi.fn()
     renderTopBar({ onChangeEnv, activeEnv: 'development' })
-    await userEvent.click(screen.getByRole('tab', { name: /staging/i }))
-    expect(onChangeEnv).toHaveBeenCalledWith('staging')
+    await userEvent.click(screen.getByRole('tab', { name: /production/i }))
+    expect(onChangeEnv).toHaveBeenCalledWith('production')
   })
 
   it('active env chip has aria-selected="true"', () => {
-    renderTopBar({ activeEnv: 'staging' })
-    const stagingChip = screen.getByRole('tab', { name: /staging/i })
-    expect(stagingChip).toHaveAttribute('aria-selected', 'true')
+    renderTopBar({ activeEnv: 'production' })
+    const prodChip = screen.getByRole('tab', { name: /production/i })
+    expect(prodChip).toHaveAttribute('aria-selected', 'true')
     const devChip = screen.getByRole('tab', { name: /development/i })
     expect(devChip).toHaveAttribute('aria-selected', 'false')
   })

@@ -2,7 +2,7 @@ import { useProject } from '../../contexts/ProjectContext'
 import { Tip } from '../primitives/Tip'
 import { Button } from '../primitives/Button'
 
-const ENVIRONMENTS = ['development', 'staging', 'production'] as const
+const ENVIRONMENTS = ['development', 'production'] as const
 
 export function SettingsScreen() {
   const { activeProject } = useProject()

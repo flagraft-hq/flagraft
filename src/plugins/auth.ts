@@ -19,6 +19,7 @@ export interface KeyContext {
   environmentId: string | null
   type: ApiKeyType
   isRoot: boolean
+  userId?: string | null
 }
 
 declare module 'fastify' {
@@ -92,6 +93,7 @@ async function authPlugin(fastify: FastifyInstance) {
           environmentId: null,
           type: 'admin' as ApiKeyType,
           isRoot: true,
+          userId: payload.sub,
         }
         return
       } catch {

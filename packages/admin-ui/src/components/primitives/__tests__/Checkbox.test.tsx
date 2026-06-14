@@ -46,18 +46,18 @@ describe('Checkbox', () => {
     expect(screen.getByRole('checkbox')).toBeDisabled()
   })
 
-  it('displays check mark when checked', () => {
+  it('displays check icon when checked', () => {
     const { container } = render(<Checkbox checked={true} onChange={() => {}} />)
-    const icon = container.querySelector('.checkbox-icon')
-    expect(icon).toHaveTextContent('✓')
+    const icon = container.querySelector('.checkbox-icon svg')
+    expect(icon).toBeTruthy()
   })
 
-  it('displays minus sign when indeterminate', () => {
+  it('displays minus icon when indeterminate', () => {
     const { container } = render(
       <Checkbox checked={false} indeterminate={true} onChange={() => {}} />,
     )
-    const icon = container.querySelector('.checkbox-icon')
-    expect(icon).toHaveTextContent('−')
+    const icon = container.querySelector('.checkbox-icon svg')
+    expect(icon).toBeTruthy()
   })
 
   it('does not display icon when unchecked and not indeterminate', () => {

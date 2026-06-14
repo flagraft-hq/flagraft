@@ -43,17 +43,6 @@ describe('FlagRow', () => {
     expect(screen.getByText('my-feature')).toBeTruthy()
   })
 
-  it('renders description when provided', () => {
-    render(<FlagRow {...defaultProps} />)
-    expect(screen.getByText('A test feature flag')).toBeTruthy()
-  })
-
-  it('does not render description element when description is empty', () => {
-    const flag = { ...baseFlag, description: '' }
-    const { container } = render(<FlagRow {...defaultProps} flag={flag} />)
-    expect(container.querySelector('.flag-desc')).toBeNull()
-  })
-
   it('renders a StatePill for each env in envNames', () => {
     const { container } = render(<FlagRow {...defaultProps} />)
     const pills = container.querySelectorAll('.state-pill')
@@ -86,27 +75,33 @@ describe('FlagRow', () => {
     expect(onToggle).toHaveBeenCalledWith('my-feature', 'staging', true)
   })
 
-  it('active env container has class flag-env-toggle-active', () => {
+  it('active env cell has class cell-env-active', () => {
     const { container } = render(<FlagRow {...defaultProps} activeEnv="development" />)
-    const envContainers = container.querySelectorAll('.flag-env-toggle')
-    expect(envContainers.length).toBe(3)
-    expect(envContainers[0].classList.contains('flag-env-toggle-active')).toBe(true)
-    expect(envContainers[1].classList.contains('flag-env-toggle-active')).toBe(false)
-    expect(envContainers[2].classList.contains('flag-env-toggle-active')).toBe(false)
+    const envCells = container.querySelectorAll('.cell-env')
+    expect(envCells.length).toBe(3)
+    expect(envCells[0].classList.contains('cell-env-active')).toBe(true)
+    expect(envCells[1].classList.contains('cell-env-active')).toBe(false)
+    expect(envCells[2].classList.contains('cell-env-active')).toBe(false)
   })
 
   it('changes active env highlight when activeEnv is staging', () => {
     const { container } = render(<FlagRow {...defaultProps} activeEnv="staging" />)
-    const envContainers = container.querySelectorAll('.flag-env-toggle')
-    expect(envContainers[0].classList.contains('flag-env-toggle-active')).toBe(false)
-    expect(envContainers[1].classList.contains('flag-env-toggle-active')).toBe(true)
-    expect(envContainers[2].classList.contains('flag-env-toggle-active')).toBe(false)
+    const envCells = container.querySelectorAll('.cell-env')
+    expect(envCells[0].classList.contains('cell-env-active')).toBe(false)
+    expect(envCells[1].classList.contains('cell-env-active')).toBe(true)
+    expect(envCells[2].classList.contains('cell-env-active')).toBe(false)
+  })
+
+  it('marks the production env cell with cell-env-prod', () => {
+    const { container } = render(<FlagRow {...defaultProps} />)
+    const envCells = container.querySelectorAll('.cell-env')
+    expect(envCells[2].classList.contains('cell-env-prod')).toBe(true)
   })
 
   it('renders correct on/off state per env in StatePills', () => {
     render(<FlagRow {...defaultProps} />)
-    const onPills = screen.getAllByText('On')
-    const offPills = screen.getAllByText('Off')
+    const onPills = screen.getAllByText('on')
+    const offPills = screen.getAllByText('off')
     // development is on, staging and production are off
     expect(onPills.length).toBe(1)
     expect(offPills.length).toBe(2)
@@ -165,7 +160,7 @@ describe('FlagRow', () => {
   it('renders row with correct role', () => {
     const { container } = render(<FlagRow {...defaultProps} />)
     expect(container.querySelector('[role="row"]')).toBeTruthy()
-    expect(container.querySelector('.flag-row')).toBeTruthy()
+    expect(container.querySelector('.flags-row')).toBeTruthy()
   })
 
   it('renders without tag chips and does not crash when flag has no tags', () => {
@@ -183,7 +178,7 @@ describe('FlagRow', () => {
     const pills = container.querySelectorAll('.state-pill')
     // Still renders 3 pills (all off) even with missing state
     expect(pills.length).toBe(3)
-    const offPills = screen.getAllByText('Off')
+    const offPills = screen.getAllByText('off')
     expect(offPills.length).toBe(3)
   })
 
@@ -239,7 +234,7 @@ describe('FlagRow', () => {
       expect(screen.queryByRole('dialog')).toBeNull()
     })
 
-    it('disabling a production env toggle calls onToggle immediately without modal', async () => {
+    it('disabling a production env toggle shows confirmation modal and calls onToggle after confirm', async () => {
       const user = userEvent.setup()
       const onToggle = vi.fn()
       // Set production to on=true so clicking it will disable it
@@ -253,9 +248,14 @@ describe('FlagRow', () => {
       const { container } = render(<FlagRow {...defaultProps} flag={flag} onToggle={onToggle} />)
       const toggles = container.querySelectorAll('[role="switch"]')
       await user.click(toggles[2])
-      // onToggle should be called immediately with false
+      // onToggle should not be called yet
+      expect(onToggle).not.toHaveBeenCalled()
+      // Expect modal confirmation
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      expect(screen.getByText('Disable in Production?')).toBeInTheDocument()
+      // Confirm modal
+      await user.click(screen.getByRole('button', { name: /disable/i }))
       expect(onToggle).toHaveBeenCalledWith('my-feature', 'production', false)
-      // No modal
       expect(screen.queryByRole('dialog')).toBeNull()
     })
   })

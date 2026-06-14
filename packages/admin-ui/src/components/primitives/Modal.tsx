@@ -1,5 +1,12 @@
-import { ReactNode, useEffect, useRef } from 'react'
+import { ReactNode, createContext, useContext, useEffect, useRef } from 'react'
 import { Icon } from './Icon'
+
+/**
+ * Internal context that passes the onClose callback from Modal down to
+ * ModalHeader so the built-in close (×) button can call it directly,
+ * without resorting to DOM queries.
+ */
+const ModalCloseCtx = createContext<(() => void) | null>(null)
 
 /**
  * Traps keyboard focus inside the referenced container while the modal is open.
@@ -53,6 +60,13 @@ interface ModalProps {
   onClose: () => void
   children: ReactNode
   titleId?: string
+  /**
+   * Controls the maximum width of the modal panel.
+   * - 'default' → 520 px (the standard width)
+   * - 'lg'      → 720 px
+   * - 'xl'      → 880 px
+   */
+  size?: 'default' | 'lg' | 'xl'
 }
 
 interface ModalComponentProps {
@@ -60,7 +74,16 @@ interface ModalComponentProps {
   id?: string
 }
 
-function Modal({ open, onClose, children, titleId }: ModalProps) {
+/**
+ * Props for the Modal.Header sub-component.
+ * Extends the base component props with an optional subtitle line
+ * shown below the heading in a smaller muted colour.
+ */
+interface ModalHeaderProps extends ModalComponentProps {
+  subtitle?: ReactNode
+}
+
+function Modal({ open, onClose, children, titleId, size = 'default' }: ModalProps) {
   const trapRef = useFocusTrap(open)
 
   useEffect(() => {
@@ -72,10 +95,22 @@ function Modal({ open, onClose, children, titleId }: ModalProps) {
     }
   }, [open])
 
+  useEffect(() => {
+    if (!open) return
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [open, onClose])
+
   if (!open) return null
 
+  /** Size modifier class — omitted for the default (520 px) width. */
+  const sizeClass = size !== 'default' ? ` modal-content--${size}` : ''
+
   return (
-    <>
+    <ModalCloseCtx.Provider value={onClose}>
       <div className="modal-backdrop" onClick={onClose} />
       <div
         ref={trapRef}
@@ -85,25 +120,31 @@ function Modal({ open, onClose, children, titleId }: ModalProps) {
         aria-modal="true"
         {...(titleId ? { 'aria-labelledby': titleId } : {})}
       >
-        <div className="modal-content">{children}</div>
+        <div className={`modal-content${sizeClass}`}>{children}</div>
       </div>
-    </>
+    </ModalCloseCtx.Provider>
   )
 }
 
-function ModalHeader({ children, id }: ModalComponentProps) {
+/**
+ * Header section of the modal.
+ * Renders the title inside an <h2> and, when supplied, a subtitle line
+ * beneath it. Always includes the built-in close (×) button aligned to
+ * the top-right corner.
+ */
+function ModalHeader({ children, id, subtitle }: ModalHeaderProps) {
+  const onClose = useContext(ModalCloseCtx)
+
   return (
     <div className="modal-header" id={id}>
-      {children}
+      <div className="modal-header__text">
+        <h2>{children}</h2>
+        {subtitle ? <p className="modal-header__sub sub">{subtitle}</p> : null}
+      </div>
       <button
         className="modal-close"
         aria-label="Close"
-        onClick={() => {
-          const backdrop = document.querySelector('.modal-backdrop')
-          if (backdrop instanceof HTMLElement) {
-            backdrop.click()
-          }
-        }}
+        onClick={() => onClose?.()}
       >
         <Icon name="x" size={16} />
       </button>
@@ -124,4 +165,4 @@ Modal.Body = ModalBody
 Modal.Footer = ModalFooter
 
 export { Modal }
-export type { ModalProps, ModalComponentProps }
+export type { ModalProps, ModalComponentProps, ModalHeaderProps }

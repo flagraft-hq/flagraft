@@ -24,4 +24,46 @@ describe('Badge', () => {
     const badge = container.querySelector('.badge.custom')
     expect(badge).toBeTruthy()
   })
+
+  it('renders leading dot when dot prop is true', () => {
+    const { container } = render(<Badge dot>Status</Badge>)
+    const dot = container.querySelector('.badge-dot')
+    expect(dot).toBeTruthy()
+  })
+
+  it('does not render dot by default', () => {
+    const { container } = render(<Badge>Status</Badge>)
+    const dot = container.querySelector('.badge-dot')
+    expect(dot).toBeNull()
+  })
+
+  it('applies mono class when mono prop is true', () => {
+    const { container } = render(<Badge mono>v1.2.3</Badge>)
+    const badge = container.querySelector('.badge-mono')
+    expect(badge).toBeTruthy()
+  })
+
+  it('does not apply mono class by default', () => {
+    const { container } = render(<Badge>Label</Badge>)
+    const badge = container.querySelector('.badge-mono')
+    expect(badge).toBeNull()
+  })
+
+  it('renders success variant using teal tone', () => {
+    const { container } = render(<Badge variant="success">Live</Badge>)
+    const badge = container.querySelector('.badge-success')
+    expect(badge).toBeTruthy()
+  })
+
+  it('renders warning variant', () => {
+    const { container } = render(<Badge variant="warning">Draft</Badge>)
+    const badge = container.querySelector('.badge-warning')
+    expect(badge).toBeTruthy()
+  })
+
+  it('renders default variant when no variant is given', () => {
+    const { container } = render(<Badge>Default</Badge>)
+    const badge = container.querySelector('.badge-default')
+    expect(badge).toBeTruthy()
+  })
 })

@@ -32,7 +32,6 @@ describe('SettingsScreen', () => {
   it('renders environment chips', () => {
     render(<SettingsScreen />)
     expect(screen.getByText('development')).toBeInTheDocument()
-    expect(screen.getByText('staging')).toBeInTheDocument()
     expect(screen.getByText('production')).toBeInTheDocument()
   })
 

@@ -132,7 +132,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
               {role === 'admin'
                 ? 'Can manage flags & keys in granted projects.'
                 : role === 'editor'
-                  ? 'Can edit flags in dev/staging. Prod requires admin.'
+                  ? 'Can edit flags in development. Prod requires admin.'
                   : 'Read-only across granted projects.'}
             </div>
           </div>

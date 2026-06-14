@@ -3,7 +3,7 @@ import { Tip } from '../primitives/Tip'
 import { Kbd } from '../primitives/Kbd'
 import { useTheme } from '../../contexts/ThemeContext'
 
-export type EnvSlug = 'development' | 'staging' | 'production'
+export type EnvSlug = 'development' | 'production'
 
 export interface ProjectInfo {
   id: string
@@ -22,7 +22,6 @@ export interface TopBarProps {
 
 const ENVS: Array<{ slug: EnvSlug; name: string }> = [
   { slug: 'development', name: 'Development' },
-  { slug: 'staging', name: 'Staging' },
   { slug: 'production', name: 'Production' },
 ]
 
@@ -66,9 +65,10 @@ export function TopBar({
             data-env={e.slug}
             className="env-chip"
             onClick={() => onChangeEnv(e.slug)}
+            title={e.name}
           >
             <span className="dot" />
-            {e.name}
+            {e.slug}
           </button>
         ))}
       </div>
@@ -89,10 +89,10 @@ export function TopBar({
 
       {/* Right panel */}
       <div className="topbar-right">
-        <span className="key-indicator">
+        <span className="key-indicator" title="Acting key">
           <span className="dot" />
           <span>ff_ad_a91c</span>
-          <span className="muted">- admin</span>
+          <span className="muted">· admin</span>
         </span>
         <Tip tip="Keyboard shortcuts (?)">
           <button className="icon-btn" onClick={onShowHelp} aria-label="Keyboard shortcuts">
