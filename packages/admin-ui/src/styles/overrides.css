@@ -213,61 +213,167 @@
   }
 }
 
-.override-row {
+/* Override rows (read view) */
+.ctx-ovr-stack {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ctx-ovr-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  gap: 14px;
   align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
+  padding: 12px 14px;
   background: var(--bg-elev);
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition:
+    border-color 0.08s,
+    box-shadow 0.08s;
 }
-.override-key {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-1);
-  font-weight: 600;
+.ctx-ovr-row:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-1);
 }
-.override-op {
-  font-size: 12px;
-  color: var(--text-3);
+.ctx-ovr-row .ord {
+  font-size: 11px;
+  color: var(--text-4);
+  text-align: center;
 }
-.override-val {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-2);
-}
-.override-result {
+.ctx-ovr-row .rule {
   display: inline-flex;
   align-items: center;
-  padding: 2px var(--s-2);
-  border-radius: var(--r-pill);
-  font-size: 11px;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  min-width: 0;
+}
+.ctx-ovr-row .rule .kw {
+  font-family: var(--font-mono);
+  color: var(--text-4);
+  font-size: 11.5px;
+}
+.ctx-ovr-row .rule .kw.arrow {
+  font-size: 14px;
+  color: var(--text-3);
+}
+.ctx-ovr-row .rule .ctx-key {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--pri-soft);
+  border: 1px solid var(--pri-soft-border);
+  color: var(--pri-fg);
+  font-size: 12px;
   font-weight: 600;
 }
-.override-result-on {
-  background: var(--teal-50);
-  color: var(--teal-700);
-}
-.override-result-off {
-  background: var(--ink-100);
-  color: var(--ink-500);
-}
-.override-note {
+.ctx-ovr-row .rule .op {
   font-size: 12px;
   color: var(--text-3);
-  font-style: italic;
-  flex: 1;
-  min-width: 0;
+  font-weight: 500;
+}
+.ctx-ovr-row .rule .val {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 500;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.override-age {
+.ctx-ovr-row .rule .result {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.ctx-ovr-row .rule .result .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+.ctx-ovr-row .rule .result.on {
+  background: var(--pri-soft);
+  border: 1px solid var(--pri-soft-border);
+  color: var(--pri-fg);
+}
+.ctx-ovr-row .rule .result.on .dot {
+  background: var(--pri);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.18);
+}
+.ctx-ovr-row .rule .result.off {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+}
+.ctx-ovr-row .rule .result.off .dot {
+  background: var(--text-4);
+}
+.ctx-ovr-row .meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  max-width: 240px;
+}
+.ctx-ovr-row .meta .note {
   font-size: 12px;
-  color: var(--text-4);
+  color: var(--text-2);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  margin-left: auto;
+  max-width: 220px;
+}
+.ctx-ovr-row .meta .override-age {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-4);
+  font-size: 11.5px;
+}
+.ctx-ovr-row .actions {
+  display: inline-flex;
+  gap: 2px;
+}
+.icon-btn.danger:hover {
+  color: var(--danger-fg);
+  background: var(--danger-soft);
+}
+
+/* "Add another override" dashed tail row */
+.ctx-ovr-addrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition:
+    background 0.08s,
+    color 0.08s,
+    border-color 0.08s;
+}
+.ctx-ovr-addrow:hover {
+  background: var(--pri-soft);
+  border-color: var(--pri-soft-border);
+  color: var(--pri-fg);
 }
 .overrides-empty {
   display: flex;

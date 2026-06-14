@@ -106,9 +106,9 @@ describe('ContextOverridesSection integration tests', () => {
 
     expect(screen.getByText('userId')).toBeInTheDocument()
     expect(screen.getAllByText('equals').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('user_123')).toBeInTheDocument()
-    expect(screen.getByText('Enabled')).toBeInTheDocument()
-    expect(screen.getByText('Disabled')).toBeInTheDocument()
+    expect(screen.getByText(/user_123/)).toBeInTheDocument()
+    expect(screen.getByText('ON')).toBeInTheDocument()
+    expect(screen.getByText('OFF')).toBeInTheDocument()
   })
 
   it('shows empty state when no overrides exist', () => {

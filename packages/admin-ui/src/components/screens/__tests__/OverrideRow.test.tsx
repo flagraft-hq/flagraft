@@ -27,14 +27,14 @@ describe('OverrideRow', () => {
     vi.clearAllMocks()
   })
 
-  it('renders key, op, and val fields', () => {
+  it('renders key, operator label, and (quoted) value', () => {
     render(<OverrideRow override={baseOverride} onEdit={onEdit} onDelete={onDelete} />)
     expect(screen.getByText('userId')).toBeTruthy()
     expect(screen.getByText('equals')).toBeTruthy()
-    expect(screen.getByText('42')).toBeTruthy()
+    expect(screen.getByText(/42/)).toBeTruthy()
   })
 
-  it('shows "Enabled" with class override-result-on when result is true', () => {
+  it('shows "ON" with class result.on when result is true', () => {
     const { container } = render(
       <OverrideRow
         override={{ ...baseOverride, result: true }}
@@ -42,12 +42,12 @@ describe('OverrideRow', () => {
         onDelete={onDelete}
       />,
     )
-    expect(screen.getByText('Enabled')).toBeTruthy()
-    expect(container.querySelector('.override-result-on')).toBeTruthy()
-    expect(container.querySelector('.override-result-off')).toBeNull()
+    expect(screen.getByText('ON')).toBeTruthy()
+    expect(container.querySelector('.result.on')).toBeTruthy()
+    expect(container.querySelector('.result.off')).toBeNull()
   })
 
-  it('shows "Disabled" with class override-result-off when result is false', () => {
+  it('shows "OFF" with class result.off when result is false', () => {
     const { container } = render(
       <OverrideRow
         override={{ ...baseOverride, result: false }}
@@ -55,9 +55,20 @@ describe('OverrideRow', () => {
         onDelete={onDelete}
       />,
     )
-    expect(screen.getByText('Disabled')).toBeTruthy()
-    expect(container.querySelector('.override-result-off')).toBeTruthy()
-    expect(container.querySelector('.override-result-on')).toBeNull()
+    expect(screen.getByText('OFF')).toBeTruthy()
+    expect(container.querySelector('.result.off')).toBeTruthy()
+    expect(container.querySelector('.result.on')).toBeNull()
+  })
+
+  it('renders a human-readable operator label (startsWith → "starts with")', () => {
+    render(
+      <OverrideRow
+        override={{ ...baseOverride, op: 'startsWith' }}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />,
+    )
+    expect(screen.getByText('starts with')).toBeTruthy()
   })
 
   it('shows note when provided', () => {
@@ -75,7 +86,7 @@ describe('OverrideRow', () => {
     const { container } = render(
       <OverrideRow override={{ ...baseOverride, note: '' }} onEdit={onEdit} onDelete={onDelete} />,
     )
-    expect(container.querySelector('.override-note')).toBeNull()
+    expect(container.querySelector('.note')).toBeNull()
   })
 
   it('shows relative created date', () => {

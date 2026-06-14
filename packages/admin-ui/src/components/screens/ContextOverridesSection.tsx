@@ -6,6 +6,7 @@ import { OverrideRow } from './OverrideRow'
 import { OverrideForm } from './OverrideForm'
 import { OverridesEmptyState } from './OverridesEmptyState'
 import { Button } from '../primitives/Button'
+import { Icon } from '../primitives/Icon'
 import { Modal } from '../primitives/Modal'
 import type { Override } from '../../lib/types'
 
@@ -157,38 +158,56 @@ export function ContextOverridesSection({
         </div>
       )}
 
-      {showForm && (
-        <div className="overrides-form-container">
-          <OverrideForm
-            key={editingOverride?.id ?? 'new'}
-            projectId={projectId}
-            flagKey={flagKey}
-            env={selectedEnv}
-            contextFields={fields}
-            existingOverrides={overrides}
-            editingOverride={editingOverride}
-            onSave={handleSave}
-            onCancel={handleCancel}
-          />
-        </div>
-      )}
-
       {loading ? (
         <div className="overrides-loading">Loading...</div>
       ) : error ? (
         <div className="overrides-error">{error}</div>
-      ) : overrides.length === 0 ? (
-        !showForm && <OverridesEmptyState onAdd={handleAddClick} envSlug={selectedEnv} />
+      ) : overrides.length === 0 && !showForm ? (
+        <OverridesEmptyState onAdd={handleAddClick} envSlug={selectedEnv} />
       ) : (
-        <div className="overrides-list">
-          {overrides.map((override) => (
-            <OverrideRow
-              key={override.id}
-              override={override}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteClick}
+        <div className="ctx-ovr-stack">
+          {overrides.map((override, i) =>
+            showForm && editingOverride?.id === override.id ? (
+              <OverrideForm
+                key={override.id}
+                projectId={projectId}
+                flagKey={flagKey}
+                env={selectedEnv}
+                contextFields={fields}
+                existingOverrides={overrides}
+                editingOverride={editingOverride}
+                onSave={handleSave}
+                onCancel={handleCancel}
+              />
+            ) : (
+              <OverrideRow
+                key={override.id}
+                index={i}
+                override={override}
+                onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
+              />
+            ),
+          )}
+          {showForm && !editingOverride && (
+            <OverrideForm
+              key="new"
+              projectId={projectId}
+              flagKey={flagKey}
+              env={selectedEnv}
+              contextFields={fields}
+              existingOverrides={overrides}
+              editingOverride={null}
+              onSave={handleSave}
+              onCancel={handleCancel}
             />
-          ))}
+          )}
+          {!showForm && overrides.length > 0 && (
+            <button type="button" className="ctx-ovr-addrow" onClick={handleAddClick}>
+              <Icon name="plus" size={13} />
+              <span>Add another override</span>
+            </button>
+          )}
         </div>
       )}
 
