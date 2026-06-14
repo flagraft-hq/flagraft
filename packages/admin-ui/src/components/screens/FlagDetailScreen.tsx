@@ -15,6 +15,14 @@ import { TextField } from '../primitives/TextField'
 
 type TabId = 'environments' | 'usage' | 'history'
 
+/** Maps an environment to its accent color (matches the env dots elsewhere). */
+function envColor(env: string): string {
+  if (env === 'production' || env.endsWith('production')) return 'red'
+  if (env === 'staging' || env.endsWith('staging')) return 'amber'
+  if (env === 'development' || env.endsWith('development')) return 'teal'
+  return 'slate'
+}
+
 interface EditFlagModalProps {
   open: boolean
   flag: Flag
@@ -53,10 +61,35 @@ function EditFlagModal({ open, flag, projectId, onClose, onSaved }: EditFlagModa
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Modal.Header>Edit flag</Modal.Header>
+      <Modal.Header subtitle={`Update configuration for feature flag: ${flag.key}`}>
+        Edit flag
+      </Modal.Header>
       <Modal.Body>
-        <TextField label="Name" value={name} onChange={setName} />
-        <TextField label="Description" value={description} onChange={setDescription} />
+        <div className="edit-flag-form">
+          <TextField
+            label="Name"
+            value={name}
+            onChange={setName}
+            placeholder="e.g. New Cart Experience"
+            hint="The display name for the feature flag."
+          />
+          <div className="text-field">
+            <label className="text-field-label" htmlFor="edit-flag-description">
+              Description
+            </label>
+            <textarea
+              id="edit-flag-description"
+              className="text-field-input text-field-textarea"
+              value={description || ''}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what this feature flag does..."
+              rows={3}
+            />
+            <span className="text-field-hint">
+              Provide context for your team members on the purpose or scope of this flag.
+            </span>
+          </div>
+        </div>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="ghost" onClick={onClose}>
@@ -64,6 +97,173 @@ function EditFlagModal({ open, flag, projectId, onClose, onSaved }: EditFlagModa
         </Button>
         <Button variant="primary" disabled={saving} onClick={() => void handleSave()}>
           Save changes
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  )
+}
+
+interface SdkSnippetModalProps {
+  open: boolean
+  flag: Flag
+  onClose: () => void
+}
+
+type SdkTab = 'node' | 'react' | 'go' | 'python' | 'curl'
+
+function SdkSnippetModal({ open, flag, onClose }: SdkSnippetModalProps) {
+  const [activeTab, setActiveTab] = useState<SdkTab>('node')
+  const [copied, setCopied] = useState(false)
+
+  const snippets: Record<SdkTab, { lang: string; code: string }> = {
+    node: {
+      lang: 'javascript',
+      code: `// Server-side, Node 20+
+import { Flagraft } from '@flagraft/sdk';
+
+const ff = new Flagraft({ apiKey: process.env.FLAGRAFT_CLIENT_KEY });
+
+if (await ff.isEnabled('${flag.key}', { userId })) {
+  // new path
+} else {
+  // legacy path
+}`,
+    },
+    react: {
+      lang: 'typescript',
+      code: `// React client-side
+import { useFlag } from '@flagraft/react';
+
+function MyComponent() {
+  const isEnabled = useFlag('${flag.key}', { userId });
+
+  return isEnabled ? <NewFeature /> : <OldFeature />;
+}`,
+    },
+    go: {
+      lang: 'go',
+      code: `// Go SDK
+import "github.com/flagraft/flagraft-go"
+
+client := flagraft.NewClient(os.Getenv("FLAGRAFT_CLIENT_KEY"))
+
+if client.IsEnabled("${flag.key}", flagraft.Context{"userId": userId}) {
+    // new path
+} else {
+    // legacy path
+}`,
+    },
+    python: {
+      lang: 'python',
+      code: `# Python SDK
+from flagraft import Flagraft
+import os
+
+ff = Flagraft(os.environ.get("FLAGRAFT_CLIENT_KEY"))
+
+if ff.is_enabled("${flag.key}", {"userId": user_id}):
+    # new path
+else:
+    # legacy path`,
+    },
+    curl: {
+      lang: 'bash',
+      code: `# HTTP API
+curl -X POST https://api.flagraft.com/v1/eval \\
+  -H "Authorization: Bearer YOUR_CLIENT_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "flagKey": "${flag.key}",
+    "context": { "userId": "123" }
+  }'`,
+    },
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard
+      .writeText(snippets[activeTab].code)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => {})
+  }
+
+  const tabs: { id: SdkTab; label: string; isComingSoon?: boolean }[] = [
+    { id: 'node', label: 'Node.js' },
+    { id: 'react', label: 'React' },
+    { id: 'go', label: 'Go', isComingSoon: true },
+    { id: 'python', label: 'Python', isComingSoon: true },
+    { id: 'curl', label: 'cURL' },
+  ]
+
+  return (
+    <Modal open={open} onClose={onClose} size="lg">
+      <Modal.Header subtitle={`Integration snippet for feature flag: ${flag.key}`}>
+        SDK snippets
+      </Modal.Header>
+      <Modal.Body>
+        <div className="sdk-modal-layout">
+          <div className="sdk-modal-tabs">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`sdk-modal-tab-btn${activeTab === tab.id ? ' active' : ''}`}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  setCopied(false)
+                }}
+              >
+                {tab.label}
+                {tab.isComingSoon && <span className="sdk-modal-coming-soon-badge">soon</span>}
+              </button>
+            ))}
+          </div>
+          <div className="sdk-modal-code-container">
+            {activeTab === 'go' || activeTab === 'python' ? (
+              <div className="sdk-modal-coming-soon-state">
+                <div className="coming-soon-icon-wrap">
+                  <Icon name="bolt" size={24} />
+                </div>
+                <h3>{tabs.find((t) => t.id === activeTab)?.label} SDK is coming soon</h3>
+                <p>
+                  We are actively building our official{' '}
+                  {tabs.find((t) => t.id === activeTab)?.label} SDK. In the meantime, you can
+                  evaluate feature flags using direct HTTP calls.
+                </p>
+                <div className="coming-soon-alternative">
+                  <span>Alternative integration:</span>
+                  <button type="button" className="link-btn" onClick={() => setActiveTab('curl')}>
+                    View cURL snippet &rarr;
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="sdk-modal-code-header">
+                  <span className="sdk-modal-lang-label">{snippets[activeTab].lang}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={copied ? 'check' : 'copy'}
+                    onClick={handleCopy}
+                  >
+                    {copied ? 'Copied' : 'Copy code'}
+                  </Button>
+                </div>
+                <pre className="sdk-modal-code">
+                  <code>{snippets[activeTab].code}</code>
+                </pre>
+              </>
+            )}
+          </div>
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <div style={{ flex: 1 }} />
+        <Button variant="ghost" onClick={onClose}>
+          Close
         </Button>
       </Modal.Footer>
     </Modal>
@@ -123,6 +323,10 @@ function EnvironmentsTab({
     setConfirmState(null)
   }
 
+  function scrollToOverrides() {
+    document.getElementById('ctx-overrides')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <div>
       <div className="env-cards-grid">
@@ -132,19 +336,51 @@ function EnvironmentsTab({
           const overrideCount = envState?.overrides ?? 0
           return (
             <div key={env} className="env-card">
-              <span className="env-badge">{env}</span>
-              <Toggle
-                checked={isOn}
-                onChange={(newValue) => handleToggle(env, newValue)}
-                variant={env === 'production' ? 'production' : 'default'}
-              />
-              <div>{isOn ? 'Enabled' : 'Disabled'}</div>
-              <div>{overrideCount > 0 ? `+${overrideCount} overrides` : 'No overrides'}</div>
+              <div className="env-card-head">
+                <span className={`env-badge env-badge-${envColor(env)}`}>
+                  <span className="dot" />
+                  {env}
+                </span>
+                <span className="spacer" />
+                <Toggle
+                  checked={isOn}
+                  size="lg"
+                  onChange={(newValue) => handleToggle(env, newValue)}
+                />
+              </div>
+              <div className="env-card-state">
+                <span className={isOn ? 'env-state-on' : 'env-state-off'}>
+                  {isOn ? 'Enabled' : 'Disabled'}
+                </span>
+                <span className="muted"> · default value</span>
+              </div>
+              <div className="env-card-overrides muted">
+                {overrideCount > 0
+                  ? `+${overrideCount} override${overrideCount > 1 ? 's' : ''} can change this result.`
+                  : 'No overrides — every caller gets the default.'}
+              </div>
+              <div className="env-card-foot">
+                <Button size="sm" variant="ghost" leftIcon="plus" onClick={scrollToOverrides}>
+                  Manage overrides
+                </Button>
+              </div>
             </div>
           )
         })}
       </div>
-      <ContextOverridesSection projectId={projectId} flagKey={flagKey} env={activeEnv} />
+
+      <div id="ctx-overrides" className="ctx-overrides-anchor">
+        <ContextOverridesSection
+          projectId={projectId}
+          flagKey={flagKey}
+          env={activeEnv}
+          environments={envKeys.map((e) => ({
+            slug: e,
+            defaultOn: flag.state[e]?.on ?? false,
+            count: flag.state[e]?.overrides ?? 0,
+          }))}
+        />
+      </div>
 
       <Modal open={confirmState !== null} onClose={handleCancel}>
         <Modal.Header>{confirmState?.checked ? 'Enable' : 'Disable'} in Production?</Modal.Header>
@@ -179,26 +415,34 @@ export function FlagDetailScreen() {
   const [activeTab, setActiveTab] = useState<TabId>('environments')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showSdkModal, setShowSdkModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   const projectId = activeProject?.id
 
-  const fetchFlag = useCallback(async () => {
-    if (!projectId || !flagKey) return
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await flagsApi.get(projectId, flagKey)
-      setFlag(res.data)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load flag')
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId, flagKey])
+  const fetchFlag = useCallback(
+    async (isInitial = false) => {
+      if (!projectId || !flagKey) return
+      if (isInitial) {
+        setLoading(true)
+      }
+      setError(null)
+      try {
+        const res = await flagsApi.get(projectId, flagKey)
+        setFlag(res.data)
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load flag')
+      } finally {
+        if (isInitial) {
+          setLoading(false)
+        }
+      }
+    },
+    [projectId, flagKey],
+  )
 
   useEffect(() => {
-    void fetchFlag()
+    void fetchFlag(true)
   }, [fetchFlag])
 
   if (!activeProject) {
@@ -210,7 +454,13 @@ export function FlagDetailScreen() {
   }
 
   if (error) {
-    return <ErrorState title="Failed to load flag" message={error} onRetry={() => void fetchFlag} />
+    return (
+      <ErrorState
+        title="Failed to load flag"
+        message={error}
+        onRetry={() => void fetchFlag(true)}
+      />
+    )
   }
 
   if (!flag) return null
@@ -245,18 +495,19 @@ export function FlagDetailScreen() {
 
   return (
     <div className="flag-detail-screen">
-      <div className="detail-page-header">
-        <nav className="detail-breadcrumb">
-          <span>Flags</span>
-          <Icon name="chevronRight" size={12} />
-          <span>{flag.name}</span>
-        </nav>
-        <h1 className="detail-title">{flag.name}</h1>
-        <div className="detail-actions">
-          <Button variant="ghost" size="sm" leftIcon="copy" onClick={handleCopyKey}>
-            Copy key
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon="code">
+      <div className="page-header detail-page-header">
+        <div className="page-header-text">
+          <nav className="detail-breadcrumb">
+            <button className="breadcrumb-link" onClick={() => navigate('/flags')}>
+              Flags
+            </button>
+            <Icon name="chevronRight" size={12} />
+            <span>{flag.name}</span>
+          </nav>
+          <h1 className="detail-title">{flag.name}</h1>
+        </div>
+        <div className="page-header-actions detail-actions">
+          <Button variant="ghost" size="sm" leftIcon="code" onClick={() => setShowSdkModal(true)}>
             SDK snippet
           </Button>
           <Button variant="ghost" size="sm" leftIcon="edit" onClick={() => setShowEditModal(true)}>
@@ -273,21 +524,45 @@ export function FlagDetailScreen() {
         </div>
       </div>
 
-      <div className="detail-meta">
-        <span className="flag-key-chip">
-          <Icon name="flag" size={12} />
-          {flag.key}
-        </span>
-        <p className="flag-desc">{flag.description}</p>
-        <div className="detail-meta-row">
-          <span>Owner: {flag.author || 'System'}</span>
-          <span>Created: {new Date(flag.created).toLocaleDateString()}</span>
-          <span>Overrides: {totalOverrides}</span>
-          <span>
-            Tags:{' '}
-            {(flag.tags ?? []).length > 0
-              ? (flag.tags ?? []).map((tag) => <Badge key={tag}>{tag}</Badge>)
-              : 'None'}
+      <div className="detail-header">
+        <div className="detail-header-main">
+          <span className="detail-flag-key">
+            <Icon name="flag" size={12} />
+            <span className="mono">{flag.key}</span>
+            <button className="icon-btn detail-key-copy" aria-label="Copy" onClick={handleCopyKey}>
+              <Icon name="copy" size={11} />
+            </button>
+          </span>
+          {flag.description && <p className="detail-desc">{flag.description}</p>}
+          <div className="meta-row">
+            <span className="meta-item">
+              <Icon name="user" size={12} />
+              Owner <b className="mono">{flag.author || 'System'}</b>
+            </span>
+            <span className="meta-item">
+              <Icon name="history" size={12} />
+              Created <b>{new Date(flag.created).toLocaleDateString()}</b>
+            </span>
+            <span className="meta-item">
+              <Icon name="target" size={12} />
+              {totalOverrides} override{totalOverrides === 1 ? '' : 's'}
+            </span>
+          </div>
+        </div>
+        <div className="detail-header-aside">
+          {(flag.tags ?? []).length > 0 ? (
+            <div className="detail-tags">
+              {(flag.tags ?? []).map((tag) => (
+                <Badge key={tag} dot>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="muted detail-no-tags">No tags</span>
+          )}
+          <span className="muted mono detail-updated">
+            updated {new Date(flag.updated).toLocaleDateString()}
           </span>
         </div>
       </div>
@@ -302,7 +577,7 @@ export function FlagDetailScreen() {
           onClick={() => setActiveTab('environments')}
         >
           Environments &amp; overrides
-          {totalOverrides > 0 && <Badge>{totalOverrides}</Badge>}
+          {totalOverrides > 0 && <span className="detail-tab-count num">{totalOverrides}</span>}
         </button>
         <button
           id="tab-usage"
@@ -399,6 +674,8 @@ export function FlagDetailScreen() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <SdkSnippetModal open={showSdkModal} flag={flag} onClose={() => setShowSdkModal(false)} />
     </div>
   )
 }

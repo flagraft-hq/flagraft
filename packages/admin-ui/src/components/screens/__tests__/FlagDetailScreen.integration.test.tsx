@@ -96,9 +96,9 @@ describe('FlagDetailScreen integration', () => {
     expect(screen.getByRole('tab', { name: /usage/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /history/i })).toBeInTheDocument()
 
-    expect(screen.getByText('development')).toBeInTheDocument()
-    expect(screen.getByText('staging')).toBeInTheDocument()
-    expect(screen.getByText('production')).toBeInTheDocument()
+    expect(screen.getAllByText('development').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('staging').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('production').length).toBeGreaterThan(0)
   })
 
   it('environments tab shows correct toggle states from flag data', async () => {
@@ -119,7 +119,7 @@ describe('FlagDetailScreen integration', () => {
 
     await screen.findByRole('heading', { name: 'Checkout Web Redesign' })
 
-    expect(screen.getByText('development')).toBeInTheDocument()
+    expect(screen.getAllByText('development').length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('tab', { name: /usage/i }))
 
@@ -147,7 +147,7 @@ describe('FlagDetailScreen integration', () => {
       expect(addOverrideButtons.length).toBeGreaterThan(0)
     })
 
-    expect(screen.getByText(/no overrides yet/i)).toBeInTheDocument()
+    expect(screen.getByText(/no overrides in/i)).toBeInTheDocument()
   })
 
   it('edit modal full flow: open, edit, save, flag name updates in header', async () => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { TextField } from '../primitives/TextField'
 import { Button } from '../primitives/Button'
+import { Icon } from '../primitives/Icon'
 import type { Override, ContextField, FieldType } from '../../lib/types'
 import { OPS_BY_TYPE } from '../../lib/types'
 import { validateOverrideForm } from '../../lib/validation'
@@ -47,19 +47,20 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
   const [errors, setErrors] = useState<OverrideValidationErrors>({})
   const [saving, setSaving] = useState(false)
 
-  // Derive selected field type
+  /** Field metadata for the currently-selected key (drives type + hints). */
   const selectedField = contextFields.find((f) => f.key === key)
   const fieldType: FieldType = selectedField?.type ?? 'string'
   const operators = OPS_BY_TYPE[fieldType] ?? OPS_BY_TYPE['string']
 
+  /** Another rule on the same key/value returns the opposite result. */
+  const conflict = existingOverrides.some(
+    (x) =>
+      x.id !== editingOverride?.id && x.key === key && x.val === val && String(x.result) !== result,
+  )
+
   const handleKeySelectChange = (value: string) => {
     setKeySelectValue(value)
-    if (value === OTHER_KEY) {
-      setKey(customKey)
-    } else {
-      setKey(value)
-    }
-    // Reset op when key changes
+    setKey(value === OTHER_KEY ? customKey : value)
     setOp('')
     setVal('')
   }
@@ -67,10 +68,6 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
   const handleCustomKeyChange = (value: string) => {
     setCustomKey(value)
     setKey(value)
-  }
-
-  const handleOpChange = (value: string) => {
-    setOp(value)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,14 +85,7 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
     setErrors({})
     setSaving(true)
     try {
-      await onSave({
-        env,
-        key,
-        op,
-        val,
-        result: result === 'true',
-        note,
-      })
+      await onSave({ env, key, op, val, result: result === 'true', note })
     } finally {
       setSaving(false)
     }
@@ -105,50 +95,55 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
     ...contextFields.map((f) => ({ value: f.key, label: f.key })),
     ...(contextFields.length > 0 ? [{ value: OTHER_KEY, label: 'Other (type key)' }] : []),
   ]
-
-  const operatorOptions = operators.map((o) => ({ value: o.value, label: o.label }))
-
-  const resultOptions = [
-    { value: 'true', label: 'Enabled' },
-    { value: 'false', label: 'Disabled' },
-  ]
-
-  const boolOptions = [
-    { value: 'true', label: 'true' },
-    { value: 'false', label: 'false' },
-  ]
-
   const showCustomKeyInput = keySelectValue === OTHER_KEY || contextFields.length === 0
+
+  const valuePlaceholder =
+    op === 'in' ? 'samsung, verizon, att' : (selectedField?.example ?? 'value')
 
   return (
     <form
-      className="override-form"
-      onSubmit={(e) => {
-        void handleSubmit(e)
-      }}
+      className="override-form ctx-ovr-form"
+      data-mode={isEditMode ? 'edit' : 'add'}
+      onSubmit={(e) => void handleSubmit(e)}
       noValidate
     >
-      <div className="override-form-title">{isEditMode ? 'Edit Override' : 'Add Override'}</div>
+      <div className="form-head">
+        <span className="form-title">{isEditMode ? 'Edit override' : 'New override'}</span>
+        <span className="muted form-head-env">
+          in{' '}
+          <span className="mono" data-env={env}>
+            {env}
+          </span>
+        </span>
+        <span className="spacer" />
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={onCancel}
+          aria-label="Close"
+          disabled={saving}
+        >
+          <Icon name="x" size={13} />
+        </button>
+      </div>
 
-      <div className="override-form-row">
-        {/* Context Key */}
-        <div className="override-form-field">
+      <div className="form-grid">
+        {/* Context key */}
+        <div className="form-field">
+          <label htmlFor="override-key-select">When context key</label>
           {contextFields.length > 0 ? (
             <>
-              <label className="override-form-label" htmlFor="override-key-select">
-                Context Key
-              </label>
               <select
                 id="override-key-select"
-                className={`select-input${errors.key ? ' error' : ''}`}
+                className={`select mono${errors.key ? ' error' : ''}`}
                 value={keySelectValue}
                 onChange={(e) => handleKeySelectChange(e.target.value)}
                 disabled={saving}
-                aria-label="Context Key"
+                aria-label="When context key"
                 aria-invalid={!!errors.key}
               >
                 <option value="" disabled>
-                  Select...
+                  Select…
                 </option>
                 {keySelectOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -157,52 +152,58 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
                 ))}
               </select>
               {showCustomKeyInput && (
-                <TextField
+                <input
+                  className="input mono"
                   placeholder="Enter context key"
                   value={customKey}
-                  onChange={handleCustomKeyChange}
+                  onChange={(e) => handleCustomKeyChange(e.target.value)}
                   disabled={saving}
+                  aria-label="Custom context key"
                 />
               )}
             </>
           ) : (
-            <>
-              <label className="override-form-label" htmlFor="override-key-text">
-                Context Key
-              </label>
-              <TextField
-                id="override-key-text"
-                placeholder="Enter context key"
-                value={key}
-                onChange={setKey}
-                disabled={saving}
-                aria-label="Context Key"
-              />
-            </>
+            <input
+              id="override-key-text"
+              className={`input mono${errors.key ? ' error' : ''}`}
+              placeholder="e.g. tenant"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              disabled={saving}
+              aria-label="When context key"
+            />
           )}
+          {selectedField ? (
+            <span className="form-hint">
+              {selectedField.type} · from {selectedField.source}
+            </span>
+          ) : key ? (
+            <span className="form-hint warn">
+              <Icon name="alert" size={11} />
+              Not in registry — rules won&apos;t match unless added
+            </span>
+          ) : null}
           {errors.key && <span className="override-form-error">{errors.key}</span>}
         </div>
 
         {/* Operator */}
-        <div className="override-form-field">
-          <label className="override-form-label" htmlFor="override-op-select">
-            Operator
-          </label>
+        <div className="form-field op-field">
+          <label htmlFor="override-op-select">matches</label>
           <select
             id="override-op-select"
-            className={`select-input${errors.op ? ' error' : ''}`}
+            className={`select${errors.op ? ' error' : ''}`}
             value={op}
-            onChange={(e) => handleOpChange(e.target.value)}
+            onChange={(e) => setOp(e.target.value)}
             disabled={saving}
-            aria-label="Operator"
+            aria-label="matches"
             aria-invalid={!!errors.op}
           >
             <option value="" disabled>
-              Select...
+              Select…
             </option>
-            {operatorOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+            {operators.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
@@ -210,92 +211,128 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
         </div>
 
         {/* Value */}
-        <div className="override-form-field">
-          {fieldType === 'boolean' ? (
-            <>
-              <label className="override-form-label" htmlFor="override-val-bool">
-                Value
-              </label>
-              <select
-                id="override-val-bool"
-                className={`select-input${errors.val ? ' error' : ''}`}
-                value={val}
-                onChange={(e) => setVal(e.target.value)}
-                disabled={saving}
-                aria-label="Value"
-                aria-invalid={!!errors.val}
-              >
-                <option value="" disabled>
-                  Select...
+        <div className="form-field val-field">
+          <label htmlFor="override-val">value</label>
+          {fieldType === 'enum' ? (
+            <select
+              id="override-val"
+              className={`select mono${errors.val ? ' error' : ''}`}
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              disabled={saving}
+              aria-label="value"
+              aria-invalid={!!errors.val}
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              {(selectedField?.enumValues ?? []).map((v) => (
+                <option key={v} value={v}>
+                  {v}
                 </option>
-                {boolOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </>
+              ))}
+            </select>
+          ) : fieldType === 'boolean' ? (
+            <select
+              id="override-val"
+              className={`select mono${errors.val ? ' error' : ''}`}
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              disabled={saving}
+              aria-label="value"
+              aria-invalid={!!errors.val}
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
           ) : (
-            <>
-              <label className="override-form-label" htmlFor="override-val-text">
-                Value
-              </label>
-              <TextField
-                id="override-val-text"
-                placeholder="Value"
-                value={val}
-                onChange={setVal}
-                disabled={saving}
-                aria-label="Value"
-              />
-            </>
+            <input
+              id="override-val"
+              className={`input mono${errors.val ? ' error' : ''}`}
+              placeholder={valuePlaceholder}
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              disabled={saving}
+              aria-label="value"
+              aria-invalid={!!errors.val}
+            />
           )}
           {errors.val && <span className="override-form-error">{errors.val}</span>}
         </div>
 
         {/* Result */}
-        <div className="override-form-field">
-          <label className="override-form-label" htmlFor="override-result-select">
-            Result
-          </label>
-          <select
-            id="override-result-select"
-            className="select-input"
-            value={result}
-            onChange={(e) => setResult(e.target.value)}
-            disabled={saving}
-            aria-label="Result"
-          >
-            {resultOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+        <div className="form-field result-field">
+          <label>then return</label>
+          <div className="result-seg" role="radiogroup" aria-label="Override result">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={result === 'true'}
+              className={`result-pill on${result === 'true' ? ' selected' : ''}`}
+              onClick={() => setResult('true')}
+              disabled={saving}
+            >
+              <span className="dot" />
+              ON
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={result === 'false'}
+              className={`result-pill off${result === 'false' ? ' selected' : ''}`}
+              onClick={() => setResult('false')}
+              disabled={saving}
+            >
+              <span className="dot" />
+              OFF
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Note */}
-      <div className="override-form-field">
-        <label className="override-form-label" htmlFor="override-note-text">
-          Note
+      <div className="form-field full">
+        <label htmlFor="override-note">
+          Note <span className="muted">· optional</span>
         </label>
-        <TextField
-          id="override-note-text"
-          placeholder="Optional note"
+        <input
+          id="override-note"
+          className="input"
+          placeholder="Why this rule? Helps the next on-call."
           value={note}
-          onChange={setNote}
+          onChange={(e) => setNote(e.target.value)}
           disabled={saving}
           aria-label="Note"
         />
       </div>
 
-      <div className="override-form-actions">
+      {/* Live conflict hint (duplicate detection is handled by validation on save) */}
+      {conflict && (
+        <div className="form-hints">
+          <div className="form-msg warn">
+            <Icon name="alert" size={12} />
+            <span>
+              Another rule for{' '}
+              <span className="mono">
+                {key}={val}
+              </span>{' '}
+              returns the opposite result. The earlier one wins.
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="form-actions">
+        <span className="muted form-actions-note">Changes are live — no confirm step</span>
+        <span className="spacer" />
         <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
         <Button type="submit" variant="primary" disabled={saving}>
-          {isEditMode ? 'Save' : 'Add'}
+          {isEditMode ? 'Save changes' : 'Save override'}
         </Button>
       </div>
     </form>

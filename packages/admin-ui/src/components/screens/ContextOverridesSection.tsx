@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useOverrides } from '../../hooks/useOverrides'
 import { useContextFields } from '../../hooks/useContextFields'
 import { useToast } from '../../hooks/useToast'
@@ -9,15 +9,43 @@ import { Button } from '../primitives/Button'
 import { Modal } from '../primitives/Modal'
 import type { Override } from '../../lib/types'
 
+interface OverrideEnvOption {
+  slug: string
+  defaultOn: boolean
+  count: number
+}
+
 interface ContextOverridesSectionProps {
   projectId: string
   flagKey: string
   env: string
+  /** When provided, renders the per-environment selector tabs. */
+  environments?: OverrideEnvOption[]
 }
 
-export function ContextOverridesSection({ projectId, flagKey, env }: ContextOverridesSectionProps) {
+/** Maps an environment slug to its dot-tone class (teal/amber/red/slate). */
+function envTone(slug: string): string {
+  if (slug === 'production' || slug.endsWith('production')) return 'red'
+  if (slug === 'staging' || slug.endsWith('staging')) return 'amber'
+  if (slug === 'development' || slug.endsWith('development')) return 'teal'
+  return 'slate'
+}
+
+export function ContextOverridesSection({
+  projectId,
+  flagKey,
+  env,
+  environments,
+}: ContextOverridesSectionProps) {
+  /** The environment whose overrides are currently shown; switched via the tabs. */
+  const [selectedEnv, setSelectedEnv] = useState(env)
+
+  useEffect(() => {
+    setSelectedEnv(env)
+  }, [env])
+
   const { overrides, loading, error, createOverride, updateOverride, deleteOverride } =
-    useOverrides({ projectId, flagKey, env })
+    useOverrides({ projectId, flagKey, env: selectedEnv })
   const { fields } = useContextFields(projectId)
   const toast = useToast()
 
@@ -84,11 +112,44 @@ export function ContextOverridesSection({ projectId, flagKey, env }: ContextOver
   return (
     <div className="overrides-section">
       <div className="overrides-header">
-        <h2>Context Overrides</h2>
-        <Button variant="ghost" size="sm" leftIcon="plus" onClick={handleAddClick}>
-          Add Override
+        <div className="overrides-header-text">
+          <h2>Context overrides</h2>
+          <p className="overrides-subtitle">
+            When a request matches a rule, the rule&apos;s result wins over the environment default.
+            Rules are evaluated top-to-bottom; first match wins.
+          </p>
+        </div>
+        <Button variant="primary" size="sm" leftIcon="plus" onClick={handleAddClick}>
+          Add override
         </Button>
       </div>
+
+      {environments && environments.length > 0 && (
+        <div className="ctx-ovr-envtabs" role="tablist" aria-label="Override environment">
+          {environments.map((e) => {
+            const count = e.slug === selectedEnv ? overrides.length : e.count
+            return (
+              <button
+                key={e.slug}
+                type="button"
+                role="tab"
+                aria-pressed={selectedEnv === e.slug}
+                data-env={e.slug}
+                className="ctx-ovr-envtab"
+                onClick={() => {
+                  setSelectedEnv(e.slug)
+                  setEditingOverride(null)
+                }}
+              >
+                <span className={`env-dot ${envTone(e.slug)}`} />
+                <span className="env-name">{e.slug}</span>
+                <span className="env-state mono">default {e.defaultOn ? 'on' : 'off'}</span>
+                <span className="env-count num">{count}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {mutationError && (
         <div className="overrides-mutation-error" role="alert">
@@ -99,9 +160,10 @@ export function ContextOverridesSection({ projectId, flagKey, env }: ContextOver
       {showForm && (
         <div className="overrides-form-container">
           <OverrideForm
+            key={editingOverride?.id ?? 'new'}
             projectId={projectId}
             flagKey={flagKey}
-            env={env}
+            env={selectedEnv}
             contextFields={fields}
             existingOverrides={overrides}
             editingOverride={editingOverride}
@@ -116,7 +178,7 @@ export function ContextOverridesSection({ projectId, flagKey, env }: ContextOver
       ) : error ? (
         <div className="overrides-error">{error}</div>
       ) : overrides.length === 0 ? (
-        <OverridesEmptyState onAdd={handleAddClick} />
+        !showForm && <OverridesEmptyState onAdd={handleAddClick} envSlug={selectedEnv} />
       ) : (
         <div className="overrides-list">
           {overrides.map((override) => (

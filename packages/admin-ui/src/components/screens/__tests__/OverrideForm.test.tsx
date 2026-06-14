@@ -60,13 +60,13 @@ beforeEach(() => {
 })
 
 describe('OverrideForm', () => {
-  it('renders in add mode with title "Add Override" and "Add" button', () => {
+  it('renders in add mode with title "New override" and "Save override" button', () => {
     render(<OverrideForm {...baseProps} />)
-    expect(screen.getByText('Add Override')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument()
+    expect(screen.getByText('New override')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /save override/i })).toBeInTheDocument()
   })
 
-  it('renders in edit mode with pre-populated values and "Save" button', () => {
+  it('renders in edit mode with pre-populated values and "Save changes" button', () => {
     const editingOverride: Override = {
       id: 'ov-1',
       flag: 'my-flag',
@@ -79,11 +79,9 @@ describe('OverrideForm', () => {
       created: '2024-01-01',
     }
     render(<OverrideForm {...baseProps} editingOverride={editingOverride} />)
-    expect(screen.getByText('Edit Override')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
-    // Value field should be pre-populated
+    expect(screen.getByText('Edit override')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument()
     expect(screen.getByDisplayValue('user-123')).toBeInTheDocument()
-    // Note field should be pre-populated
     expect(screen.getByDisplayValue('VIP user')).toBeInTheDocument()
   })
 
@@ -94,7 +92,7 @@ describe('OverrideForm', () => {
       val: 'Value is required',
     })
     render(<OverrideForm {...baseProps} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
     await waitFor(() => {
       expect(screen.getByText('Context key is required')).toBeInTheDocument()
       expect(screen.getByText('Operator is required')).toBeInTheDocument()
@@ -106,35 +104,23 @@ describe('OverrideForm', () => {
     const onSave = vi.fn()
     mockValidate.mockReturnValue({ key: 'Context key is required' })
     render(<OverrideForm {...baseProps} onSave={onSave} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
     await waitFor(() => {
       expect(screen.getByText('Context key is required')).toBeInTheDocument()
     })
     expect(onSave).not.toHaveBeenCalled()
   })
 
-  it('calls onSave with correct shape when form is valid', async () => {
+  it('calls onSave with correct shape when form is valid (result defaults to ON)', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined)
     mockValidate.mockReturnValue({})
     render(<OverrideForm {...baseProps} onSave={onSave} />)
 
-    // Select context key
-    const keySelect = screen.getByLabelText('Context Key')
-    fireEvent.change(keySelect, { target: { value: 'userId' } })
+    fireEvent.change(screen.getByLabelText('When context key'), { target: { value: 'userId' } })
+    fireEvent.change(screen.getByLabelText('matches'), { target: { value: 'equals' } })
+    fireEvent.change(screen.getByLabelText('value'), { target: { value: 'user-abc' } })
 
-    // Select operator
-    const opSelect = screen.getByLabelText('Operator')
-    fireEvent.change(opSelect, { target: { value: 'equals' } })
-
-    // Fill in value
-    const valInput = screen.getByLabelText('Value')
-    fireEvent.change(valInput, { target: { value: 'user-abc' } })
-
-    // Select result
-    const resultSelect = screen.getByLabelText('Result')
-    fireEvent.change(resultSelect, { target: { value: 'true' } })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith(
@@ -149,6 +135,23 @@ describe('OverrideForm', () => {
     })
   })
 
+  it('selecting OFF in the result control saves result=false', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    mockValidate.mockReturnValue({})
+    render(<OverrideForm {...baseProps} onSave={onSave} />)
+
+    fireEvent.change(screen.getByLabelText('When context key'), { target: { value: 'userId' } })
+    fireEvent.change(screen.getByLabelText('matches'), { target: { value: 'equals' } })
+    fireEvent.change(screen.getByLabelText('value'), { target: { value: 'user-abc' } })
+    fireEvent.click(screen.getByRole('radio', { name: /^off$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ result: false }))
+    })
+  })
+
   it('calls onCancel when Cancel is clicked', () => {
     const onCancel = vi.fn()
     render(<OverrideForm {...baseProps} onCancel={onCancel} />)
@@ -159,22 +162,18 @@ describe('OverrideForm', () => {
   it('operator options change based on selected context field type', async () => {
     render(<OverrideForm {...baseProps} />)
 
-    // Select a boolean field - should offer only "is" operator
-    const keySelect = screen.getByLabelText('Context Key')
-    fireEvent.change(keySelect, { target: { value: 'beta' } })
-
+    fireEvent.change(screen.getByLabelText('When context key'), { target: { value: 'beta' } })
     await waitFor(() => {
-      const opSelect = screen.getByLabelText<HTMLSelectElement>('Operator')
+      const opSelect = screen.getByLabelText<HTMLSelectElement>('matches')
       const options = Array.from(opSelect.options)
         .map((o) => o.value)
         .filter(Boolean)
       expect(options).toEqual(['is'])
     })
 
-    // Switch to string field - should have more operators
-    fireEvent.change(keySelect, { target: { value: 'userId' } })
+    fireEvent.change(screen.getByLabelText('When context key'), { target: { value: 'userId' } })
     await waitFor(() => {
-      const opSelect = screen.getByLabelText<HTMLSelectElement>('Operator')
+      const opSelect = screen.getByLabelText<HTMLSelectElement>('matches')
       const options = Array.from(opSelect.options)
         .map((o) => o.value)
         .filter(Boolean)
@@ -194,33 +193,20 @@ describe('OverrideForm', () => {
     mockValidate.mockReturnValue({})
     render(<OverrideForm {...baseProps} onSave={onSave} />)
 
-    // Select context key
-    const keySelect = screen.getByLabelText('Context Key')
-    fireEvent.change(keySelect, { target: { value: 'userId' } })
+    fireEvent.change(screen.getByLabelText('When context key'), { target: { value: 'userId' } })
+    fireEvent.change(screen.getByLabelText('matches'), { target: { value: 'equals' } })
+    fireEvent.change(screen.getByLabelText('value'), { target: { value: 'user-abc' } })
 
-    // Select operator
-    const opSelect = screen.getByLabelText('Operator')
-    fireEvent.change(opSelect, { target: { value: 'equals' } })
-
-    // Fill in value
-    const valInput = screen.getByLabelText('Value')
-    fireEvent.change(valInput, { target: { value: 'user-abc' } })
-
-    // Select result
-    const resultSelect = screen.getByLabelText('Result')
-    fireEvent.change(resultSelect, { target: { value: 'true' } })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: /save override/i })).toBeDisabled()
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
     })
 
-    // Resolve the save
     resolvePromise!()
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Add' })).not.toBeDisabled()
+      expect(screen.getByRole('button', { name: /save override/i })).not.toBeDisabled()
     })
   })
 })

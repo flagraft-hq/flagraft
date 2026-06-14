@@ -115,7 +115,7 @@ describe('ContextOverridesSection integration tests', () => {
     setupMocks([])
     render(<ContextOverridesSection {...defaultProps} />)
 
-    expect(screen.getByText('No overrides yet')).toBeInTheDocument()
+    expect(screen.getByText(/No overrides in/i)).toBeInTheDocument()
   })
 
   it('add override flow: form appears, submitting creates override', async () => {
@@ -127,26 +127,24 @@ describe('ContextOverridesSection integration tests', () => {
     fireEvent.click(addButtons[0])
 
     // Form should appear
-    expect(screen.getByRole('button', { name: /^Add$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /save override/i })).toBeInTheDocument()
 
     // Select context key = userId
-    const keySelect = screen.getByLabelText('Context Key')
+    const keySelect = screen.getByLabelText('When context key')
     fireEvent.change(keySelect, { target: { value: 'userId' } })
 
     // Select operator = equals
-    const opSelect = screen.getByLabelText('Operator')
+    const opSelect = screen.getByLabelText('matches')
     fireEvent.change(opSelect, { target: { value: 'equals' } })
 
     // Type value
-    const valInput = screen.getByLabelText('Value')
+    const valInput = screen.getByLabelText('value')
     fireEvent.change(valInput, { target: { value: 'user_456' } })
 
-    // Result is already 'Enabled' (true) by default, but let's ensure
-    const resultSelect = screen.getByLabelText('Result')
-    fireEvent.change(resultSelect, { target: { value: 'true' } })
+    // Result defaults to ON (true) via the segmented control
 
     // Submit
-    fireEvent.click(screen.getByRole('button', { name: /^Add$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
 
     await waitFor(() => {
       expect(mockCreateOverride).toHaveBeenCalledWith(
@@ -171,7 +169,7 @@ describe('ContextOverridesSection integration tests', () => {
     fireEvent.click(addButtons[0])
 
     // Submit without filling anything
-    fireEvent.click(screen.getByRole('button', { name: /^Add$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
 
     // Validation errors should appear
     await waitFor(() => {
@@ -223,16 +221,16 @@ describe('ContextOverridesSection integration tests', () => {
 
     // Form should appear with pre-populated value
     await waitFor(() => {
-      const valInput = screen.getByLabelText<HTMLInputElement>('Value')
+      const valInput = screen.getByLabelText<HTMLInputElement>('value')
       expect(valInput.value).toBe('user_123')
     })
 
     // Change value to user_999
-    const valInput = screen.getByLabelText('Value')
+    const valInput = screen.getByLabelText('value')
     fireEvent.change(valInput, { target: { value: 'user_999' } })
 
     // Click Save
-    fireEvent.click(screen.getByRole('button', { name: /^Save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }))
 
     await waitFor(() => {
       expect(mockUpdateOverride).toHaveBeenCalledWith(
@@ -250,17 +248,17 @@ describe('ContextOverridesSection integration tests', () => {
     fireEvent.click(screen.getByRole('button', { name: /add override/i }))
 
     // Fill: key=userId, op=equals, val=user_123 (same as mockOverrides[0])
-    const keySelect = screen.getByLabelText('Context Key')
+    const keySelect = screen.getByLabelText('When context key')
     fireEvent.change(keySelect, { target: { value: 'userId' } })
 
-    const opSelect = screen.getByLabelText('Operator')
+    const opSelect = screen.getByLabelText('matches')
     fireEvent.change(opSelect, { target: { value: 'equals' } })
 
-    const valInput = screen.getByLabelText('Value')
+    const valInput = screen.getByLabelText('value')
     fireEvent.change(valInput, { target: { value: 'user_123' } })
 
     // Submit
-    fireEvent.click(screen.getByRole('button', { name: /^Add$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save override/i }))
 
     // Duplicate error should appear
     await waitFor(() => {

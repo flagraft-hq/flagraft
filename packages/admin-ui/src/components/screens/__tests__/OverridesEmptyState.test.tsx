@@ -9,23 +9,31 @@ describe('OverridesEmptyState', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the empty state title and description', () => {
+  it('renders the generic title when no env is given', () => {
     render(<OverridesEmptyState onAdd={onAdd} />)
     expect(screen.getByText('No overrides yet')).toBeTruthy()
-    expect(
-      screen.getByText('Context overrides let you target specific users or groups.'),
-    ).toBeTruthy()
   })
 
-  it('renders the Add Override button', () => {
+  it('renders an env-specific title when envSlug is provided', () => {
+    render(<OverridesEmptyState onAdd={onAdd} envSlug="development" />)
+    expect(screen.getByText(/No overrides in/i)).toBeTruthy()
+    expect(screen.getByText('development')).toBeTruthy()
+  })
+
+  it('renders the description', () => {
     render(<OverridesEmptyState onAdd={onAdd} />)
-    expect(screen.getByRole('button', { name: /add override/i })).toBeTruthy()
+    expect(screen.getByText(/Add an override to flip the result/i)).toBeTruthy()
   })
 
-  it('calls onAdd when Add Override button is clicked', async () => {
+  it('renders the primary add button', () => {
+    render(<OverridesEmptyState onAdd={onAdd} />)
+    expect(screen.getByRole('button', { name: /add your first override/i })).toBeTruthy()
+  })
+
+  it('calls onAdd when the add button is clicked', async () => {
     const user = userEvent.setup()
     render(<OverridesEmptyState onAdd={onAdd} />)
-    await user.click(screen.getByRole('button', { name: /add override/i }))
+    await user.click(screen.getByRole('button', { name: /add your first override/i }))
     expect(onAdd).toHaveBeenCalledTimes(1)
   })
 })

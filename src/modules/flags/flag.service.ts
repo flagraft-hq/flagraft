@@ -78,6 +78,7 @@ export async function fetchFlagWithState(db: Db, projectId: string, flagKey: str
     .from(flagEnvironments)
     .innerJoin(environments, eq(flagEnvironments.environmentId, environments.id))
     .where(eq(flagEnvironments.flagId, flag.id))
+    .orderBy(environments.createdAt)
 
   const overrideCounts = await db
     .select({
@@ -185,6 +186,7 @@ export async function listFlags(db: Db, projectId: string) {
     .from(flagEnvironments)
     .innerJoin(environments, eq(flagEnvironments.environmentId, environments.id))
     .where(inArray(flagEnvironments.flagId, flagIds))
+    .orderBy(environments.createdAt)
 
   const overrideCounts = await db
     .select({
