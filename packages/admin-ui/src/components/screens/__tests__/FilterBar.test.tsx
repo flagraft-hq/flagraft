@@ -4,7 +4,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { FilterBar } from '../FilterBar'
 import type { StateFilter } from '../../../lib/types'
 
-
 const defaultProps = {
   search: '',
   onSearchChange: vi.fn(),
@@ -43,9 +42,9 @@ describe('FilterBar', () => {
 
   it('marks the active state chip with aria-pressed', () => {
     render(<FilterBar {...defaultProps} stateFilter="on" />)
-    expect(
-      screen.getByRole('button', { name: /on anywhere/i }).getAttribute('aria-pressed'),
-    ).toBe('true')
+    expect(screen.getByRole('button', { name: /on anywhere/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
     expect(
       screen.getByRole('button', { name: /off everywhere/i }).getAttribute('aria-pressed'),
     ).toBe('false')

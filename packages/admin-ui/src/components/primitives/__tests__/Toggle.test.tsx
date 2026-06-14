@@ -86,9 +86,7 @@ describe('Toggle', () => {
   })
 
   it('production variant checked state carries data-variant and aria-checked', () => {
-    const { container } = render(
-      <Toggle checked={true} onChange={() => {}} variant="production" />,
-    )
+    const { container } = render(<Toggle checked={true} onChange={() => {}} variant="production" />)
     const btn = container.querySelector('[data-variant="production"]')
     expect(btn).toBeTruthy()
     expect(btn).toHaveAttribute('aria-checked', 'true')

@@ -83,8 +83,8 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
         <div>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Invite users</h2>
           <div className="sub muted" style={{ fontSize: 12.5, marginTop: 4 }}>
-            Invites expire after <b>7 days</b>. Recipients must verify their email and configure
-            2FA before they can sign in.
+            Invites expire after <b>7 days</b>. Recipients must verify their email and configure 2FA
+            before they can sign in.
           </div>
         </div>
       </Modal.Header>

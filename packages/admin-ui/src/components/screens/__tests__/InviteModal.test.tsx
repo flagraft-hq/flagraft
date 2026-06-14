@@ -106,9 +106,7 @@ describe('InviteModal', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
-    await waitFor(() =>
-      expect(usersApi.invite).toHaveBeenCalledWith(['x@a.com'], 'editor', ['p1']),
-    )
+    await waitFor(() => expect(usersApi.invite).toHaveBeenCalledWith(['x@a.com'], 'editor', ['p1']))
   })
 
   it('shows a toast with temp password for each invited user', async () => {

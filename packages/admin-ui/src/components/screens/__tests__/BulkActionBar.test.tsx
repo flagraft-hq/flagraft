@@ -130,9 +130,7 @@ describe('BulkActionBar', () => {
   })
 
   it('X button does not render when onCancel is not provided', () => {
-    render(
-      <BulkActionBar selectedKeys={['a']} projectId="p" activeEnv="dev" onDone={vi.fn()} />,
-    )
+    render(<BulkActionBar selectedKeys={['a']} projectId="p" activeEnv="dev" onDone={vi.fn()} />)
     expect(screen.queryByRole('button', { name: /clear selection/i })).not.toBeInTheDocument()
   })
 })

@@ -134,4 +134,3 @@ export const OPS_BY_TYPE: Record<FieldType, OperatorOption[]> = {
 }
 
 export type StateFilter = null | 'on' | 'off' | 'overrides' | 'kill-switch'
-

@@ -29,6 +29,7 @@ A **workspace-wide** user directory — every human and service account that can
 ```
 q, statusFilter, roleFilter, sortBy {key,dir}, selected:Set<id>, detail:User|null, showInvite:boolean
 ```
+
 Derive `counts` (per status), `filtered` (filter+sort pipeline), and select-all `allChecked`/`someChecked`.
 
 Status filter detail: selecting **Service** restricts to service accounts only; the other status filters exclude service accounts.
@@ -40,6 +41,7 @@ hover (muted bg) · selected (teal-soft bg) · drawer-active (teal-soft + inset 
 ## Data layer
 
 The prototype uses a static `USERS` array — replace with our admin API. The `User` shape is documented at the top of the component (id, name, email, role, status, twoFA, last, projects[], joined, initials, tone, system?). Suggested endpoints:
+
 - `GET /admin/users`, `GET /admin/users/:id`
 - `POST /admin/users/invite` `{ emails[], role, projects[] }`
 - `PATCH /admin/users/:id` (role / suspend / reinstate)

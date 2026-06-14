@@ -14,7 +14,11 @@ vi.mock('../UserDetailDrawer', () => ({
 
 vi.mock('../InviteModal', () => ({
   InviteModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog" aria-label="invite-modal">InviteModal</div> : null,
+    open ? (
+      <div role="dialog" aria-label="invite-modal">
+        InviteModal
+      </div>
+    ) : null,
 }))
 
 vi.mock('../../../lib/api', () => ({
@@ -139,7 +143,9 @@ describe('UsersScreen', () => {
 
   it('renders a "Users" heading', async () => {
     renderScreen()
-    await waitFor(() => expect(screen.getByRole('heading', { name: /^users$/i })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /^users$/i })).toBeInTheDocument(),
+    )
   })
 
   it('clicking a user row opens the UserDetailDrawer', async () => {

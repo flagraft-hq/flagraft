@@ -157,9 +157,7 @@ describe('FlagDetailScreen', () => {
     await waitFor(() =>
       expect(mockToastPush).toHaveBeenCalledWith({ title: 'Flag deleted', variant: 'success' }),
     )
-    await waitFor(() =>
-      expect(screen.getByTestId('flags-list-page')).toBeInTheDocument(),
-    )
+    await waitFor(() => expect(screen.getByTestId('flags-list-page')).toBeInTheDocument())
   })
 
   it('cancelling delete closes the modal and stays on the detail page', async () => {

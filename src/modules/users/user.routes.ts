@@ -24,15 +24,13 @@ export async function userRoutes(fastify: FastifyInstance) {
       const results = await Promise.all(
         emails.map((email) => service.inviteUser(fastify.db, { email, role, projectIds })),
       )
-      return reply
-        .status(201)
-        .send(
-          results.map((r) => ({
-            id: r.user.id,
-            email: r.user.email,
-            tempPassword: r.tempPassword,
-          })),
-        )
+      return reply.status(201).send(
+        results.map((r) => ({
+          id: r.user.id,
+          email: r.user.email,
+          tempPassword: r.tempPassword,
+        })),
+      )
     },
   )
 

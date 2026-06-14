@@ -39,10 +39,7 @@ export function Toggle({
    * 'default' size needs no extra class — the base .toggle-track
    * already defines the default (36×20) dimensions.
    */
-  const trackClass = [
-    'toggle-track',
-    size === 'sm' ? 'track-sm' : size === 'lg' ? 'track-lg' : '',
-  ]
+  const trackClass = ['toggle-track', size === 'sm' ? 'track-sm' : size === 'lg' ? 'track-lg' : '']
     .filter(Boolean)
     .join(' ')
 

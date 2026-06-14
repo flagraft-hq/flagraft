@@ -36,7 +36,10 @@ vi.mock('../FlagRow', () => ({
       <button data-testid={`nav-${flag.key}`} onClick={() => onClick(flag.key)}>
         Open
       </button>
-      <button data-testid={`toggle-${flag.key}`} onClick={() => onToggle(flag.key, 'development', true)}>
+      <button
+        data-testid={`toggle-${flag.key}`}
+        onClick={() => onToggle(flag.key, 'development', true)}
+      >
         Toggle
       </button>
     </div>

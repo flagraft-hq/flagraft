@@ -141,11 +141,7 @@ function ModalHeader({ children, id, subtitle }: ModalHeaderProps) {
         <h2>{children}</h2>
         {subtitle ? <p className="modal-header__sub sub">{subtitle}</p> : null}
       </div>
-      <button
-        className="modal-close"
-        aria-label="Close"
-        onClick={() => onClose?.()}
-      >
+      <button className="modal-close" aria-label="Close" onClick={() => onClose?.()}>
         <Icon name="x" size={16} />
       </button>
     </div>

@@ -200,14 +200,26 @@ export function UsersScreen() {
         <StatCard
           label="Total users"
           value={counts.all}
-          sub={<>{counts.active} active · {counts.system} service</>}
+          sub={
+            <>
+              {counts.active} active · {counts.system} service
+            </>
+          }
           icon="user"
           tone="teal"
         />
         <StatCard
           label="Pending invites"
           value={counts.invited}
-          sub={counts.invited > 0 ? <>Expires in <b>7&nbsp;days</b></> : 'Nothing pending'}
+          sub={
+            counts.invited > 0 ? (
+              <>
+                Expires in <b>7&nbsp;days</b>
+              </>
+            ) : (
+              'Nothing pending'
+            )
+          }
           icon="sparkles"
           tone="amber"
           warn={counts.invited > 0}
@@ -359,7 +371,11 @@ export function UsersScreen() {
           </span>
           <span style={{ flex: 1 }} />
           <span className="muted" style={{ fontSize: 12 }}>
-            Provisioning via <span className="mono" style={{ color: 'var(--text-2)' }}>SCIM 2.0</span> · Okta
+            Provisioning via{' '}
+            <span className="mono" style={{ color: 'var(--text-2)' }}>
+              SCIM 2.0
+            </span>{' '}
+            · Okta
           </span>
         </div>
       </div>

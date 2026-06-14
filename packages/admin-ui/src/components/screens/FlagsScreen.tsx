@@ -14,7 +14,6 @@ import { CreateFlagModal } from './CreateFlagModal'
 import { flagsApi } from '../../lib/api'
 import type { Flag, StateFilter } from '../../lib/types'
 
-
 const ENV_NAMES = ['development', 'production']
 
 /** Returns whether a flag passes the currently selected state-filter chip. */
@@ -285,7 +284,11 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           ))}
         </div>
       )}
-      <CreateFlagModal open={showCreate} projectId={projectId} onClose={() => setShowCreate(false)} />
+      <CreateFlagModal
+        open={showCreate}
+        projectId={projectId}
+        onClose={() => setShowCreate(false)}
+      />
     </div>
   )
 }

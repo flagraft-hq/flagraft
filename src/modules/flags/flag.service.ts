@@ -1,7 +1,13 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
-import { environments, featureFlags, flagEnvironments, flagOverrides, users } from '../../db/schema.js'
+import {
+  environments,
+  featureFlags,
+  flagEnvironments,
+  flagOverrides,
+  users,
+} from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateFlagInput, PatchFlagInput } from './flag.schema.js'
 
@@ -139,7 +145,7 @@ export async function createFlag(
     }
     return newFlag
   })
-  
+
   return fetchFlagWithState(db, projectId, flag.key)
 }
 
@@ -192,7 +198,7 @@ export async function listFlags(db: Db, projectId: string) {
     .groupBy(flagOverrides.flagId, environments.slug)
 
   const statesMap: Record<string, Record<string, { on: boolean; overrides: number }>> = {}
-  
+
   for (const row of envStates) {
     if (!statesMap[row.flagId]) {
       statesMap[row.flagId] = {}

@@ -12,7 +12,13 @@ interface BulkActionBarProps {
   onCancel?: () => void
 }
 
-export function BulkActionBar({ selectedKeys, projectId, activeEnv, onDone, onCancel }: BulkActionBarProps) {
+export function BulkActionBar({
+  selectedKeys,
+  projectId,
+  activeEnv,
+  onDone,
+  onCancel,
+}: BulkActionBarProps) {
   const [loading, setLoading] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const toast = useToast()

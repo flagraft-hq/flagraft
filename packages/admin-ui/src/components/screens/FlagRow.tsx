@@ -80,7 +80,11 @@ export function FlagRow({
   }
 
   return (
-    <div className={`flags-row body${selected ? ' selected' : ''}`} role="row" data-selected={selected || undefined}>
+    <div
+      className={`flags-row body${selected ? ' selected' : ''}`}
+      role="row"
+      data-selected={selected || undefined}
+    >
       <div className="cell-check">
         <Checkbox
           checked={selected}
@@ -136,8 +140,8 @@ export function FlagRow({
         <Modal.Header>{confirmState?.checked ? 'Enable' : 'Disable'} in Production?</Modal.Header>
         <Modal.Body>
           <p>
-            {confirmState?.checked ? 'Enable' : 'Disable'} <strong>{flag.name}</strong> in <strong>{confirmState?.env}</strong>? This will
-            affect production traffic.
+            {confirmState?.checked ? 'Enable' : 'Disable'} <strong>{flag.name}</strong> in{' '}
+            <strong>{confirmState?.env}</strong>? This will affect production traffic.
           </p>
         </Modal.Body>
         <Modal.Footer>

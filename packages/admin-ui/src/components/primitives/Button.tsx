@@ -41,11 +41,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
      * - 'icon-only' adds a fixed-width square treatment
      */
     const variantClasses =
-      variant === 'danger-solid'
-        ? ['danger', 'solid']
-        : variant !== 'default'
-          ? [variant]
-          : []
+      variant === 'danger-solid' ? ['danger', 'solid'] : variant !== 'default' ? [variant] : []
 
     const classes = [
       'btn',

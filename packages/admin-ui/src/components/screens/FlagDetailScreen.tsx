@@ -150,8 +150,8 @@ function EnvironmentsTab({
         <Modal.Header>{confirmState?.checked ? 'Enable' : 'Disable'} in Production?</Modal.Header>
         <Modal.Body>
           <p>
-            {confirmState?.checked ? 'Enable' : 'Disable'} <strong>{flag.name}</strong> in <strong>{confirmState?.env}</strong>? This will
-            affect production traffic.
+            {confirmState?.checked ? 'Enable' : 'Disable'} <strong>{flag.name}</strong> in{' '}
+            <strong>{confirmState?.env}</strong>? This will affect production traffic.
           </p>
         </Modal.Body>
         <Modal.Footer>
@@ -285,7 +285,9 @@ export function FlagDetailScreen() {
           <span>Overrides: {totalOverrides}</span>
           <span>
             Tags:{' '}
-            {(flag.tags ?? []).length > 0 ? (flag.tags ?? []).map((tag) => <Badge key={tag}>{tag}</Badge>) : 'None'}
+            {(flag.tags ?? []).length > 0
+              ? (flag.tags ?? []).map((tag) => <Badge key={tag}>{tag}</Badge>)
+              : 'None'}
           </span>
         </div>
       </div>

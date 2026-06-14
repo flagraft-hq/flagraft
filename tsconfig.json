@@ -13,4 +13,3 @@
   },
   "include": ["src/**/*", "tests/**/*", "e2e/**/*", "scripts/**/*", "*.config.ts"]
 }
-
