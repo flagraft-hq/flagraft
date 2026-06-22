@@ -1,0 +1,188 @@
+/**
+ * API keys screen: the key table, the security note, the issue dialog, and the
+ * one-time plaintext reveal. Reuses shared tokens, .page-header, .icon-btn.
+ */
+
+.keys-screen {
+  padding: var(--s-6);
+}
+
+.keys-empty-project,
+.keys-loading {
+  padding: var(--s-6);
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+/* Table */
+.keys-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.keys-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.keys-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-4);
+  padding: 10px 16px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+.keys-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.keys-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.keys-label {
+  font-weight: 600;
+  color: var(--text-1);
+}
+.keys-label-sub {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.keys-prefix {
+  font-size: 12.5px;
+}
+.keys-date {
+  color: var(--text-2);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.keys-date.muted {
+  color: var(--text-3);
+}
+.keys-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.keys-empty {
+  padding: var(--s-6);
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-1);
+}
+
+/* Security note */
+.keys-security-note {
+  margin-top: var(--s-4);
+  padding: 14px;
+  background: var(--acc-soft);
+  border: 1px solid var(--acc-soft-border);
+  border-radius: var(--r-md);
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+  align-items: start;
+  font-size: 12.5px;
+  color: var(--acc-fg);
+}
+.keys-security-note strong {
+  color: var(--acc-fg);
+}
+
+/* Issue dialog form */
+.keys-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.keys-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.keys-form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.keys-form-hint {
+  font-size: 12px;
+}
+.keys-scope-seg {
+  display: flex;
+  gap: 6px;
+}
+
+/* One-time reveal */
+.keys-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.keys-reveal-code {
+  background: #0b1220;
+  color: #e4f7f3;
+  padding: 14px;
+  border-radius: var(--r-md);
+  border: 1px solid #1f2a40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  word-break: break-all;
+  font-size: 13px;
+}
+.keys-reveal-code .mono {
+  flex: 1;
+}
+/* Make the copy button legible on the dark reveal block */
+.btn.keys-reveal-copy {
+  background: #172238;
+  color: #e4f7f3;
+  border: 1px solid #2a3855;
+  flex-shrink: 0;
+}
+.btn.keys-reveal-copy:hover {
+  background: #1d2942;
+}
+.btn.keys-reveal-copy.is-copied {
+  color: #5eead4;
+}
+.keys-reveal-usage {
+  background: var(--bg-subtle);
+  border-radius: var(--r-md);
+  padding: 12px;
+}
+.keys-reveal-usage-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.keys-reveal-curl {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+  color: var(--text-2);
+}
+.keys-reveal-foot {
+  font-size: 12px;
+}

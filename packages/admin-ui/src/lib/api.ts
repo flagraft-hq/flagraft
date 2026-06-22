@@ -1,5 +1,14 @@
 import axios from 'axios'
-import type { Flag, Override, ContextField, Project, Env } from './types'
+import type {
+  Flag,
+  Override,
+  ContextField,
+  Project,
+  Env,
+  ApiKey,
+  ApiKeyType,
+  CreatedApiKey,
+} from './types'
 
 /** Carries the HTTP status alongside the server-provided message. */
 export class ApiError extends Error {
@@ -122,6 +131,19 @@ export const environmentsApi = {
 
   delete: (projectId: string, environmentId: string) =>
     http.delete(`/api/v1/admin/projects/${projectId}/environments/${environmentId}`),
+}
+
+export const keysApi = {
+  list: (projectId: string) => http.get<ApiKey[]>(`/api/v1/admin/projects/${projectId}/keys`),
+
+  /** Returns the plaintext key once; the backend only ever stores its hash. */
+  create: (
+    projectId: string,
+    data: { type: ApiKeyType; environmentId?: string; description?: string },
+  ) => http.post<CreatedApiKey>(`/api/v1/admin/projects/${projectId}/keys`, data),
+
+  delete: (projectId: string, keyId: string) =>
+    http.delete(`/api/v1/admin/projects/${projectId}/keys/${keyId}`),
 }
 
 export const projectsApi = {

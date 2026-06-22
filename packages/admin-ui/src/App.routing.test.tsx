@@ -50,6 +50,10 @@ vi.mock('./components/screens/EnvironmentsScreen', () => ({
   EnvironmentsScreen: () => <div data-testid="environments-screen">Environments</div>,
 }))
 
+vi.mock('./components/screens/KeysScreen', () => ({
+  KeysScreen: () => <div data-testid="keys-screen">API keys</div>,
+}))
+
 vi.mock('./components/layout/MainLayout', () => ({
   MainLayout: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="main-layout">{children}</div>
@@ -119,10 +123,9 @@ describe('Routing — authenticated user', () => {
     expect(screen.getByTestId('environments-screen')).toBeInTheDocument()
   })
 
-  it('/keys renders "API keys" Coming soon placeholder', () => {
+  it('/keys renders the API keys screen', () => {
     renderAt('/keys')
-    expect(screen.getByText('API keys')).toBeInTheDocument()
-    expect(screen.getByText('Coming soon.')).toBeInTheDocument()
+    expect(screen.getByTestId('keys-screen')).toBeInTheDocument()
   })
 
   it('/login redirects to /flags when already authenticated', () => {

@@ -18,6 +18,25 @@ export interface Env {
   protected: boolean
 }
 
+/** Key tiers the admin API can issue. The root key is CLI-managed and not listed here. */
+export type ApiKeyType = 'admin' | 'client'
+
+export interface ApiKey {
+  id: string
+  prefix: string
+  type: ApiKeyType
+  /** Set only for client keys, which are scoped to one environment. */
+  environmentId: string | null
+  description: string | null
+  lastUsedAt: string | null
+  createdAt: string
+}
+
+/** Returned only at creation — carries the plaintext key, shown to the user once. */
+export interface CreatedApiKey extends ApiKey {
+  key: string
+}
+
 export interface FlagEnvState {
   on: boolean
   overrides: number

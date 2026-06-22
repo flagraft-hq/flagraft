@@ -6,6 +6,7 @@ import {
   overridesApi,
   contextFieldsApi,
   environmentsApi,
+  keysApi,
   projectsApi,
   authApi,
   usersApi,
@@ -180,6 +181,29 @@ describe('environmentsApi', () => {
     const spy = vi.spyOn(http, 'delete').mockResolvedValueOnce({ data: {} })
     await environmentsApi.delete('proj-1', 'staging')
     expect(spy).toHaveBeenCalledWith('/api/v1/admin/projects/proj-1/environments/staging')
+    spy.mockRestore()
+  })
+})
+
+describe('keysApi', () => {
+  it('exports list, create, delete', () => {
+    expect(typeof keysApi.list).toBe('function')
+    expect(typeof keysApi.create).toBe('function')
+    expect(typeof keysApi.delete).toBe('function')
+  })
+
+  it('create posts to the project keys endpoint', async () => {
+    const spy = vi.spyOn(http, 'post').mockResolvedValueOnce({ data: {} })
+    const body = { type: 'client' as const, environmentId: 'env-1', description: 'CI' }
+    await keysApi.create('proj-1', body)
+    expect(spy).toHaveBeenCalledWith('/api/v1/admin/projects/proj-1/keys', body)
+    spy.mockRestore()
+  })
+
+  it('delete targets the key by id', async () => {
+    const spy = vi.spyOn(http, 'delete').mockResolvedValueOnce({ data: {} })
+    await keysApi.delete('proj-1', 'key-9')
+    expect(spy).toHaveBeenCalledWith('/api/v1/admin/projects/proj-1/keys/key-9')
     spy.mockRestore()
   })
 })
