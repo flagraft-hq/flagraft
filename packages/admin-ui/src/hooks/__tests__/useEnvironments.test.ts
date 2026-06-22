@@ -48,7 +48,17 @@ describe('useEnvironments', () => {
   it('orders dev → staging → production, then unknown envs alphabetically', async () => {
     asMock(flagsApi.list).mockResolvedValue({
       data: [
-        { key: 'a', name: 'A', state: { production: { on: false }, staging: { on: false }, development: { on: false }, zeta: { on: false }, alpha: { on: false } } },
+        {
+          key: 'a',
+          name: 'A',
+          state: {
+            production: { on: false },
+            staging: { on: false },
+            development: { on: false },
+            zeta: { on: false },
+            alpha: { on: false },
+          },
+        },
       ],
     })
     const { result } = renderHook(() => useEnvironments('proj-1'))
@@ -75,7 +85,9 @@ describe('useEnvironments', () => {
   it('prefers environment metadata (name/color/protected) over derived values', async () => {
     asMock(flagsApi.list).mockResolvedValue({ data: mockFlags })
     asMock(environmentsApi.list).mockResolvedValue({
-      data: [{ id: 'e1', slug: 'production', name: 'Prod Custom', color: 'amber', protected: false }],
+      data: [
+        { id: 'e1', slug: 'production', name: 'Prod Custom', color: 'amber', protected: false },
+      ],
     })
     const { result } = renderHook(() => useEnvironments('proj-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))

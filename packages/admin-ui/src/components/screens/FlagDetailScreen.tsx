@@ -179,7 +179,6 @@ curl -X POST https://api.flagraft.com/v1/eval \\
     },
   }
 
-
   const tabs: { id: SdkTab; label: string; isComingSoon?: boolean }[] = [
     { id: 'node', label: 'Node.js' },
     { id: 'react', label: 'React' },
@@ -457,7 +456,6 @@ export function FlagDetailScreen() {
     0,
   )
 
-
   const handleDelete = async () => {
     setDeleting(true)
     try {
@@ -508,7 +506,13 @@ export function FlagDetailScreen() {
           <span className="detail-flag-key">
             <Icon name="flag" size={12} />
             <span className="mono">{flag.key}</span>
-            <CopyButton value={flag.key} iconOnly tip="Copy key" iconSize={11} className="detail-key-copy" />
+            <CopyButton
+              value={flag.key}
+              iconOnly
+              tip="Copy key"
+              iconSize={11}
+              className="detail-key-copy"
+            />
           </span>
           {flag.description && <p className="detail-desc">{flag.description}</p>}
           <div className="meta-row">

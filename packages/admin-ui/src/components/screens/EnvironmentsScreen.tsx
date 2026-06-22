@@ -155,7 +155,10 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
               <span className="muted env-baseurl-label">Base URL</span>
               <code className="mono env-baseurl">{baseUrlFor(env.slug)}</code>
               <span className="spacer" />
-              <CopyButton value={baseUrlFor(env.slug)} ariaLabel={`Copy base URL for ${env.name}`} />
+              <CopyButton
+                value={baseUrlFor(env.slug)}
+                ariaLabel={`Copy base URL for ${env.name}`}
+              />
             </div>
           </div>
         ))}

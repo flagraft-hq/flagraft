@@ -109,23 +109,16 @@ export const contextFieldsApi = {
 }
 
 export const environmentsApi = {
-  list: (projectId: string) =>
-    http.get<Env[]>(`/api/v1/admin/projects/${projectId}/environments`),
+  list: (projectId: string) => http.get<Env[]>(`/api/v1/admin/projects/${projectId}/environments`),
 
-  create: (
-    projectId: string,
-    data: { name: string; slug: string; protected: boolean },
-  ) => http.post<Env>(`/api/v1/admin/projects/${projectId}/environments`, data),
+  create: (projectId: string, data: { name: string; slug: string; protected: boolean }) =>
+    http.post<Env>(`/api/v1/admin/projects/${projectId}/environments`, data),
 
   update: (
     projectId: string,
     environmentId: string,
     data: Partial<Pick<Env, 'name' | 'protected'>>,
-  ) =>
-    http.patch<Env>(
-      `/api/v1/admin/projects/${projectId}/environments/${environmentId}`,
-      data,
-    ),
+  ) => http.patch<Env>(`/api/v1/admin/projects/${projectId}/environments/${environmentId}`, data),
 
   delete: (projectId: string, environmentId: string) =>
     http.delete(`/api/v1/admin/projects/${projectId}/environments/${environmentId}`),

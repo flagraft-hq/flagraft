@@ -67,7 +67,7 @@ export function useEnvironments(projectId: string): UseEnvironmentsResult {
         flags.forEach((f) => Object.keys(f.state ?? {}).forEach((s) => slugs.add(s)))
 
         /** Prefer real environment metadata; fall back to deriving it from slugs. */
-        let meta: Env[] = []
+        let meta: Env[]
         try {
           const res = await environmentsApi.list(projectId)
           meta = res.data
