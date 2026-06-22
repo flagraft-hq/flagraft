@@ -24,6 +24,7 @@ export const environments = pgTable(
       .references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
+    protected: boolean('protected').notNull().default(false),
     createdAt: createdAt(),
   },
   (table) => [unique('environments_project_id_slug_unique').on(table.projectId, table.slug)],

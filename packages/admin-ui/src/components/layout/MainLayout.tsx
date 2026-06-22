@@ -16,7 +16,7 @@ export interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const { activeProject, activeEnv, setActiveEnv } = useProject()
+  const { activeProject, environments, activeEnv, setActiveEnv } = useProject()
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showSwitcher, setShowSwitcher] = useState(false)
 
@@ -46,6 +46,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="app-shell">
         <TopBar
           project={project}
+          environments={environments}
           onSwitchProject={() => setShowSwitcher(true)}
           activeEnv={activeEnv ?? 'development'}
           onChangeEnv={setActiveEnv}

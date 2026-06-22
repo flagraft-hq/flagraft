@@ -4,6 +4,7 @@ import {
   createEnvironmentSchema,
   environmentParamsSchema,
   projectEnvironmentParamsSchema,
+  updateEnvironmentSchema,
 } from './environment.schema.js'
 import { cacheKeys } from '../../cache/keys.js'
 import * as service from './environment.service.js'
@@ -51,6 +52,34 @@ export async function environmentRoutes(fastify: FastifyInstance) {
     async (request) => {
       const params = projectEnvironmentParamsSchema.parse(request.params)
       return service.listEnvironments(fastify.db, params.projectId)
+    },
+  )
+
+  fastify.patch(
+    '/admin/projects/:projectId/environments/:environmentId',
+    {
+      preHandler: fastify.requireAdminKey,
+      schema: {
+        tags: ['admin'],
+        description: 'Update an environment (name, protected). The slug is immutable.',
+        params: {
+          type: 'object',
+          properties: {
+            projectId: { type: 'string' },
+            environmentId: { type: 'string' },
+          },
+          required: ['projectId', 'environmentId'],
+        },
+      },
+    },
+    async (request) => {
+      const params = environmentParamsSchema.parse(request.params)
+      return service.updateEnvironment(
+        fastify.db,
+        params.projectId,
+        params.environmentId,
+        updateEnvironmentSchema.parse(request.body),
+      )
     },
   )
 

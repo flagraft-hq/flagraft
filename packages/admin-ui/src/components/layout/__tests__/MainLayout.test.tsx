@@ -21,6 +21,8 @@ vi.mock('../../../contexts/ProjectContext', () => ({
   useProject: () => ({
     activeProject: { id: 'p1', name: 'Flagraft Demo', slug: 'flagraft-demo', flagCount: 0 },
     activeEnv: 'development',
+    environments: [],
+    refetchEnvironments: vi.fn(),
     setActiveEnv: vi.fn(),
     projects: [],
     loading: false,

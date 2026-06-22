@@ -1,0 +1,163 @@
+/**
+ * Environments screen: a two-column grid of environment cards with per-env
+ * stats and the create/edit form. Mirrors the Claude Design prototype
+ * (screens-mgmt.jsx → EnvironmentsScreen): colored soft-tint pills per
+ * environment, filled stat boxes, and a base-URL footer. Reuses shared tokens,
+ * .page-header, .icon-btn and the .env-card-foot separator from flag-detail.css.
+ */
+
+/* Screen padding — matches .flags-screen / .flag-detail (24px all round) */
+.env-screen {
+  padding: var(--s-6);
+}
+
+.env-empty-project,
+.env-loading {
+  padding: var(--s-6);
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+/* Two-column card grid (collapses to one column on narrow viewports) */
+.env-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+}
+@media (max-width: 720px) {
+  .env-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.env-card-lg {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-1);
+  padding: var(--s-5);
+}
+
+.env-card-lg-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: 14px;
+}
+
+/* Colored environment pill — soft tint background matching the env color */
+.env-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.env-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ink-400);
+}
+.env-pill-teal {
+  background: var(--pri-soft);
+  border-color: var(--pri-soft-border);
+  color: var(--pri-fg);
+}
+.env-pill-teal .dot {
+  background: var(--teal-500);
+}
+.env-pill-amber {
+  background: var(--acc-soft);
+  border-color: var(--acc-soft-border);
+  color: var(--acc-fg);
+}
+.env-pill-amber .dot {
+  background: var(--amber-500);
+}
+.env-pill-red {
+  background: var(--danger-soft);
+  border-color: var(--danger-soft-border);
+  color: var(--danger-fg);
+}
+.env-pill-red .dot {
+  background: var(--red-500);
+}
+.env-pill-slate {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+.env-pill-slate .dot {
+  background: var(--ink-400);
+}
+
+.env-card-slug {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 14px;
+}
+
+/* Stats row: three filled boxes */
+.env-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+}
+.env-stat {
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border-radius: var(--r-md);
+}
+.env-stat-label {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.env-stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Footer base-URL row (.env-card-foot supplies the top border + flex) */
+.env-card-lg .env-card-foot {
+  gap: var(--s-2);
+}
+.env-baseurl-label {
+  font-size: 12px;
+}
+.env-baseurl {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* Create / edit form */
+.env-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.env-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.env-form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.env-form-protected {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 13px;
+}

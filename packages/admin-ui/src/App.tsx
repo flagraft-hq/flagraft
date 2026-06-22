@@ -10,6 +10,7 @@ import { FlagDetailScreen } from './components/screens/FlagDetailScreen'
 import { SettingsScreen } from './components/screens/SettingsScreen'
 import { LoginScreen } from './components/screens/LoginScreen'
 import { UsersScreen } from './components/screens/UsersScreen'
+import { EnvironmentsScreen } from './components/screens/EnvironmentsScreen'
 import './styles/index.css'
 
 function Placeholder({ title }: { title: string }) {
@@ -98,7 +99,7 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <MainLayout>
-              <Placeholder title="Environments" />
+              <EnvironmentsScreen />
             </MainLayout>
           </RequireAuth>
         }

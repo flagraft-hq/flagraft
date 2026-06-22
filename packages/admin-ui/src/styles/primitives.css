@@ -456,3 +456,25 @@
 .spacer {
   flex: 1 1 auto;
 }
+
+/* CopyButton: success tint while showing the "Copied" confirmation */
+.btn.copy-btn.is-copied,
+.icon-btn.is-copied {
+  color: var(--pri-fg);
+}
+
+/* Inline form/dialog error banner (FormError primitive) */
+.form-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-soft-border);
+  border-radius: var(--r-md);
+  color: var(--danger-fg);
+  font-size: 12.5px;
+}
+.form-error-banner svg {
+  flex-shrink: 0;
+}

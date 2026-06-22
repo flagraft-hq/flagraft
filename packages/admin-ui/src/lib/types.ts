@@ -1,4 +1,4 @@
-export type EnvColor = 'teal' | 'amber' | 'red'
+export type EnvColor = 'teal' | 'amber' | 'red' | 'slate'
 export type FieldType = 'string' | 'enum' | 'boolean' | 'number' | 'version' | 'date'
 export type FieldSource = 'sdk' | 'server' | 'computed'
 export type KeyScope = 'root' | 'admin' | 'client'

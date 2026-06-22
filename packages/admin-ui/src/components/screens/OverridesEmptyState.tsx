@@ -3,10 +3,10 @@ import { Button } from '../primitives/Button'
 interface OverridesEmptyStateProps {
   onAdd: () => void
   /** When provided, the heading names the environment being viewed. */
-  envSlug?: string
+  envName?: string
 }
 
-export function OverridesEmptyState({ onAdd, envSlug }: OverridesEmptyStateProps) {
+export function OverridesEmptyState({ onAdd, envName }: OverridesEmptyStateProps) {
   return (
     <div className="overrides-empty">
       <div className="overrides-empty-ill" aria-hidden="true">
@@ -18,13 +18,7 @@ export function OverridesEmptyState({ onAdd, envSlug }: OverridesEmptyStateProps
         </svg>
       </div>
       <h3 className="overrides-empty-title">
-        {envSlug ? (
-          <>
-            No overrides in <span className="mono">{envSlug}</span>
-          </>
-        ) : (
-          'No overrides yet'
-        )}
+        {envName ? <>No overrides in {envName}</> : 'No overrides yet'}
       </h3>
       <p className="overrides-empty-desc">
         Every caller in this environment gets the default. Add an override to flip the result for a

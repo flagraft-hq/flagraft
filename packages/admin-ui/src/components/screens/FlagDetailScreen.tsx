@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast'
 import type { Flag } from '../../lib/types'
 import { Button } from '../primitives/Button'
 import { ErrorState } from '../primitives/ErrorState'
+import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
 import { Toggle } from '../primitives/Toggle'
 import { Modal } from '../primitives/Modal'
@@ -113,7 +114,6 @@ type SdkTab = 'node' | 'react' | 'go' | 'python' | 'curl'
 
 function SdkSnippetModal({ open, flag, onClose }: SdkSnippetModalProps) {
   const [activeTab, setActiveTab] = useState<SdkTab>('node')
-  const [copied, setCopied] = useState(false)
 
   const snippets: Record<SdkTab, { lang: string; code: string }> = {
     node: {
@@ -179,15 +179,6 @@ curl -X POST https://api.flagraft.com/v1/eval \\
     },
   }
 
-  const handleCopy = () => {
-    navigator.clipboard
-      .writeText(snippets[activeTab].code)
-      .then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      })
-      .catch(() => {})
-  }
 
   const tabs: { id: SdkTab; label: string; isComingSoon?: boolean }[] = [
     { id: 'node', label: 'Node.js' },
@@ -210,10 +201,7 @@ curl -X POST https://api.flagraft.com/v1/eval \\
                 key={tab.id}
                 type="button"
                 className={`sdk-modal-tab-btn${activeTab === tab.id ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveTab(tab.id)
-                  setCopied(false)
-                }}
+                onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
                 {tab.isComingSoon && <span className="sdk-modal-coming-soon-badge">soon</span>}
@@ -243,14 +231,7 @@ curl -X POST https://api.flagraft.com/v1/eval \\
               <>
                 <div className="sdk-modal-code-header">
                   <span className="sdk-modal-lang-label">{snippets[activeTab].lang}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={copied ? 'check' : 'copy'}
-                    onClick={handleCopy}
-                  >
-                    {copied ? 'Copied' : 'Copy code'}
-                  </Button>
+                  <CopyButton key={activeTab} value={snippets[activeTab].code} label="Copy code" />
                 </div>
                 <pre className="sdk-modal-code">
                   <code>{snippets[activeTab].code}</code>
@@ -290,6 +271,9 @@ function EnvironmentsTab({
   onToggled: () => void
 }) {
   const toast = useToast()
+  const { environments } = useProject()
+  /** Display the environment's real name; fall back to the slug if unknown. */
+  const nameFor = (slug: string) => environments.find((e) => e.slug === slug)?.name ?? slug
   const [confirmState, setConfirmState] = useState<{ env: string; checked: boolean } | null>(null)
 
   const executeToggle = (env: string, newValue: boolean) => {
@@ -339,7 +323,7 @@ function EnvironmentsTab({
               <div className="env-card-head">
                 <span className={`env-badge env-badge-${envColor(env)}`}>
                   <span className="dot" />
-                  {env}
+                  {nameFor(env)}
                 </span>
                 <span className="spacer" />
                 <Toggle
@@ -376,6 +360,7 @@ function EnvironmentsTab({
           env={activeEnv}
           environments={envKeys.map((e) => ({
             slug: e,
+            name: nameFor(e),
             defaultOn: flag.state[e]?.on ?? false,
             count: flag.state[e]?.overrides ?? 0,
           }))}
@@ -472,12 +457,6 @@ export function FlagDetailScreen() {
     0,
   )
 
-  const handleCopyKey = () => {
-    navigator.clipboard
-      .writeText(flag.key)
-      .then(() => toast.push({ title: 'Key copied', variant: 'success' }))
-      .catch(() => toast.push({ title: 'Failed to copy key', variant: 'error' }))
-  }
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -529,9 +508,7 @@ export function FlagDetailScreen() {
           <span className="detail-flag-key">
             <Icon name="flag" size={12} />
             <span className="mono">{flag.key}</span>
-            <button className="icon-btn detail-key-copy" aria-label="Copy" onClick={handleCopyKey}>
-              <Icon name="copy" size={11} />
-            </button>
+            <CopyButton value={flag.key} iconOnly tip="Copy key" iconSize={11} className="detail-key-copy" />
           </span>
           {flag.description && <p className="detail-desc">{flag.description}</p>}
           <div className="meta-row">

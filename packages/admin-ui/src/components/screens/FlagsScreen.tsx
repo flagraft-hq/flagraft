@@ -78,7 +78,13 @@ export function FlagsScreen() {
 }
 
 function FlagsScreenInner({ projectId }: { projectId: string }) {
-  const { activeEnv } = useProject()
+  const { activeEnv, environments } = useProject()
+  /**
+   * The flags list shows the development and production columns by design.
+   * Their labels come from the real environment names so renames show here too.
+   * ponytail: fixed two columns; revisit if the list needs to scale to N envs.
+   */
+  const nameFor = (slug: string) => environments.find((e) => e.slug === slug)?.name ?? slug
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -251,11 +257,11 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
               onSort={handleSortCol}
             />
             <div className="cell-env">
-              <span className="env-label">development</span>
+              <span className="env-label">{nameFor('development')}</span>
             </div>
             <div className="cell-env cell-env-prod">
               <span className="env-label">
-                production
+                {nameFor('production')}
                 <span className="live-dot" aria-hidden="true" />
               </span>
             </div>

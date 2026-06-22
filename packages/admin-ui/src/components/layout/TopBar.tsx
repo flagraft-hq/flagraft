@@ -2,8 +2,10 @@ import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
 import { Kbd } from '../primitives/Kbd'
 import { useTheme } from '../../contexts/ThemeContext'
+import type { Env } from '../../lib/types'
 
-export type EnvSlug = 'development' | 'production'
+/** Environment slugs are project-defined, so this is just a string. */
+export type EnvSlug = string
 
 export interface ProjectInfo {
   id: string
@@ -13,6 +15,7 @@ export interface ProjectInfo {
 
 export interface TopBarProps {
   project: ProjectInfo
+  environments: Env[]
   onSwitchProject: () => void
   activeEnv: EnvSlug
   onChangeEnv: (env: EnvSlug) => void
@@ -20,13 +23,9 @@ export interface TopBarProps {
   onShowHelp: () => void
 }
 
-const ENVS: Array<{ slug: EnvSlug; name: string }> = [
-  { slug: 'development', name: 'Development' },
-  { slug: 'production', name: 'Production' },
-]
-
 export function TopBar({
   project,
+  environments,
   onSwitchProject,
   activeEnv,
   onChangeEnv,
@@ -57,7 +56,7 @@ export function TopBar({
 
       {/* Environment chips */}
       <div className="env-chips" role="tablist" aria-label="Environment scope">
-        {ENVS.map((e) => (
+        {environments.map((e) => (
           <button
             key={e.slug}
             role="tab"
@@ -65,10 +64,10 @@ export function TopBar({
             data-env={e.slug}
             className="env-chip"
             onClick={() => onChangeEnv(e.slug)}
-            title={e.name}
+            title={`/${e.slug}`}
           >
             <span className="dot" />
-            {e.slug}
+            {e.name}
           </button>
         ))}
       </div>

@@ -18,6 +18,8 @@ vi.mock('./contexts/ProjectContext', () => ({
     activeProject: { id: 'p1', name: 'Demo', slug: 'demo', flagCount: 0 },
     setActiveProject: vi.fn(),
     activeEnv: 'development',
+    environments: [],
+    refetchEnvironments: vi.fn(),
     setActiveEnv: vi.fn(),
     loading: false,
     error: null,
@@ -42,6 +44,10 @@ vi.mock('./components/screens/UsersScreen', () => ({
 
 vi.mock('./components/screens/SettingsScreen', () => ({
   SettingsScreen: () => <div data-testid="settings-screen">Settings</div>,
+}))
+
+vi.mock('./components/screens/EnvironmentsScreen', () => ({
+  EnvironmentsScreen: () => <div data-testid="environments-screen">Environments</div>,
 }))
 
 vi.mock('./components/layout/MainLayout', () => ({
@@ -108,10 +114,9 @@ describe('Routing — authenticated user', () => {
     expect(screen.getByText('Coming soon.')).toBeInTheDocument()
   })
 
-  it('/environments renders "Environments" Coming soon placeholder', () => {
+  it('/environments renders the Environments screen', () => {
     renderAt('/environments')
-    expect(screen.getByText('Environments')).toBeInTheDocument()
-    expect(screen.getByText('Coming soon.')).toBeInTheDocument()
+    expect(screen.getByTestId('environments-screen')).toBeInTheDocument()
   })
 
   it('/keys renders "API keys" Coming soon placeholder', () => {

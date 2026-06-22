@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
 import { TopBar } from '../TopBar'
 import type { ProjectInfo, EnvSlug } from '../TopBar'
+import type { Env } from '../../../lib/types'
 
 const defaultProject: ProjectInfo = {
   id: 'proj-1',
@@ -11,9 +12,15 @@ const defaultProject: ProjectInfo = {
   slug: 'my-project',
 }
 
+const defaultEnvironments: Env[] = [
+  { id: 'e1', slug: 'development', name: 'Development', color: 'teal', protected: false },
+  { id: 'e2', slug: 'production', name: 'Production', color: 'red', protected: true },
+]
+
 function renderTopBar(
   overrides: Partial<{
     project: ProjectInfo
+    environments: Env[]
     onSwitchProject: () => void
     activeEnv: EnvSlug
     onChangeEnv: (env: EnvSlug) => void
@@ -23,6 +30,7 @@ function renderTopBar(
 ) {
   const props = {
     project: defaultProject,
+    environments: defaultEnvironments,
     onSwitchProject: vi.fn(),
     activeEnv: 'development' as EnvSlug,
     onChangeEnv: vi.fn(),
@@ -57,6 +65,21 @@ describe('TopBar', () => {
     renderTopBar()
     expect(screen.getByRole('tab', { name: /development/i })).toBeTruthy()
     expect(screen.getByRole('tab', { name: /production/i })).toBeTruthy()
+  })
+
+  it('renders each environment by its name from the data, not its slug', () => {
+    // The name is whatever the user saved in the DB — the test is bound to that
+    // value, not a hardcoded label, so it proves the chip renders the name.
+    const env: Env = {
+      id: 'e1',
+      slug: 'development',
+      name: 'Whatever The User Named It',
+      color: 'teal',
+      protected: false,
+    }
+    renderTopBar({ environments: [env] })
+    expect(screen.getByRole('tab', { name: env.name })).toBeTruthy()
+    expect(screen.queryByText(env.slug)).toBeNull()
   })
 
   it('clicking an env chip calls onChangeEnv with correct slug', async () => {

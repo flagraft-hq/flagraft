@@ -144,6 +144,16 @@ describe('ContextOverridesSection', () => {
     expect(screen.getByTestId('empty-add')).toBeInTheDocument()
   })
 
+  it('renders env tabs by their name from the data, not the slug', () => {
+    mockUseOverrides.mockReturnValue(makeHookResult([], false))
+    // Names come from the env data — the test is bound to those values, not literals.
+    const dev = { slug: 'development', name: 'Renamed Dev', defaultOn: true, count: 0 }
+    const prod = { slug: 'production', name: 'Renamed Prod', defaultOn: false, count: 0 }
+    render(<ContextOverridesSection {...defaultProps} environments={[dev, prod]} />)
+    expect(screen.getByRole('tab', { name: new RegExp(dev.name) })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: new RegExp(prod.name) })).toBeTruthy()
+  })
+
   it('renders OverrideRow for each override', () => {
     mockUseOverrides.mockReturnValue(makeHookResult([mockOverride1, mockOverride2]))
     render(<ContextOverridesSection {...defaultProps} />)

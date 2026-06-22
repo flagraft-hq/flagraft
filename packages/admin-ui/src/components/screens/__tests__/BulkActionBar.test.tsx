@@ -24,6 +24,8 @@ const defaultProps = {
   selectedKeys: ['flag-a', 'flag-b'],
   projectId: 'proj-1',
   activeEnv: 'development',
+  environments: [],
+  refetchEnvironments: vi.fn(),
   onDone: vi.fn(),
   onCancel: vi.fn(),
 }

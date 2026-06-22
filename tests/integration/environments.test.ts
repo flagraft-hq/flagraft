@@ -233,6 +233,83 @@ describeIfDb('environments', () => {
     })
   })
 
+  describe('PATCH /api/v1/admin/projects/:projectId/environments/:environmentId', () => {
+    it('updates name and protected and returns the updated environment', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const envsRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/environments`,
+        headers: { authorization: adminKey },
+      })
+      const target = envsRes
+        .json<Array<{ id: string; slug: string }>>()
+        .find((e) => e.slug === 'development')!
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/projects/${project.id}/environments/${target.id}`,
+        headers: { authorization: adminKey },
+        payload: { name: 'Dev Renamed', protected: true },
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toMatchObject({
+        id: target.id,
+        slug: 'development',
+        name: 'Dev Renamed',
+        protected: true,
+      })
+      await app.close()
+    })
+
+    it('returns 400 when the body is empty', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const envsRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/environments`,
+        headers: { authorization: adminKey },
+      })
+      const target = envsRes.json<Array<{ id: string }>>()[0]
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/projects/${project.id}/environments/${target.id}`,
+        headers: { authorization: adminKey },
+        payload: {},
+      })
+
+      expect(res.statusCode).toBe(400)
+      expect(res.json()).toMatchObject({ error: 'ValidationError', statusCode: 400 })
+      await app.close()
+    })
+
+    it('returns 404 for a non-existent environmentId', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/projects/${project.id}/environments/00000000-0000-0000-0000-000000000000`,
+        headers: { authorization: adminKey },
+        payload: { name: 'Nope' },
+      })
+
+      expect(res.statusCode).toBe(404)
+      expect(res.json()).toMatchObject({ error: 'NotFound', statusCode: 404 })
+      await app.close()
+    })
+  })
+
   describe('DELETE /api/v1/admin/projects/:projectId/environments/:environmentId', () => {
     it('deletes an environment and returns 204', async () => {
       const app = await buildServer({ db })

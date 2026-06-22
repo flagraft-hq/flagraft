@@ -89,6 +89,8 @@ beforeEach(() => {
   mockUseProject.mockReturnValue({
     activeProject: defaultProject,
     activeEnv: 'development',
+    environments: [],
+    refetchEnvironments: vi.fn(),
     projects: [defaultProject],
     setActiveProject: vi.fn(),
     setActiveEnv: vi.fn(),
@@ -102,6 +104,8 @@ describe('FlagsScreen', () => {
     mockUseProject.mockReturnValue({
       activeProject: null,
       activeEnv: 'development',
+      environments: [],
+      refetchEnvironments: vi.fn(),
       projects: [],
       setActiveProject: vi.fn(),
       setActiveEnv: vi.fn(),

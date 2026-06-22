@@ -20,6 +20,8 @@ vi.mock('./contexts/ProjectContext', () => ({
     activeProject: null,
     setActiveProject: vi.fn(),
     activeEnv: 'development',
+    environments: [],
+    refetchEnvironments: vi.fn(),
     setActiveEnv: vi.fn(),
     loading: false,
     error: null,

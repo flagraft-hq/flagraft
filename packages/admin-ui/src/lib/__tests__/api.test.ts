@@ -5,6 +5,7 @@ import {
   flagsApi,
   overridesApi,
   contextFieldsApi,
+  environmentsApi,
   projectsApi,
   authApi,
   usersApi,
@@ -147,6 +148,39 @@ describe('overridesApi', () => {
 describe('contextFieldsApi', () => {
   it('exports list', () => {
     expect(typeof contextFieldsApi.list).toBe('function')
+  })
+})
+
+describe('environmentsApi', () => {
+  it('exports list, create, update, delete', () => {
+    expect(typeof environmentsApi.list).toBe('function')
+    expect(typeof environmentsApi.create).toBe('function')
+    expect(typeof environmentsApi.update).toBe('function')
+    expect(typeof environmentsApi.delete).toBe('function')
+  })
+
+  it('create posts to the project environments endpoint', async () => {
+    const spy = vi.spyOn(http, 'post').mockResolvedValueOnce({ data: {} })
+    const body = { name: 'Preview', slug: 'preview', protected: false }
+    await environmentsApi.create('proj-1', body)
+    expect(spy).toHaveBeenCalledWith('/api/v1/admin/projects/proj-1/environments', body)
+    spy.mockRestore()
+  })
+
+  it('update patches the environment by slug', async () => {
+    const spy = vi.spyOn(http, 'patch').mockResolvedValueOnce({ data: {} })
+    await environmentsApi.update('proj-1', 'staging', { protected: true })
+    expect(spy).toHaveBeenCalledWith('/api/v1/admin/projects/proj-1/environments/staging', {
+      protected: true,
+    })
+    spy.mockRestore()
+  })
+
+  it('delete targets the environment by slug', async () => {
+    const spy = vi.spyOn(http, 'delete').mockResolvedValueOnce({ data: {} })
+    await environmentsApi.delete('proj-1', 'staging')
+    expect(spy).toHaveBeenCalledWith('/api/v1/admin/projects/proj-1/environments/staging')
+    spy.mockRestore()
   })
 })
 

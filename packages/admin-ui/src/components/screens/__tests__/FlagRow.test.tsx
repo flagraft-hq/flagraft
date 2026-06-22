@@ -25,6 +25,8 @@ const baseFlag: Flag = {
 const defaultProps = {
   flag: baseFlag,
   activeEnv: 'development',
+  environments: [],
+  refetchEnvironments: vi.fn(),
   envNames: ['development', 'staging', 'production'],
   selected: false,
   onSelect: vi.fn(),

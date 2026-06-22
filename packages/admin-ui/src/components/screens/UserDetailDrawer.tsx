@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
+import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
 
@@ -115,18 +116,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             <Icon name="x" size={16} />
           </button>
           <span className="spacer" style={{ flex: 1 }} />
-          <Tip tip="Copy user ID">
-            <button
-              className="icon-btn"
-              onClick={() => {
-                void navigator.clipboard?.writeText(user.id)
-                toast.push({ title: 'User ID copied' })
-              }}
-              aria-label="Copy user ID"
-            >
-              <Icon name="copy" size={14} />
-            </button>
-          </Tip>
+          <CopyButton value={user.id} iconOnly tip="Copy user ID" />
           <Tip tip="Open audit">
             <button className="icon-btn" aria-label="Open audit">
               <Icon name="history" size={14} />

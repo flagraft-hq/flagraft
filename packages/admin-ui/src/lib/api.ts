@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Flag, Override, ContextField, Project } from './types'
+import type { Flag, Override, ContextField, Project, Env } from './types'
 
 /** Carries the HTTP status alongside the server-provided message. */
 export class ApiError extends Error {
@@ -106,6 +106,29 @@ export const overridesApi = {
 export const contextFieldsApi = {
   list: (projectId: string) =>
     http.get<ContextField[]>(`/api/v1/admin/projects/${projectId}/context-fields`),
+}
+
+export const environmentsApi = {
+  list: (projectId: string) =>
+    http.get<Env[]>(`/api/v1/admin/projects/${projectId}/environments`),
+
+  create: (
+    projectId: string,
+    data: { name: string; slug: string; protected: boolean },
+  ) => http.post<Env>(`/api/v1/admin/projects/${projectId}/environments`, data),
+
+  update: (
+    projectId: string,
+    environmentId: string,
+    data: Partial<Pick<Env, 'name' | 'protected'>>,
+  ) =>
+    http.patch<Env>(
+      `/api/v1/admin/projects/${projectId}/environments/${environmentId}`,
+      data,
+    ),
+
+  delete: (projectId: string, environmentId: string) =>
+    http.delete(`/api/v1/admin/projects/${projectId}/environments/${environmentId}`),
 }
 
 export const projectsApi = {

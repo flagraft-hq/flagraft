@@ -14,10 +14,9 @@ describe('OverridesEmptyState', () => {
     expect(screen.getByText('No overrides yet')).toBeTruthy()
   })
 
-  it('renders an env-specific title when envSlug is provided', () => {
-    render(<OverridesEmptyState onAdd={onAdd} envSlug="development" />)
-    expect(screen.getByText(/No overrides in/i)).toBeTruthy()
-    expect(screen.getByText('development')).toBeTruthy()
+  it('renders an env-specific title with the environment name when provided', () => {
+    render(<OverridesEmptyState onAdd={onAdd} envName="Development1" />)
+    expect(screen.getByText(/No overrides in Development1/i)).toBeTruthy()
   })
 
   it('renders the description', () => {

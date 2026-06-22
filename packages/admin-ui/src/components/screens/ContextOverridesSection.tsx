@@ -12,6 +12,7 @@ import type { Override } from '../../lib/types'
 
 interface OverrideEnvOption {
   slug: string
+  name: string
   defaultOn: boolean
   count: number
 }
@@ -143,7 +144,7 @@ export function ContextOverridesSection({
                 }}
               >
                 <span className={`env-dot ${envTone(e.slug)}`} />
-                <span className="env-name">{e.slug}</span>
+                <span className="env-name">{e.name}</span>
                 <span className="env-state mono">default {e.defaultOn ? 'on' : 'off'}</span>
                 <span className="env-count num">{count}</span>
               </button>
@@ -163,7 +164,10 @@ export function ContextOverridesSection({
       ) : error ? (
         <div className="overrides-error">{error}</div>
       ) : overrides.length === 0 && !showForm ? (
-        <OverridesEmptyState onAdd={handleAddClick} envSlug={selectedEnv} />
+        <OverridesEmptyState
+          onAdd={handleAddClick}
+          envName={environments?.find((e) => e.slug === selectedEnv)?.name ?? selectedEnv}
+        />
       ) : (
         <div className="ctx-ovr-stack">
           {overrides.map((override, i) =>

@@ -96,6 +96,36 @@ describe('ToastContext', () => {
     expect(screen.getByTestId('count').textContent).toBe('0')
   })
 
+  it('renders pushed toasts in the toast stack with the variant class', () => {
+    render(
+      <ToastProvider>
+        <TestConsumer />
+      </ToastProvider>,
+    )
+    act(() => {
+      screen.getByTestId('push-btn').click()
+    })
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('Hello')
+    expect(status).toHaveClass('toast', 'success')
+  })
+
+  it('removes a rendered toast when its Dismiss button is clicked', () => {
+    render(
+      <ToastProvider>
+        <TestConsumer />
+      </ToastProvider>,
+    )
+    act(() => {
+      screen.getByTestId('push-btn').click()
+    })
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    act(() => {
+      screen.getByRole('button', { name: 'Dismiss' }).click()
+    })
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('useToast throws when called outside ToastProvider', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => render(<TestConsumer />)).toThrow('useToast called outside ToastProvider')

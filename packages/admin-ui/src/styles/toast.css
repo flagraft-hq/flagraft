@@ -1,0 +1,81 @@
+/**
+ * Toast notifications. Fixed bottom-right stack rendered by ToastProvider.
+ * z-index sits above the modal layer (999/1000) so error feedback is visible
+ * even while a dialog is open.
+ */
+.toast-stack {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 360px;
+  max-width: calc(100vw - 48px);
+}
+.toast {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-3);
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  animation: toastIn 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.toast .ico {
+  margin-top: 1px;
+}
+.toast .title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.toast .msg {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.toast.success .ico {
+  color: var(--pri);
+}
+.toast.error .ico {
+  color: var(--danger);
+}
+.toast.default .ico,
+.toast.info .ico {
+  color: var(--text-3);
+}
+.toast::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--pri);
+  transform-origin: left;
+  animation: toastBar 4s linear forwards;
+}
+.toast.error::after {
+  background: var(--danger);
+}
+.toast.default::after,
+.toast.info::after {
+  background: var(--text-4);
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes toastBar {
+  to {
+    transform: scaleX(0);
+  }
+}

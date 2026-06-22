@@ -29,6 +29,8 @@ vi.mock('../../../contexts/ProjectContext', () => ({
   useProject: () => ({
     activeProject: { id: 'proj-1', name: 'Test Project', slug: 'test', flagCount: 10 },
     activeEnv: 'development',
+    environments: [],
+    refetchEnvironments: vi.fn(),
     setActiveEnv: vi.fn(),
     projects: [],
     loading: false,
