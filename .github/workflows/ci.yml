@@ -164,6 +164,7 @@ jobs:
       PORT: 3000
       LOG_LEVEL: silent
       CACHE_TTL_SECONDS: 30
+      JWT_SECRET: 'b48c4a956e8dcf83b5588a7092125277ee195942e1d891eb60220f89a2bd2263'
 
     steps:
       - uses: actions/checkout@v4
