@@ -1,7 +1,13 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
-import { environments, featureFlags, flagEnvironments } from '../../db/schema.js'
+import {
+  environments,
+  featureFlags,
+  flagEnvironments,
+  flagOverrides,
+  users,
+} from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateFlagInput, PatchFlagInput } from './flag.schema.js'
 
@@ -40,13 +46,93 @@ async function findEnvironment(db: Db, projectId: string, environmentSlug: strin
 }
 
 /**
+ * Helper to fetch a single flag with its environment states and author details
+ */
+export async function fetchFlagWithState(db: Db, projectId: string, flagKey: string) {
+  const [flag] = await db
+    .select({
+      id: featureFlags.id,
+      projectId: featureFlags.projectId,
+      name: featureFlags.name,
+      key: featureFlags.key,
+      description: featureFlags.description,
+      createdAt: featureFlags.createdAt,
+      updatedAt: featureFlags.updatedAt,
+      authorId: featureFlags.authorId,
+      authorName: users.name,
+    })
+    .from(featureFlags)
+    .leftJoin(users, eq(featureFlags.authorId, users.id))
+    .where(and(eq(featureFlags.projectId, projectId), eq(featureFlags.key, flagKey)))
+    .limit(1)
+
+  if (!flag) {
+    throw new AppError('Flag not found', 404, 'NotFound')
+  }
+
+  const envStates = await db
+    .select({
+      slug: environments.slug,
+      enabled: flagEnvironments.enabled,
+    })
+    .from(flagEnvironments)
+    .innerJoin(environments, eq(flagEnvironments.environmentId, environments.id))
+    .where(eq(flagEnvironments.flagId, flag.id))
+    .orderBy(environments.createdAt)
+
+  const overrideCounts = await db
+    .select({
+      slug: environments.slug,
+      count: sql<number>`count(${flagOverrides.id})::int`,
+    })
+    .from(flagOverrides)
+    .innerJoin(environments, eq(flagOverrides.environmentId, environments.id))
+    .where(eq(flagOverrides.flagId, flag.id))
+    .groupBy(environments.slug)
+
+  const statesMap: Record<string, { on: boolean; overrides: number }> = {}
+  for (const row of envStates) {
+    statesMap[row.slug] = {
+      on: row.enabled,
+      overrides: 0,
+    }
+  }
+
+  for (const row of overrideCounts) {
+    if (statesMap[row.slug]) {
+      statesMap[row.slug].overrides = row.count
+    }
+  }
+
+  return {
+    id: flag.id,
+    projectId: flag.projectId,
+    key: flag.key,
+    name: flag.name,
+    description: flag.description || '',
+    tags: [],
+    created: flag.createdAt.toISOString(),
+    updated: flag.updatedAt.toISOString(),
+    createdAt: flag.createdAt.toISOString(),
+    updatedAt: flag.updatedAt.toISOString(),
+    author: flag.authorName || 'System',
+    state: statesMap,
+  }
+}
+
+/**
  * Creates a new feature flag and initializes its state in all project environments
  */
-export async function createFlag(db: Db, projectId: string, input: CreateFlagInput) {
+export async function createFlag(
+  db: Db,
+  projectId: string,
+  input: CreateFlagInput,
+  authorId?: string | null,
+) {
   const flag = await db.transaction(async (tx) => {
     const [newFlag] = await tx
       .insert(featureFlags)
-      .values({ ...input, projectId })
+      .values({ ...input, projectId, authorId })
       .returning()
     const envs = await tx.select().from(environments).where(eq(environments.projectId, projectId))
     if (envs.length > 0) {
@@ -60,34 +146,117 @@ export async function createFlag(db: Db, projectId: string, input: CreateFlagInp
     }
     return newFlag
   })
-  return flag
+
+  return fetchFlagWithState(db, projectId, flag.key)
 }
 
 /**
  * Lists all feature flags for a project
  */
 export async function listFlags(db: Db, projectId: string) {
-  return db
-    .select()
+  const flags = await db
+    .select({
+      id: featureFlags.id,
+      projectId: featureFlags.projectId,
+      name: featureFlags.name,
+      key: featureFlags.key,
+      description: featureFlags.description,
+      createdAt: featureFlags.createdAt,
+      updatedAt: featureFlags.updatedAt,
+      authorId: featureFlags.authorId,
+      authorName: users.name,
+    })
     .from(featureFlags)
+    .leftJoin(users, eq(featureFlags.authorId, users.id))
     .where(eq(featureFlags.projectId, projectId))
     .orderBy(featureFlags.createdAt)
+
+  if (flags.length === 0) {
+    return []
+  }
+
+  const flagIds = flags.map((f) => f.id)
+
+  const envStates = await db
+    .select({
+      flagId: flagEnvironments.flagId,
+      slug: environments.slug,
+      enabled: flagEnvironments.enabled,
+    })
+    .from(flagEnvironments)
+    .innerJoin(environments, eq(flagEnvironments.environmentId, environments.id))
+    .where(inArray(flagEnvironments.flagId, flagIds))
+    .orderBy(environments.createdAt)
+
+  const overrideCounts = await db
+    .select({
+      flagId: flagOverrides.flagId,
+      slug: environments.slug,
+      count: sql<number>`count(${flagOverrides.id})::int`,
+    })
+    .from(flagOverrides)
+    .innerJoin(environments, eq(flagOverrides.environmentId, environments.id))
+    .where(inArray(flagOverrides.flagId, flagIds))
+    .groupBy(flagOverrides.flagId, environments.slug)
+
+  const statesMap: Record<string, Record<string, { on: boolean; overrides: number }>> = {}
+
+  for (const row of envStates) {
+    if (!statesMap[row.flagId]) {
+      statesMap[row.flagId] = {}
+    }
+    statesMap[row.flagId][row.slug] = {
+      on: row.enabled,
+      overrides: 0,
+    }
+  }
+
+  for (const row of overrideCounts) {
+    if (statesMap[row.flagId] && statesMap[row.flagId][row.slug]) {
+      statesMap[row.flagId][row.slug].overrides = row.count
+    }
+  }
+
+  return flags.map((f) => ({
+    id: f.id,
+    projectId: f.projectId,
+    key: f.key,
+    name: f.name,
+    description: f.description || '',
+    tags: [],
+    created: f.createdAt.toISOString(),
+    updated: f.updatedAt.toISOString(),
+    createdAt: f.createdAt.toISOString(),
+    updatedAt: f.updatedAt.toISOString(),
+    author: f.authorName || 'System',
+    state: statesMap[f.id] || {},
+  }))
 }
 
 /**
  * Retrieves a flag by its key
  */
 export async function getFlag(db: Db, projectId: string, flagKey: string) {
-  return findFlag(db, projectId, flagKey)
+  return fetchFlagWithState(db, projectId, flagKey)
 }
 
 /**
  * Updates a flag's metadata (name, description)
  */
-export async function patchFlag(db: Db, projectId: string, flagKey: string, input: PatchFlagInput) {
+export async function patchFlag(
+  db: Db,
+  projectId: string,
+  flagKey: string,
+  input: PatchFlagInput,
+  authorId?: string | null,
+) {
   const [flag] = await db
     .update(featureFlags)
-    .set({ ...input, updatedAt: new Date() })
+    .set({
+      ...input,
+      authorId: authorId !== undefined ? authorId : undefined,
+      updatedAt: new Date(),
+    })
     .where(and(eq(featureFlags.projectId, projectId), eq(featureFlags.key, flagKey)))
     .returning()
 
@@ -95,7 +264,7 @@ export async function patchFlag(db: Db, projectId: string, flagKey: string, inpu
     throw new AppError('Flag not found', 404, 'NotFound')
   }
 
-  return flag
+  return fetchFlagWithState(db, projectId, flag.key)
 }
 
 /**

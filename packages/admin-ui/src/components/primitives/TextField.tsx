@@ -1,31 +1,30 @@
-import React, { useMemo } from 'react';
+import React, { useMemo } from 'react'
 
-interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  hint?: string;
-  error?: string;
-  onChange: (value: string) => void;
+interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  label?: string
+  hint?: string
+  error?: string
+  onChange: (value: string) => void
 }
 
 export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
   ({ label, hint, error, onChange, value, className = '', id, ...rest }, ref) => {
     const fieldId = useMemo(
-      () => id || `text-field-${crypto.getRandomValues(new Uint8Array(6)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '')}`,
-      [id]
-    );
+      () =>
+        id ||
+        `text-field-${crypto.getRandomValues(new Uint8Array(6)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '')}`,
+      [id],
+    )
 
-    const hintId = `${fieldId}-hint`;
-    const errorId = `${fieldId}-error`;
+    const hintId = `${fieldId}-hint`
+    const errorId = `${fieldId}-error`
 
-    const describedByIds = [
-      hint && !error ? hintId : null,
-      error ? errorId : null,
-    ]
+    const describedByIds = [hint && !error ? hintId : null, error ? errorId : null]
       .filter(Boolean)
-      .join(' ');
+      .join(' ')
 
     return (
-      <div className={`text-field ${error ? 'error' : ''}`}>
+      <div className={`text-field ${error ? 'error' : ''} ${className}`}>
         {label && (
           <label className="text-field-label" htmlFor={fieldId}>
             {label}
@@ -52,8 +51,8 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
           </span>
         )}
       </div>
-    );
-  }
-);
+    )
+  },
+)
 
-TextField.displayName = 'TextField';
+TextField.displayName = 'TextField'

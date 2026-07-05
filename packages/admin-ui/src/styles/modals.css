@@ -1,0 +1,145 @@
+/* SDK Snippet Modal styles */
+.sdk-modal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.sdk-modal-tabs {
+  display: flex;
+  gap: var(--s-2);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--s-2);
+}
+.sdk-modal-tab-btn {
+  background: none;
+  border: none;
+  padding: var(--s-2) var(--s-3);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: var(--r-md);
+  transition: all 0.12s;
+}
+.sdk-modal-tab-btn:hover {
+  color: var(--text-1);
+  background: var(--bg-subtle);
+}
+.sdk-modal-tab-btn.active {
+  color: var(--text-1);
+  background: var(--bg-hover);
+  font-weight: 600;
+}
+.sdk-modal-code-container {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.sdk-modal-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-2) var(--s-4);
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+}
+.sdk-modal-lang-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.sdk-modal-code {
+  margin: 0;
+  padding: var(--s-4);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.sdk-modal-coming-soon-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: var(--bg-hover);
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+}
+
+.sdk-modal-coming-soon-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--s-8) var(--s-4);
+  background: var(--bg-subtle);
+  min-height: 240px;
+}
+.coming-soon-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  margin-bottom: var(--s-4);
+}
+.sdk-modal-coming-soon-state h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0 0 var(--s-2) 0;
+}
+.sdk-modal-coming-soon-state p {
+  font-size: 13px;
+  color: var(--text-3);
+  max-width: 380px;
+  line-height: 1.5;
+  margin: 0 0 var(--s-4) 0;
+}
+.coming-soon-alternative {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.coming-soon-alternative .link-btn {
+  background: none;
+  border: none;
+  color: var(--pri-fg);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.12s;
+}
+.coming-soon-alternative .link-btn:hover {
+  opacity: 0.85;
+  text-decoration: underline;
+}
+
+/* Edit Flag Form & Textarea styles */
+.edit-flag-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+.text-field-textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+}

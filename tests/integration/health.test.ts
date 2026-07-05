@@ -28,7 +28,7 @@ describeIfDb('health routes', () => {
   })
 
   it('GET /ready returns 503 when DB is unavailable', async () => {
-    const app = await buildServer({ db })
+    const app = await buildServer({ db, skipBootSeed: true })
 
     await db!.$pool.end()
 

@@ -1,7 +1,7 @@
-import React from 'react';
+import React from 'react'
 
 interface KbdProps {
-  keys: string[];
+  keys: string[]
 }
 
 export function Kbd({ keys }: KbdProps) {
@@ -14,5 +14,5 @@ export function Kbd({ keys }: KbdProps) {
         </React.Fragment>
       ))}
     </span>
-  );
+  )
 }

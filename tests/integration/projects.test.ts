@@ -177,7 +177,7 @@ describeIfDb('projects', () => {
     })
 
     it('returns empty array when no projects exist (root key)', async () => {
-      const app = await buildServer({ db })
+      const app = await buildServer({ db, skipBootSeed: true })
       const rootKey = await createRootKey(db!)
 
       const response = await app.inject({

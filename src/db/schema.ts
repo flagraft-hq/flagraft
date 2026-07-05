@@ -1,6 +1,15 @@
-import { API_KEY_TYPES } from '../auth/constants'
+import { API_KEY_TYPES, DEFAULT_USER_ROLE } from '../auth/constants'
 import { relations, sql } from 'drizzle-orm'
-import { boolean, check, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  check,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core'
 
 const id = () => uuid('id').primaryKey().defaultRandom()
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
@@ -24,6 +33,7 @@ export const environments = pgTable(
       .references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
+    protected: boolean('protected').notNull().default(false),
     createdAt: createdAt(),
   },
   (table) => [unique('environments_project_id_slug_unique').on(table.projectId, table.slug)],
@@ -39,6 +49,7 @@ export const featureFlags = pgTable(
     name: text('name').notNull(),
     key: text('key').notNull(),
     description: text('description'),
+    authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -111,10 +122,51 @@ export const apiKeys = pgTable(
   ],
 )
 
+export const users = pgTable('users', {
+  id: id(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  name: text('name').notNull(),
+  role: text('role').notNull().default(DEFAULT_USER_ROLE),
+  status: text('status').notNull().default('active'),
+  twoFa: text('two_fa').notNull().default('none'),
+  isSystem: boolean('is_system').notNull().default(false),
+  initials: text('initials').notNull().default(''),
+  tone: text('tone').notNull().default('teal'),
+  lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
+  /**
+   * Bumped whenever existing sessions must be invalidated (e.g. password
+   * reset). Session JWTs carry this value and are rejected on mismatch.
+   */
+  sessionVersion: integer('session_version').notNull().default(0),
+  /** SHA-256 of the pending invite token; null once the invite is accepted or never issued. */
+  inviteTokenHash: text('invite_token_hash'),
+  /** When the pending invite link stops working. */
+  inviteExpiresAt: timestamp('invite_expires_at', { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+})
+
+export const userProjects = pgTable(
+  'user_projects',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (table) => [unique('user_projects_user_id_project_id_unique').on(table.userId, table.projectId)],
+)
+
 export const projectRelations = relations(projects, ({ many }) => ({
   environments: many(environments),
   flags: many(featureFlags),
   apiKeys: many(apiKeys),
+  members: many(userProjects),
 }))
 
 export const environmentRelations = relations(environments, ({ one, many }) => ({
@@ -154,6 +206,15 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   }),
 }))
 
+export const userRelations = relations(users, ({ many }) => ({
+  projects: many(userProjects),
+}))
+
+export const userProjectRelations = relations(userProjects, ({ one }) => ({
+  user: one(users, { fields: [userProjects.userId], references: [users.id] }),
+  project: one(projects, { fields: [userProjects.projectId], references: [projects.id] }),
+}))
+
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
 export type Environment = typeof environments.$inferSelect
@@ -166,3 +227,6 @@ export type FlagOverride = typeof flagOverrides.$inferSelect
 export type NewFlagOverride = typeof flagOverrides.$inferInsert
 export type ApiKey = typeof apiKeys.$inferSelect
 export type NewApiKey = typeof apiKeys.$inferInsert
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+export type UserProject = typeof userProjects.$inferSelect
