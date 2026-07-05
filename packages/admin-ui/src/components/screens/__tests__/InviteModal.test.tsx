@@ -119,7 +119,7 @@ describe('InviteModal', () => {
       target: { value: 'a@a.com, A@a.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
-    await waitFor(() => expect(usersApi.invite).toHaveBeenCalledWith(['a@a.com'], 'editor', ['p1']))
+    await waitFor(() => expect(usersApi.invite).toHaveBeenCalledWith(['a@a.com'], 'viewer', ['p1']))
   })
 
   it('calls usersApi.invite with correct args on submit', async () => {
@@ -132,7 +132,7 @@ describe('InviteModal', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
-    await waitFor(() => expect(usersApi.invite).toHaveBeenCalledWith(['x@a.com'], 'editor', ['p1']))
+    await waitFor(() => expect(usersApi.invite).toHaveBeenCalledWith(['x@a.com'], 'viewer', ['p1']))
   })
 
   const inviteResult = (over: Partial<{ emailed: boolean }> = {}) => ({

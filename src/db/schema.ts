@@ -1,6 +1,15 @@
 import { API_KEY_TYPES } from '../auth/constants'
 import { relations, sql } from 'drizzle-orm'
-import { boolean, check, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  check,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core'
 
 const id = () => uuid('id').primaryKey().defaultRandom()
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
@@ -118,13 +127,18 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   name: text('name').notNull(),
-  role: text('role').notNull().default('editor'),
+  role: text('role').notNull().default('viewer'),
   status: text('status').notNull().default('active'),
   twoFa: text('two_fa').notNull().default('none'),
   isSystem: boolean('is_system').notNull().default(false),
   initials: text('initials').notNull().default(''),
   tone: text('tone').notNull().default('teal'),
   lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
+  /**
+   * Bumped whenever existing sessions must be invalidated (e.g. password
+   * reset). Session JWTs carry this value and are rejected on mismatch.
+   */
+  sessionVersion: integer('session_version').notNull().default(0),
   /** SHA-256 of the pending invite token; null once the invite is accepted or never issued. */
   inviteTokenHash: text('invite_token_hash'),
   /** When the pending invite link stops working. */

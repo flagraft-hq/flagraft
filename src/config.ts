@@ -45,5 +45,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error(`Invalid configuration: ${details}`)
   }
 
+  /**
+   * The fallback admin password is publicly documented, so a production
+   * deployment must never run with it. Refuse to boot instead of seeding an
+   * owner account anyone can log into.
+   */
+  if (
+    result.data.NODE_ENV === 'production' &&
+    result.data.DEFAULT_ADMIN_PASSWORD === 'flagraft-admin'
+  ) {
+    throw new Error(
+      'Invalid configuration: DEFAULT_ADMIN_PASSWORD must be set to a strong, non-default value in production',
+    )
+  }
+
   return Object.freeze(result.data)
 }

@@ -39,7 +39,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
   const toast = useToast()
   const { projects } = useProject()
   const [emails, setEmails] = useState('')
-  const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('editor')
+  const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('viewer')
   const [projectIds, setProjectIds] = useState<Set<string>>(new Set())
   const [submitting, setSubmitting] = useState(false)
   const [results, setResults] = useState<InviteResult[] | null>(null)
@@ -89,7 +89,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
 
   function reset() {
     setEmails('')
-    setRole('editor')
+    setRole('viewer')
     setProjectIds(new Set())
     setResults(null)
   }

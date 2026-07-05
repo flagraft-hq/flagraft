@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
 import { users, userProjects, projects } from '../../db/schema.js'
@@ -14,6 +14,21 @@ function hashInviteToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
+/**
+ * Strips credential and invite-token material from a user record before it
+ * leaves the API. Every route that returns users must go through this.
+ */
+export function toPublicUser(user: User) {
+  const { passwordHash, inviteTokenHash, inviteExpiresAt, sessionVersion, ...safe } = user
+  void passwordHash
+  void inviteTokenHash
+  void inviteExpiresAt
+  void sessionVersion
+  return safe
+}
+
+export type PublicUser = ReturnType<typeof toPublicUser>
+
 export async function listUsers(db: Db) {
   const rows = await db
     .select({
@@ -25,10 +40,10 @@ export async function listUsers(db: Db) {
     .leftJoin(userProjects, eq(userProjects.userId, users.id))
     .leftJoin(projects, eq(projects.id, userProjects.projectId))
 
-  const map = new Map<string, User & { projects: string[] }>()
+  const map = new Map<string, PublicUser & { projects: string[] }>()
   for (const row of rows) {
     if (!map.has(row.user.id)) {
-      map.set(row.user.id, { ...row.user, projects: [] })
+      map.set(row.user.id, { ...toPublicUser(row.user), projects: [] })
     }
     if (row.projectName) map.get(row.user.id)!.projects.push(row.projectName)
   }
@@ -47,7 +62,7 @@ export async function getUserWithProjects(db: Db, id: string) {
   const userProj = rows
     .filter((r) => r.projectName)
     .map((r) => ({ id: r.projectId!, name: r.projectName! }))
-  return { ...user, projects: userProj }
+  return { ...toPublicUser(user), projects: userProj }
 }
 
 /**
@@ -153,12 +168,16 @@ export async function patchUser(
 /**
  * Generates a new temp password, hashes it, and stores it.
  * Returns the plaintext password so the admin can share it manually.
+ * Bumps sessionVersion so every existing session is invalidated.
  */
 export async function resetPassword(db: Db, id: string): Promise<string> {
   const tempPassword = randomBytes(10).toString('base64url')
   await db
     .update(users)
-    .set({ passwordHash: await hashPassword(tempPassword) })
+    .set({
+      passwordHash: await hashPassword(tempPassword),
+      sessionVersion: sql`${users.sessionVersion} + 1`,
+    })
     .where(eq(users.id, id))
   return tempPassword
 }

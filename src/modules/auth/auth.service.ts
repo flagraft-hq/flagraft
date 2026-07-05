@@ -1,6 +1,7 @@
 import argon2 from 'argon2'
 import { eq } from 'drizzle-orm'
 
+import { USER_ROLES } from '../../auth/constants.js'
 import type { Db } from '../../db/index.js'
 import { users } from '../../db/schema.js'
 import type { User } from '../../db/schema.js'
@@ -50,7 +51,8 @@ export async function createUser(
       email: data.email.toLowerCase().trim(),
       passwordHash,
       name: data.name,
-      role: data.role ?? 'editor',
+      /** Least privilege: callers that omit a role get the read-only one. */
+      role: data.role ?? USER_ROLES.VIEWER,
       status: data.status ?? 'active',
       initials,
     })

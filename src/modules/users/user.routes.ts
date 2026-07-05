@@ -6,11 +6,11 @@ import { AppError } from '../../plugins/errorHandler.js'
 import { isMailerConfigured, sendInviteEmail } from '../../mailer.js'
 
 export async function userRoutes(fastify: FastifyInstance) {
-  fastify.get('/admin/users', { preHandler: fastify.requireAdminKey }, async () => {
+  fastify.get('/admin/users', { preHandler: fastify.requireRootKey }, async () => {
     return service.listUsers(fastify.db)
   })
 
-  fastify.get('/admin/users/:id', { preHandler: fastify.requireAdminKey }, async (req) => {
+  fastify.get('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req) => {
     const { id } = req.params as { id: string }
     const user = await service.getUserWithProjects(fastify.db, id)
     if (!user) throw new AppError('User not found', 404, 'Not Found')
@@ -19,7 +19,7 @@ export async function userRoutes(fastify: FastifyInstance) {
 
   fastify.post(
     '/admin/users/invite',
-    { preHandler: fastify.requireAdminKey },
+    { preHandler: fastify.requireRootKey },
     async (req, reply) => {
       const { emails, role, projectIds } = inviteUserSchema.parse(req.body)
       const results = await Promise.all(
@@ -65,15 +65,15 @@ export async function userRoutes(fastify: FastifyInstance) {
     },
   )
 
-  fastify.patch('/admin/users/:id', { preHandler: fastify.requireAdminKey }, async (req) => {
+  fastify.patch('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req) => {
     const { id } = req.params as { id: string }
     const data = patchUserSchema.parse(req.body)
-    return service.patchUser(fastify.db, id, data)
+    return service.toPublicUser(await service.patchUser(fastify.db, id, data))
   })
 
   fastify.post(
     '/admin/users/:id/reset-password',
-    { preHandler: fastify.requireAdminKey },
+    { preHandler: fastify.requireRootKey },
     async (req) => {
       const { id } = req.params as { id: string }
       const tempPassword = await service.resetPassword(fastify.db, id)
@@ -81,19 +81,15 @@ export async function userRoutes(fastify: FastifyInstance) {
     },
   )
 
-  fastify.delete(
-    '/admin/users/:id',
-    { preHandler: fastify.requireAdminKey },
-    async (req, reply) => {
-      const { id } = req.params as { id: string }
-      await service.deleteUser(fastify.db, id)
-      return reply.status(204).send()
-    },
-  )
+  fastify.delete('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    await service.deleteUser(fastify.db, id)
+    return reply.status(204).send()
+  })
 
   fastify.post(
     '/admin/users/:id/projects/:projectId',
-    { preHandler: fastify.requireAdminKey },
+    { preHandler: fastify.requireRootKey },
     async (req, reply) => {
       const { id, projectId } = req.params as { id: string; projectId: string }
       await service.addUserToProject(fastify.db, id, projectId)
@@ -103,7 +99,7 @@ export async function userRoutes(fastify: FastifyInstance) {
 
   fastify.delete(
     '/admin/users/:id/projects/:projectId',
-    { preHandler: fastify.requireAdminKey },
+    { preHandler: fastify.requireRootKey },
     async (req, reply) => {
       const { id, projectId } = req.params as { id: string; projectId: string }
       await service.removeUserFromProject(fastify.db, id, projectId)

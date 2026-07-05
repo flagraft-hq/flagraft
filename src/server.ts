@@ -3,6 +3,7 @@ import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 
+import { USER_ROLES } from './auth/constants.js'
 import { loadConfig, type AppConfig } from './config.js'
 import type { Cache } from './cache/index.js'
 import type { Db } from './db/index.js'
@@ -94,7 +95,7 @@ export async function buildServer(opts: BuildServerOptions = {}) {
         email: config.DEFAULT_ADMIN_EMAIL,
         password: config.DEFAULT_ADMIN_PASSWORD,
         name: config.DEFAULT_ADMIN_NAME,
-        role: 'owner',
+        role: USER_ROLES.OWNER,
         status: 'active',
       })
       fastify.log.info(

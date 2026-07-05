@@ -103,6 +103,30 @@ beforeEach(() => {
 })
 
 describe('FlagDetailScreen', () => {
+  it('navigates back to the flags list when the active project changes', async () => {
+    const { rerender } = renderScreen()
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'My Feature Flag' })).toBeInTheDocument()
+    })
+
+    mockUseProject.mockReturnValue({
+      ...defaultProjectContext,
+      activeProject: { id: 'p2', name: 'Other Project', slug: 'other', flagCount: 0 },
+    })
+    rerender(
+      <MemoryRouter initialEntries={['/flags/my-flag']}>
+        <Routes>
+          <Route path="/flags/:key" element={<FlagDetailScreen />} />
+          <Route path="/flags" element={<div data-testid="flags-list-page">Flags list</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('flags-list-page')).toBeInTheDocument()
+    })
+  })
+
   it('shows loading state initially', () => {
     mockFlagsApi.get.mockReturnValue(new Promise(() => {}))
     renderScreen()

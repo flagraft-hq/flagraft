@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm'
+import { eq, getTableColumns } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
-import { environments, projects } from '../../db/schema.js'
+import { environments, projects, userProjects } from '../../db/schema.js'
 import type { KeyContext } from '../../plugins/auth.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import { DEFAULT_ENVIRONMENTS } from '../../constants/environments.js'
@@ -29,6 +29,16 @@ export async function createProject(db: Db, input: CreateProjectInput) {
 export async function listProjects(db: Db, context: KeyContext) {
   if (context.isRoot) {
     return db.select().from(projects).orderBy(projects.createdAt)
+  }
+
+  /** Browser session with a non-admin role: list the projects they are members of. */
+  if (context.userId) {
+    return db
+      .select(getTableColumns(projects))
+      .from(projects)
+      .innerJoin(userProjects, eq(userProjects.projectId, projects.id))
+      .where(eq(userProjects.userId, context.userId))
+      .orderBy(projects.createdAt)
   }
 
   if (!context.projectId) {

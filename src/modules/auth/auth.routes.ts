@@ -28,24 +28,20 @@ export async function authRoutes(fastify: FastifyInstance) {
     return reply.clearCookie(COOKIE, { path: '/' }).send({ ok: true })
   })
 
-  fastify.get('/admin/auth/me', { config: { skipAuth: true } }, async (req, reply) => {
-    const token = req.cookies?.[COOKIE]
-    if (!token) return reply.status(401).send({ error: 'Not authenticated' })
-    try {
-      const payload = fastify.jwt.verify<{
-        sub: string
-        email: string
-        role: string
-        name: string
-      }>(token)
-      return reply.send({
-        id: payload.sub,
-        email: payload.email,
-        role: payload.role,
-        name: payload.name,
-      })
-    } catch {
-      return reply.status(401).send({ error: 'Invalid session' })
-    }
+  /**
+   * The global auth hook has already validated the session against the
+   * database, so answer from there instead of trusting stale JWT claims.
+   */
+  fastify.get('/admin/auth/me', async (req, reply) => {
+    const userId = req.keyContext?.userId
+    if (!userId) return reply.status(401).send({ error: 'Not authenticated' })
+    const user = await service.getUserById(fastify.db, userId)
+    if (!user) return reply.status(401).send({ error: 'Not authenticated' })
+    return reply.send({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    })
   })
 }

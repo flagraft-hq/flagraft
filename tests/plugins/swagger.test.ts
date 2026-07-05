@@ -27,7 +27,10 @@ describe('swagger plugin', () => {
 
   it('does not register docs routes in production', async () => {
     const original = process.env.NODE_ENV
+    const originalPw = process.env.DEFAULT_ADMIN_PASSWORD
     process.env.NODE_ENV = 'production'
+    /** Production boot refuses the documented default admin password. */
+    process.env.DEFAULT_ADMIN_PASSWORD = 'a-strong-test-only-password'
     try {
       const { buildServer } = await import('../../src/server.js')
       const fastify = await buildServer()
@@ -37,6 +40,8 @@ describe('swagger plugin', () => {
       expect(ui.statusCode).toBe(404)
     } finally {
       process.env.NODE_ENV = original
+      if (originalPw === undefined) delete process.env.DEFAULT_ADMIN_PASSWORD
+      else process.env.DEFAULT_ADMIN_PASSWORD = originalPw
     }
   })
 })

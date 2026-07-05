@@ -6,12 +6,17 @@ import { and, eq } from 'drizzle-orm'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
 
-import { API_KEY_TYPES, type ApiKeyType } from '../auth/constants.js'
-import { apiKeys } from '../db/schema.js'
+import {
+  API_KEY_TYPES,
+  READ_ONLY_ROLES,
+  WORKSPACE_ADMIN_ROLES,
+  type ApiKeyType,
+} from '../auth/constants.js'
+import { apiKeys, userProjects, users } from '../db/schema.js'
 import { AppError } from './errorHandler.js'
 
 /**
- * Represents the security context derived from an API key
+ * Represents the security context derived from an API key or user session
  */
 export interface KeyContext {
   keyId: string
@@ -20,6 +25,8 @@ export interface KeyContext {
   type: ApiKeyType
   isRoot: boolean
   userId?: string | null
+  /** Set only for browser sessions: the user's current role from the database. */
+  userRole?: string
 }
 
 declare module 'fastify' {
@@ -81,24 +88,35 @@ async function authPlugin(fastify: FastifyInstance) {
 
     /**
      * Try JWT session cookie first -- used by browser clients (admin UI).
-     * If valid, we treat the session as a root admin context.
+     * The JWT only proves who the user is; role, status, and session validity
+     * are checked against the database on every request so suspensions,
+     * demotions, and password resets take effect immediately.
      */
     const sessionCookie = request.cookies?.['flagraft_session']
     if (sessionCookie) {
+      let payload: { sub: string; sv?: number }
       try {
-        const payload = fastify.jwt.verify<{ sub: string; role: string }>(sessionCookie)
-        request.keyContext = {
-          keyId: payload.sub,
-          projectId: null,
-          environmentId: null,
-          type: 'admin' as ApiKeyType,
-          isRoot: true,
-          userId: payload.sub,
-        }
-        return
+        payload = fastify.jwt.verify<{ sub: string; sv?: number }>(sessionCookie)
       } catch {
         throw new AppError('Session expired', 401, 'Unauthorized')
       }
+
+      const [user] = await fastify.db.select().from(users).where(eq(users.id, payload.sub)).limit(1)
+
+      if (!user || user.status !== 'active' || payload.sv !== user.sessionVersion) {
+        throw new AppError('Session expired', 401, 'Unauthorized')
+      }
+
+      request.keyContext = {
+        keyId: user.id,
+        projectId: null,
+        environmentId: null,
+        type: API_KEY_TYPES.ADMIN,
+        isRoot: WORKSPACE_ADMIN_ROLES.has(user.role),
+        userId: user.id,
+        userRole: user.role,
+      }
+      return
     }
 
     /**
@@ -136,7 +154,9 @@ async function authPlugin(fastify: FastifyInstance) {
   })
 
   /**
-   * Decorator that ensures the request has a valid admin key with proper scope
+   * Decorator that ensures the request has a valid admin key with proper scope.
+   * For browser sessions, non-admin roles are restricted to projects they are
+   * members of, and viewers to read-only access.
    */
   fastify.decorate('requireAdminKey', async (request: FastifyRequest) => {
     const context = request.keyContext
@@ -145,18 +165,46 @@ async function authPlugin(fastify: FastifyInstance) {
     }
 
     const routeProjectId = projectIdFromParams(request)
+
+    if (context.userRole && !context.isRoot) {
+      if (
+        READ_ONLY_ROLES.has(context.userRole) &&
+        request.method !== 'GET' &&
+        request.method !== 'HEAD'
+      ) {
+        throw new AppError('Your role is read-only', 403, 'Forbidden')
+      }
+      if (routeProjectId) {
+        const [membership] = await fastify.db
+          .select({ id: userProjects.id })
+          .from(userProjects)
+          .where(
+            and(
+              eq(userProjects.userId, context.userId!),
+              eq(userProjects.projectId, routeProjectId),
+            ),
+          )
+          .limit(1)
+        if (!membership) {
+          throw new AppError('You are not a member of this project', 403, 'Forbidden')
+        }
+      }
+      return
+    }
+
     if (routeProjectId && !context.isRoot && context.projectId !== routeProjectId) {
       throw new AppError('Project scope mismatch', 403, 'Forbidden')
     }
   })
 
   /**
-   * Decorator that ensures the request has a root admin key
+   * Decorator that ensures the request is workspace-admin level: a root admin
+   * API key, or a browser session whose user has the owner/admin role.
    */
   fastify.decorate('requireRootKey', async (request: FastifyRequest) => {
     const context = request.keyContext
     if (!context || context.type !== API_KEY_TYPES.ADMIN || !context.isRoot) {
-      throw new AppError('Root admin key required', 403, 'Forbidden')
+      throw new AppError('Workspace admin access required', 403, 'Forbidden')
     }
   })
 

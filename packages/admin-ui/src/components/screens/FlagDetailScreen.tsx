@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { flagsApi } from '../../lib/api'
 import { useProject } from '../../contexts/ProjectContext'
@@ -403,6 +403,19 @@ export function FlagDetailScreen() {
   const [deleting, setDeleting] = useState(false)
 
   const projectId = activeProject?.id
+
+  /**
+   * Flag keys are project-scoped, so this URL stops making sense when the
+   * user switches projects. Go back to the flags list instead of showing a
+   * "flag not found" error for the new project.
+   */
+  const initialProjectId = useRef(projectId)
+  useEffect(() => {
+    if (!initialProjectId.current) initialProjectId.current = projectId
+    if (projectId && initialProjectId.current && projectId !== initialProjectId.current) {
+      navigate('/flags', { replace: true })
+    }
+  }, [projectId, navigate])
 
   const fetchFlag = useCallback(
     async (isInitial = false) => {
