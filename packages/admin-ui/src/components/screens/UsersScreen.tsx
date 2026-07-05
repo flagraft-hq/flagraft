@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, ReactNode } from 'react'
 import { usersApi } from '../../lib/api'
 import type { WorkspaceUser } from '../../lib/api'
+import { USER_ROLES } from '../../lib/roles'
 import { useToast } from '../../hooks/useToast'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
@@ -442,7 +443,7 @@ function StatCard({ label, value, sub, icon, tone, warn }: StatCardProps) {
 }
 
 function RoleBadge({ role }: { role: WorkspaceUser['role'] }) {
-  const tone = role === 'owner' ? 'amber' : role === 'admin' ? 'teal' : 'slate'
+  const tone = role === USER_ROLES.OWNER ? 'amber' : role === USER_ROLES.ADMIN ? 'teal' : 'slate'
   return (
     <span className={'badge badge-tone-' + tone}>
       <span className="role-dot" />
@@ -547,7 +548,7 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
               </Tip>
               <Tip
                 tip={
-                  u.role === 'owner'
+                  u.role === USER_ROLES.OWNER
                     ? 'Transfer ownership first'
                     : u.status === 'suspended'
                       ? 'Reinstate'
@@ -556,7 +557,7 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
               >
                 <button
                   className="icon-btn"
-                  disabled={u.role === 'owner'}
+                  disabled={u.role === USER_ROLES.OWNER}
                   aria-label={u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
                 >
                   <Icon name={u.status === 'suspended' ? 'check' : 'minus'} size={13} />

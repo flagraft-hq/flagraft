@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { USER_ROLES } from '../../auth/constants.js'
+import { DEFAULT_USER_ROLE, USER_ROLES } from '../../auth/constants.js'
 
 export const inviteUserSchema = z.object({
   emails: z.array(z.string().email()).min(1),
@@ -8,7 +8,7 @@ export const inviteUserSchema = z.object({
    * Owner is excluded on purpose: invites can never grant ownership.
    * An omitted role defaults to viewer -- least privilege.
    */
-  role: z.enum([USER_ROLES.ADMIN, USER_ROLES.EDITOR, USER_ROLES.VIEWER]).default(USER_ROLES.VIEWER),
+  role: z.enum([USER_ROLES.ADMIN, USER_ROLES.EDITOR, USER_ROLES.VIEWER]).default(DEFAULT_USER_ROLE),
   projectIds: z.array(z.string().uuid()).default([]),
 })
 

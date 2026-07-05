@@ -18,6 +18,9 @@ export const USER_ROLES = {
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES]
 
+/** Role granted when none is specified -- least privilege. */
+export const DEFAULT_USER_ROLE = USER_ROLES.VIEWER
+
 /** Roles allowed to administer the whole workspace (users, keys, projects). */
 export const WORKSPACE_ADMIN_ROLES: ReadonlySet<string> = new Set([
   USER_ROLES.OWNER,

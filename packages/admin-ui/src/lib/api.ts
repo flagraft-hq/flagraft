@@ -1,4 +1,6 @@
 import axios from 'axios'
+
+import type { UserRole } from './roles'
 import type {
   Flag,
   Override,
@@ -186,7 +188,7 @@ export interface WorkspaceUser {
   id: string
   email: string
   name: string
-  role: 'owner' | 'admin' | 'editor' | 'viewer'
+  role: UserRole
   status: 'active' | 'invited' | 'suspended'
   isSystem: boolean
   initials: string

@@ -1,4 +1,4 @@
-import { API_KEY_TYPES } from '../auth/constants'
+import { API_KEY_TYPES, DEFAULT_USER_ROLE } from '../auth/constants'
 import { relations, sql } from 'drizzle-orm'
 import {
   boolean,
@@ -127,7 +127,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   name: text('name').notNull(),
-  role: text('role').notNull().default('viewer'),
+  role: text('role').notNull().default(DEFAULT_USER_ROLE),
   status: text('status').notNull().default('active'),
   twoFa: text('two_fa').notNull().default('none'),
   isSystem: boolean('is_system').notNull().default(false),

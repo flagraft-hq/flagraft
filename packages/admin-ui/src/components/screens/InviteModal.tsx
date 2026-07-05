@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { usersApi } from '../../lib/api'
+import { DEFAULT_INVITE_ROLE, INVITABLE_ROLES, type InvitableRole } from '../../lib/roles'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { Button } from '../primitives/Button'
@@ -21,7 +22,7 @@ interface InviteModalProps {
   onInvited?: () => void
 }
 
-const ROLE_HINTS: Record<'admin' | 'editor' | 'viewer', string> = {
+const ROLE_HINTS: Record<InvitableRole, string> = {
   admin: 'Can manage flags & keys in granted projects.',
   editor: 'Can edit flags in development. Prod requires admin.',
   viewer: 'Read-only across granted projects.',
@@ -39,7 +40,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
   const toast = useToast()
   const { projects } = useProject()
   const [emails, setEmails] = useState('')
-  const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('viewer')
+  const [role, setRole] = useState<InvitableRole>(DEFAULT_INVITE_ROLE)
   const [projectIds, setProjectIds] = useState<Set<string>>(new Set())
   const [submitting, setSubmitting] = useState(false)
   const [results, setResults] = useState<InviteResult[] | null>(null)
@@ -89,7 +90,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
 
   function reset() {
     setEmails('')
-    setRole('viewer')
+    setRole(DEFAULT_INVITE_ROLE)
     setProjectIds(new Set())
     setResults(null)
   }
@@ -207,11 +208,13 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
               id="invite-role"
               className="select-input"
               value={role}
-              onChange={(e) => setRole(e.target.value as 'admin' | 'editor' | 'viewer')}
+              onChange={(e) => setRole(e.target.value as InvitableRole)}
             >
-              <option value="admin">admin</option>
-              <option value="editor">editor</option>
-              <option value="viewer">viewer</option>
+              {INVITABLE_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
             <span className="text-field-hint">{ROLE_HINTS[role]}</span>
           </div>

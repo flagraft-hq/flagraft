@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { WorkspaceUser } from '../../lib/api'
 import { usersApi } from '../../lib/api'
+import { USER_ROLES } from '../../lib/roles'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
@@ -275,7 +276,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
               variant="danger"
               leftIcon="minus"
               onClick={() => void handleSuspendToggle()}
-              disabled={busy || user.role === 'owner'}
+              disabled={busy || user.role === USER_ROLES.OWNER}
             >
               Suspend
             </Button>
@@ -296,7 +297,7 @@ function DRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 function roleTone(role: WorkspaceUser['role']): 'amber' | 'teal' | 'slate' {
-  if (role === 'owner') return 'amber'
-  if (role === 'admin') return 'teal'
+  if (role === USER_ROLES.OWNER) return 'amber'
+  if (role === USER_ROLES.ADMIN) return 'teal'
   return 'slate'
 }
