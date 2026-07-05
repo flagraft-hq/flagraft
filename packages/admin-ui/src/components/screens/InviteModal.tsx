@@ -100,8 +100,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
     onClose()
   }
 
-  const canSend =
-    validEmails.length > 0 && invalidCount === 0 && projectIds.size > 0 && !submitting
+  const canSend = validEmails.length > 0 && invalidCount === 0 && projectIds.size > 0 && !submitting
 
   if (results) {
     const anyManual = results.some((r) => !r.emailed)
@@ -132,7 +131,11 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
                   <span className="mono" title={r.inviteUrl}>
                     {r.inviteUrl}
                   </span>
-                  <CopyButton value={r.inviteUrl} label="Copy link" ariaLabel={'Copy invite link for ' + r.email} />
+                  <CopyButton
+                    value={r.inviteUrl}
+                    label="Copy link"
+                    ariaLabel={'Copy invite link for ' + r.email}
+                  />
                 </div>
               </li>
             ))}

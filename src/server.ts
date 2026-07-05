@@ -41,6 +41,11 @@ export interface BuildServerOptions {
    */
   db?: Db
   cache?: Cache
+  /**
+   * Skips the first-boot seeding of the default admin and project.
+   * Used by tests whose premise is an empty or unavailable database.
+   */
+  skipBootSeed?: boolean
 }
 
 /**
@@ -82,6 +87,7 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(publicRoutes, v1Prefix)
 
   fastify.addHook('onReady', async () => {
+    if (opts.skipBootSeed) return
     const [existingUser] = await fastify.db.select().from(users).limit(1)
     if (!existingUser) {
       await createUser(fastify.db, {

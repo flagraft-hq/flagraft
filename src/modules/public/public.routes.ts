@@ -31,15 +31,19 @@ export async function publicRoutes(fastify: FastifyInstance) {
   })
 
   /** Accepts an invite: sets the password, activates the account, and logs in. */
-  fastify.post('/public/invite/:token/accept', { config: { skipAuth: true } }, async (req, reply) => {
-    const { token } = req.params as { token: string }
-    const { password } = acceptInviteSchema.parse(req.body)
-    const user = await users.acceptInvite(fastify.db, token, password)
-    if (!user) throw new AppError('This invite link is invalid or has expired', 410, 'Gone')
+  fastify.post(
+    '/public/invite/:token/accept',
+    { config: { skipAuth: true } },
+    async (req, reply) => {
+      const { token } = req.params as { token: string }
+      const { password } = acceptInviteSchema.parse(req.body)
+      const user = await users.acceptInvite(fastify.db, token, password)
+      if (!user) throw new AppError('This invite link is invalid or has expired', 410, 'Gone')
 
-    setSessionCookie(fastify, reply, user)
-    return reply
-      .status(200)
-      .send({ id: user.id, email: user.email, name: user.name, role: user.role })
-  })
+      setSessionCookie(fastify, reply, user)
+      return reply
+        .status(200)
+        .send({ id: user.id, email: user.email, name: user.name, role: user.role })
+    },
+  )
 }

@@ -33,7 +33,7 @@ export async function userRoutes(fastify: FastifyInstance) {
        */
       const base = (
         fastify.config.APP_BASE_URL ??
-        (req.headers.origin as string | undefined) ??
+        req.headers.origin ??
         `${req.protocol}://${req.headers.host}`
       ).replace(/\/$/, '')
 

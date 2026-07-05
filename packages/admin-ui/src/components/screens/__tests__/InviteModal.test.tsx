@@ -119,9 +119,7 @@ describe('InviteModal', () => {
       target: { value: 'a@a.com, A@a.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
-    await waitFor(() =>
-      expect(usersApi.invite).toHaveBeenCalledWith(['a@a.com'], 'editor', ['p1']),
-    )
+    await waitFor(() => expect(usersApi.invite).toHaveBeenCalledWith(['a@a.com'], 'editor', ['p1']))
   })
 
   it('calls usersApi.invite with correct args on submit', async () => {

@@ -44,7 +44,9 @@ describe('AcceptInviteScreen', () => {
   })
 
   it('shows an expired state for an invalid link', async () => {
-    vi.mocked(inviteApi.get).mockRejectedValue(new Error('This invite link is invalid or has expired'))
+    vi.mocked(inviteApi.get).mockRejectedValue(
+      new Error('This invite link is invalid or has expired'),
+    )
     renderAt()
     await waitFor(() => expect(screen.getByText(/invite link expired/i)).toBeInTheDocument())
   })
@@ -73,7 +75,9 @@ describe('AcceptInviteScreen', () => {
     renderAt('tok-xyz')
     await waitFor(() => screen.getByText('Set your password'))
     fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'longenough1' } })
-    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'longenough1' } })
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: 'longenough1' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /activate account/i }))
     await waitFor(() => expect(mockAcceptInvite).toHaveBeenCalledWith('tok-xyz', 'longenough1'))
     expect(mockNavigate).toHaveBeenCalledWith('/flags', { replace: true })

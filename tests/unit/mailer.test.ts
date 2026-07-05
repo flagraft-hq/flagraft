@@ -42,8 +42,12 @@ describe('buildInviteMessage', () => {
 
   it('prefers SMTP_FROM, falls back to SMTP_USER, then a default', () => {
     const inv = { to: 't@x.com', inviteUrl: 'https://x/invite/t' }
-    expect(buildInviteMessage(loadConfig({ ...base, SMTP_FROM: 'a@x.com' }), inv).from).toBe('a@x.com')
-    expect(buildInviteMessage(loadConfig({ ...base, SMTP_USER: 'u@x.com' }), inv).from).toBe('u@x.com')
+    expect(buildInviteMessage(loadConfig({ ...base, SMTP_FROM: 'a@x.com' }), inv).from).toBe(
+      'a@x.com',
+    )
+    expect(buildInviteMessage(loadConfig({ ...base, SMTP_USER: 'u@x.com' }), inv).from).toBe(
+      'u@x.com',
+    )
     expect(buildInviteMessage(loadConfig(base), inv).from).toBe('no-reply@flagraft.local')
   })
 })

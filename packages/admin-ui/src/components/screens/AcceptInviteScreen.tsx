@@ -93,7 +93,9 @@ export function AcceptInviteScreen() {
             >
               FR
             </span>
-            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em' }}>Flagraft</span>
+            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em' }}>
+              Flagraft
+            </span>
           </div>
           <div className="auth-pitch">
             <h1>
@@ -181,7 +183,9 @@ export function AcceptInviteScreen() {
                         onClick={() => setShowPw((v) => !v)}
                       >
                         <Icon name={showPw ? 'eyeOff' : 'eye'} size={14} />
-                        <span className="sr-only">{showPw ? 'Hide password' : 'Show password'}</span>
+                        <span className="sr-only">
+                          {showPw ? 'Hide password' : 'Show password'}
+                        </span>
                       </button>
                     </div>
                     {password.length > 0 ? (
