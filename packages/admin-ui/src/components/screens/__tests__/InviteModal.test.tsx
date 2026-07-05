@@ -98,6 +98,32 @@ describe('InviteModal', () => {
     expect(screen.getByText(/2 recipients/i)).toBeInTheDocument()
   })
 
+  it('flags an invalid email and blocks sending until it is fixed', () => {
+    renderModal()
+    fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
+    fireEvent.change(document.getElementById('invite-emails')!, {
+      target: { value: 'good@a.com, not-an-email' },
+    })
+    expect(screen.getByText(/1 invalid/i)).toBeInTheDocument()
+    expect(screen.getByText('not-an-email')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /send.*invite/i })).toBeDisabled()
+  })
+
+  it('de-duplicates and only sends valid emails', async () => {
+    vi.mocked(usersApi.invite).mockResolvedValue({
+      data: [{ email: 'a@a.com', tempPassword: 't', emailed: true }],
+    } as unknown as Awaited<ReturnType<typeof usersApi.invite>>)
+    renderModal()
+    fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
+    fireEvent.change(document.getElementById('invite-emails')!, {
+      target: { value: 'a@a.com, A@a.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
+    await waitFor(() =>
+      expect(usersApi.invite).toHaveBeenCalledWith(['a@a.com'], 'editor', ['p1']),
+    )
+  })
+
   it('calls usersApi.invite with correct args on submit', async () => {
     vi.mocked(usersApi.invite).mockResolvedValue({
       data: [{ email: 'x@a.com', tempPassword: 'tmp-123' }],
@@ -111,50 +137,68 @@ describe('InviteModal', () => {
     await waitFor(() => expect(usersApi.invite).toHaveBeenCalledWith(['x@a.com'], 'editor', ['p1']))
   })
 
-  it('shows a toast with temp password for each invited user', async () => {
-    vi.mocked(usersApi.invite).mockResolvedValue({
-      data: [{ email: 'x@a.com', tempPassword: 'tmp-123' }],
-    } as unknown as Awaited<ReturnType<typeof usersApi.invite>>)
+  const inviteResult = (over: Partial<{ emailed: boolean }> = {}) => ({
+    data: [
+      {
+        id: 'u1',
+        email: 'x@a.com',
+        inviteUrl: 'http://localhost/invite/tok-123',
+        expiresAt: '2026-07-02T00:00:00.000Z',
+        emailed: true,
+        ...over,
+      },
+    ],
+  })
+
+  it('shows the emailed badge in the results phase when emailed is true', async () => {
+    vi.mocked(usersApi.invite).mockResolvedValue(
+      inviteResult({ emailed: true }) as unknown as Awaited<ReturnType<typeof usersApi.invite>>,
+    )
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, {
-      target: { value: 'x@a.com' },
-    })
+    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
-    await waitFor(() =>
-      expect(mockToastPush).toHaveBeenCalledWith({
-        title: 'Invited x@a.com',
-        msg: 'Temporary password: tmp-123',
-      }),
+    await waitFor(() => expect(screen.getByText(/1 invite sent/i)).toBeInTheDocument())
+    expect(screen.getByText('Emailed')).toBeInTheDocument()
+  })
+
+  it('shows the manual-share link in the results phase when emailed is false', async () => {
+    vi.mocked(usersApi.invite).mockResolvedValue(
+      inviteResult({ emailed: false }) as unknown as Awaited<ReturnType<typeof usersApi.invite>>,
     )
+    renderModal()
+    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
+    fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
+    fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
+    await waitFor(() => expect(screen.getByText('Share manually')).toBeInTheDocument())
+    expect(screen.getByText('http://localhost/invite/tok-123')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /copy invite link/i })).toBeInTheDocument()
   })
 
   it('calls onInvited after successful invite', async () => {
-    vi.mocked(usersApi.invite).mockResolvedValue({
-      data: [{ email: 'x@a.com', tempPassword: 'tmp-123' }],
-    } as unknown as Awaited<ReturnType<typeof usersApi.invite>>)
+    vi.mocked(usersApi.invite).mockResolvedValue(
+      inviteResult() as unknown as Awaited<ReturnType<typeof usersApi.invite>>,
+    )
     const mockOnInvited = vi.fn()
     render(<InviteModal open onClose={vi.fn()} onInvited={mockOnInvited} />)
-    fireEvent.change(document.getElementById('invite-emails')!, {
-      target: { value: 'x@a.com' },
-    })
+    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
     await waitFor(() => expect(mockOnInvited).toHaveBeenCalled())
   })
 
-  it('calls onClose after successful invite', async () => {
-    vi.mocked(usersApi.invite).mockResolvedValue({
-      data: [{ email: 'x@a.com', tempPassword: 'tmp-123' }],
-    } as unknown as Awaited<ReturnType<typeof usersApi.invite>>)
+  it('closes when Done is clicked in the results phase', async () => {
+    vi.mocked(usersApi.invite).mockResolvedValue(
+      inviteResult() as unknown as Awaited<ReturnType<typeof usersApi.invite>>,
+    )
     const mockOnClose = vi.fn()
     render(<InviteModal open onClose={mockOnClose} />)
-    fireEvent.change(document.getElementById('invite-emails')!, {
-      target: { value: 'x@a.com' },
-    })
+    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
-    await waitFor(() => expect(mockOnClose).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByRole('button', { name: /^done$/i })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    expect(mockOnClose).toHaveBeenCalled()
   })
 
   it('shows error toast on invite failure', async () => {

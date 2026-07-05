@@ -59,7 +59,6 @@ const activeUser: WorkspaceUser = {
   email: 'alice@example.com',
   role: 'admin',
   status: 'active',
-  twoFa: 'app',
   isSystem: false,
   initials: 'AS',
   tone: 'teal',
@@ -131,6 +130,30 @@ describe('UserDetailDrawer', () => {
     renderDrawer(activeUser, vi.fn(), mockOnUpdated)
     fireEvent.click(screen.getByRole('button', { name: /suspend/i }))
     await waitFor(() => expect(mockOnUpdated).toHaveBeenCalledWith(updatedUser))
+  })
+
+  it('removing a project calls onUpdated with the project dropped', async () => {
+    mockUsersApi.removeFromProject.mockResolvedValue({})
+    const mockOnUpdated = vi.fn()
+    renderDrawer(activeUser, vi.fn(), mockOnUpdated)
+    fireEvent.click(screen.getByRole('button', { name: /remove from demo/i }))
+    await waitFor(() => expect(mockUsersApi.removeFromProject).toHaveBeenCalledWith('u1', 'p1'))
+    await waitFor(() =>
+      expect(mockOnUpdated).toHaveBeenCalledWith(expect.objectContaining({ projects: [] })),
+    )
+  })
+
+  it('adding a project calls onUpdated with the project appended', async () => {
+    mockUsersApi.addToProject.mockResolvedValue({})
+    const mockOnUpdated = vi.fn()
+    const userNoProjects = { ...activeUser, projects: [] }
+    renderDrawer(userNoProjects, vi.fn(), mockOnUpdated)
+    fireEvent.click(screen.getByRole('button', { name: /add to project/i }))
+    fireEvent.change(screen.getByLabelText(/choose project/i), { target: { value: 'p1' } })
+    await waitFor(() => expect(mockUsersApi.addToProject).toHaveBeenCalledWith('u1', 'p1'))
+    await waitFor(() =>
+      expect(mockOnUpdated).toHaveBeenCalledWith(expect.objectContaining({ projects: ['Demo'] })),
+    )
   })
 
   it('shows "Reinstate" button for suspended user', () => {

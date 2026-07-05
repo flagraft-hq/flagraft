@@ -48,6 +48,7 @@
     "fastify": "^4.28.1",
     "fastify-plugin": "^4.5.1",
     "fastify-type-provider-zod": "^2.1.0",
+    "nodemailer": "^9.0.1",
     "pg": "^8.13.1",
     "pino": "^9.5.0",
     "zod": "^3.23.8"
@@ -57,6 +58,7 @@
     "@playwright/test": "^1.60.0",
     "@types/argon2": "^0.15.4",
     "@types/node": "^22.10.1",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.11.10",
     "drizzle-kit": "^0.27.2",
     "eslint": "^10.2.1",

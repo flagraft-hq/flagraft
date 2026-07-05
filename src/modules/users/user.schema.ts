@@ -6,6 +6,10 @@ export const inviteUserSchema = z.object({
   projectIds: z.array(z.string().uuid()).default([]),
 })
 
+export const acceptInviteSchema = z.object({
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
 export const patchUserSchema = z
   .object({
     role: z.enum(['owner', 'admin', 'editor', 'viewer']).optional(),

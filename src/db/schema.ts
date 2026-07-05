@@ -125,6 +125,10 @@ export const users = pgTable('users', {
   initials: text('initials').notNull().default(''),
   tone: text('tone').notNull().default('teal'),
   lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
+  /** SHA-256 of the pending invite token; null once the invite is accepted or never issued. */
+  inviteTokenHash: text('invite_token_hash'),
+  /** When the pending invite link stops working. */
+  inviteExpiresAt: timestamp('invite_expires_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 })

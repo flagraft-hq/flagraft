@@ -1,10 +1,18 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
 import { users, userProjects, projects } from '../../db/schema.js'
 import type { User } from '../../db/schema.js'
 import { createUser, hashPassword } from '../auth/auth.service.js'
+
+/** Invite links live for 24 hours. */
+const INVITE_TTL_MS = 24 * 60 * 60 * 1000
+
+/** Tokens are stored hashed so a database leak cannot yield usable invite links. */
+function hashInviteToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
+}
 
 export async function listUsers(db: Db) {
   const rows = await db
@@ -43,29 +51,77 @@ export async function getUserWithProjects(db: Db, id: string) {
 }
 
 /**
- * Creates an invited user with a generated temp password.
- * Returns the user record along with the plaintext tempPassword so the
- * admin can share it manually -- no email is sent.
+ * Creates an invited user and issues a one-time invite token (valid 24h).
+ * The account has an unusable random password and status 'invited', so it
+ * cannot be logged into until the invite is accepted. Returns the plaintext
+ * token so the caller can build a link to email or share manually.
  */
 export async function inviteUser(
   db: Db,
   data: { email: string; role: string; projectIds: string[] },
-): Promise<{ user: User; tempPassword: string }> {
-  const tempPassword = randomBytes(10).toString('base64url')
+): Promise<{ user: User; token: string; expiresAt: Date }> {
+  const token = randomBytes(32).toString('base64url')
+  const expiresAt = new Date(Date.now() + INVITE_TTL_MS)
   const name = data.email.split('@')[0]
   const user = await createUser(db, {
+    /** Unusable placeholder; the real password is set when the invite is accepted. */
+    password: randomBytes(32).toString('base64url'),
     email: data.email,
-    password: tempPassword,
     name,
     role: data.role,
     status: 'invited',
   })
+  await db
+    .update(users)
+    .set({ inviteTokenHash: hashInviteToken(token), inviteExpiresAt: expiresAt })
+    .where(eq(users.id, user.id))
   if (data.projectIds.length > 0) {
     await db
       .insert(userProjects)
       .values(data.projectIds.map((projectId) => ({ userId: user.id, projectId })))
   }
-  return { user, tempPassword }
+  return { user, token, expiresAt }
+}
+
+/**
+ * Looks up a pending invite by its plaintext token. Returns the invited user
+ * only when the token matches and has not expired; otherwise undefined.
+ */
+export async function getUserByInviteToken(db: Db, token: string): Promise<User | undefined> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.inviteTokenHash, hashInviteToken(token)))
+    .limit(1)
+  if (!user || !user.inviteExpiresAt) return undefined
+  if (user.inviteExpiresAt.getTime() < Date.now()) return undefined
+  return user
+}
+
+/**
+ * Accepts a pending invite: sets the chosen password, activates the account,
+ * and clears the token so the link cannot be reused. Returns the activated
+ * user, or undefined if the token is invalid or expired.
+ */
+export async function acceptInvite(
+  db: Db,
+  token: string,
+  password: string,
+): Promise<User | undefined> {
+  const user = await getUserByInviteToken(db, token)
+  if (!user) return undefined
+  const [updated] = await db
+    .update(users)
+    .set({
+      passwordHash: await hashPassword(password),
+      status: 'active',
+      inviteTokenHash: null,
+      inviteExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, user.id))
+    .returning()
+  return updated
 }
 
 export async function patchUser(

@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { authApi, type AuthUser } from '../lib/api'
+import { authApi, inviteApi, type AuthUser } from '../lib/api'
 
 interface AuthContextType {
   user: AuthUser | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
+  acceptInvite: (token: string, password: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -27,6 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.data)
   }, [])
 
+  const acceptInvite = useCallback(async (token: string, password: string) => {
+    const res = await inviteApi.accept(token, password)
+    setUser(res.data)
+  }, [])
+
   const logout = useCallback(async () => {
     await authApi.logout()
     setUser(null)
@@ -34,7 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, acceptInvite, logout }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 

@@ -3,7 +3,7 @@ import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 
-import { loadConfig } from './config.js'
+import { loadConfig, type AppConfig } from './config.js'
 import type { Cache } from './cache/index.js'
 import type { Db } from './db/index.js'
 import { createUser } from './modules/auth/auth.service.js'
@@ -26,6 +26,12 @@ import healthPlugin from './plugins/health.js'
 import requestIdPlugin from './plugins/requestId.js'
 import swaggerPlugin from './plugins/swagger.js'
 
+declare module 'fastify' {
+  interface FastifyInstance {
+    config: AppConfig
+  }
+}
+
 /**
  * Options for configuring the server build
  */
@@ -45,6 +51,7 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   const fastify = Fastify({
     logger: { level: config.LOG_LEVEL },
   })
+  fastify.decorate('config', config)
 
   await fastify.register(cors, {
     origin: config.NODE_ENV === 'production' ? false : true,

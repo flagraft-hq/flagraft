@@ -5,15 +5,9 @@ import type {} from '@fastify/jwt'
 import { AppError } from '../../plugins/errorHandler.js'
 import { loginSchema } from './auth.schema.js'
 import * as service from './auth.service.js'
+import { SESSION_COOKIE, setSessionCookie } from './session.js'
 
-const COOKIE = 'flagraft_session'
-const COOKIE_OPTS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  path: '/',
-  maxAge: 60 * 60 * 24 * 7,
-}
+const COOKIE = SESSION_COOKIE
 
 export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/admin/auth/login', { config: { skipAuth: true } }, async (req, reply) => {
@@ -21,11 +15,8 @@ export async function authRoutes(fastify: FastifyInstance) {
     const user = await service.validateCredentials(fastify.db, email, password)
     if (!user) throw new AppError('Invalid email or password', 401, 'Unauthorized')
 
-    const token = fastify.jwt.sign(
-      { sub: user.id, email: user.email, role: user.role, name: user.name },
-      { expiresIn: '7d' },
-    )
-    return reply.setCookie(COOKIE, token, COOKIE_OPTS).send({
+    setSessionCookie(fastify, reply, user)
+    return reply.send({
       id: user.id,
       email: user.email,
       name: user.name,

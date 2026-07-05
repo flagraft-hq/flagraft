@@ -1,10 +1,19 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { usersApi } from '../../lib/api'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { Button } from '../primitives/Button'
+import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
 import { Modal } from '../primitives/Modal'
+
+interface InviteResult {
+  id: string
+  email: string
+  inviteUrl: string
+  expiresAt: string
+  emailed: boolean
+}
 
 interface InviteModalProps {
   open: boolean
@@ -12,9 +21,19 @@ interface InviteModalProps {
   onInvited?: () => void
 }
 
+const ROLE_HINTS: Record<'admin' | 'editor' | 'viewer', string> = {
+  admin: 'Can manage flags & keys in granted projects.',
+  editor: 'Can edit flags in development. Prod requires admin.',
+  viewer: 'Read-only across granted projects.',
+}
+
+/** ponytail: UI-side typo guard only. The backend (zod .email()) is authoritative. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 /**
  * Modal for inviting one or more users to the workspace.
- * Emails are comma- or newline-separated. At least one project must be selected.
+ * Emails are comma- or newline-separated; each is validated live so typos are
+ * caught before sending. At least one project must be selected.
  */
 export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
   const toast = useToast()
@@ -23,11 +42,23 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
   const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('editor')
   const [projectIds, setProjectIds] = useState<Set<string>>(new Set())
   const [submitting, setSubmitting] = useState(false)
+  const [results, setResults] = useState<InviteResult[] | null>(null)
 
-  const parsed = emails
-    .split(/[,\s]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
+  /** Parse, de-duplicate, and validate the raw textarea into recipient chips. */
+  const recipients = useMemo(() => {
+    const seen = new Set<string>()
+    const out: { email: string; valid: boolean }[] = []
+    for (const raw of emails.split(/[,\s]+/)) {
+      const email = raw.trim().toLowerCase()
+      if (!email || seen.has(email)) continue
+      seen.add(email)
+      out.push({ email, valid: EMAIL_RE.test(email) })
+    }
+    return out
+  }, [emails])
+
+  const validEmails = recipients.filter((r) => r.valid).map((r) => r.email)
+  const invalidCount = recipients.length - validEmails.length
 
   function toggleProject(id: string) {
     setProjectIds((prev) => {
@@ -39,19 +70,12 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
   }
 
   async function handleSubmit() {
-    if (parsed.length === 0 || projectIds.size === 0) return
+    if (validEmails.length === 0 || invalidCount > 0 || projectIds.size === 0) return
     setSubmitting(true)
     try {
-      const res = await usersApi.invite(parsed, role, Array.from(projectIds))
-      for (const inv of res.data) {
-        toast.push({
-          title: 'Invited ' + inv.email,
-          msg: 'Temporary password: ' + inv.tempPassword,
-        })
-      }
+      const res = await usersApi.invite(validEmails, role, Array.from(projectIds))
+      setResults(res.data)
       onInvited?.()
-      reset()
-      onClose()
     } catch (err) {
       toast.push({
         title: 'Failed to send invites',
@@ -67,6 +91,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
     setEmails('')
     setRole('editor')
     setProjectIds(new Set())
+    setResults(null)
   }
 
   function handleClose() {
@@ -75,52 +100,109 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
     onClose()
   }
 
-  const canSend = parsed.length > 0 && projectIds.size > 0 && !submitting
+  const canSend =
+    validEmails.length > 0 && invalidCount === 0 && projectIds.size > 0 && !submitting
+
+  if (results) {
+    const anyManual = results.some((r) => !r.emailed)
+    return (
+      <Modal open={open} onClose={handleClose} titleId="invite-modal-title" size="lg">
+        <Modal.Header
+          id="invite-modal-title"
+          subtitle={
+            anyManual
+              ? 'Share these links — each expires in 24 hours.'
+              : 'Invite links were emailed. Each expires in 24 hours.'
+          }
+        >
+          {results.length} {results.length === 1 ? 'invite' : 'invites'} sent
+        </Modal.Header>
+        <Modal.Body>
+          <ul className="invite-results">
+            {results.map((r) => (
+              <li key={r.id} className="invite-result">
+                <div className="invite-result-head">
+                  <span className="invite-result-email mono">{r.email}</span>
+                  <span className={'invite-result-badge ' + (r.emailed ? 'ok' : 'manual')}>
+                    <Icon name={r.emailed ? 'check' : 'info'} size={11} />
+                    {r.emailed ? 'Emailed' : 'Share manually'}
+                  </span>
+                </div>
+                <div className="invite-result-link">
+                  <span className="mono" title={r.inviteUrl}>
+                    {r.inviteUrl}
+                  </span>
+                  <CopyButton value={r.inviteUrl} label="Copy link" ariaLabel={'Copy invite link for ' + r.email} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Modal.Body>
+        <Modal.Footer>
+          <span style={{ flex: 1 }} />
+          <Button variant="ghost" onClick={() => reset()}>
+            Invite more
+          </Button>
+          <Button variant="primary" onClick={handleClose}>
+            Done
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
 
   return (
-    <Modal open={open} onClose={handleClose} titleId="invite-modal-title">
-      <Modal.Header id="invite-modal-title">
-        <div>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Invite users</h2>
-          <div className="sub muted" style={{ fontSize: 12.5, marginTop: 4 }}>
-            Invites expire after <b>7 days</b>. Recipients must verify their email and configure 2FA
-            before they can sign in.
-          </div>
-        </div>
+    <Modal open={open} onClose={handleClose} titleId="invite-modal-title" size="lg">
+      <Modal.Header
+        id="invite-modal-title"
+        subtitle="Each invite sends a one-time link to set a password. Links expire in 24 hours."
+      >
+        Invite users
       </Modal.Header>
-      <Modal.Body>
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label
-            htmlFor="invite-emails"
-            style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}
-          >
-            Email addresses
-          </label>
-          <textarea
-            id="invite-emails"
-            className="input textarea mono"
-            value={emails}
-            onChange={(e) => setEmails(e.target.value)}
-            placeholder="alex@company.com, jamie@company.com"
-            style={{ minHeight: 76, width: '100%' }}
-          />
-          <div className="hint muted" style={{ fontSize: 11.5, marginTop: 4 }}>
-            Comma- or newline-separated. {parsed.length}{' '}
-            {parsed.length === 1 ? 'recipient' : 'recipients'} parsed.
-          </div>
-        </div>
 
-        <div className="field-row" style={{ marginBottom: 14 }}>
-          <div className="field">
-            <label
-              htmlFor="invite-role"
-              style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}
-            >
+      <Modal.Body>
+        <div className="invite-form">
+          <div className="text-field">
+            <label className="text-field-label" htmlFor="invite-emails">
+              Email addresses
+            </label>
+            <textarea
+              id="invite-emails"
+              className="text-field-input text-field-textarea mono"
+              value={emails}
+              onChange={(e) => setEmails(e.target.value)}
+              placeholder="alex@company.com, jamie@company.com"
+              rows={3}
+            />
+            {recipients.length > 0 ? (
+              <div className="invite-chips">
+                {recipients.map((r) => (
+                  <span
+                    key={r.email}
+                    className={'invite-chip' + (r.valid ? '' : ' invalid')}
+                    title={r.valid ? undefined : 'Not a valid email address'}
+                  >
+                    {r.valid ? null : <Icon name="alert" size={11} />}
+                    {r.email}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <span className="text-field-hint">
+              Comma- or newline-separated.
+              {invalidCount > 0
+                ? ` ${invalidCount} invalid — fix or remove to continue.`
+                : ` ${validEmails.length} ${validEmails.length === 1 ? 'recipient' : 'recipients'}.`}
+            </span>
+          </div>
+
+          <div className="select-wrapper">
+            <label className="select-label" htmlFor="invite-role">
               Workspace role
             </label>
             <select
               id="invite-role"
-              className="select"
+              className="select-input"
               value={role}
               onChange={(e) => setRole(e.target.value as 'admin' | 'editor' | 'viewer')}
             >
@@ -128,69 +210,54 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
               <option value="editor">editor</option>
               <option value="viewer">viewer</option>
             </select>
-            <div className="hint muted" style={{ fontSize: 11.5, marginTop: 4 }}>
-              {role === 'admin'
-                ? 'Can manage flags & keys in granted projects.'
-                : role === 'editor'
-                  ? 'Can edit flags in development. Prod requires admin.'
-                  : 'Read-only across granted projects.'}
-            </div>
+            <span className="text-field-hint">{ROLE_HINTS[role]}</span>
           </div>
-          <div className="field">
-            <label
-              htmlFor="invite-2fa"
-              style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}
-            >
-              Default 2FA
+
+          <div className="text-field">
+            <label className="text-field-label">
+              Project access
+              <span className="invite-count">{projectIds.size} selected</span>
             </label>
-            <select id="invite-2fa" className="select" defaultValue="required">
-              <option value="required">Required</option>
-              <option value="optional">Optional</option>
-            </select>
-            <div className="hint muted" style={{ fontSize: 11.5, marginTop: 4 }}>
-              Workspace policy enforces 2FA.
+            {projects.length === 0 ? (
+              <span className="text-field-hint">No projects yet — create one first.</span>
+            ) : (
+              <div className="invite-projects">
+                {projects.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="invite-proj-chip"
+                    aria-pressed={projectIds.has(p.id)}
+                    onClick={() => toggleProject(p.id)}
+                  >
+                    <span
+                      className="proj-avatar"
+                      style={{ width: 22, height: 22, fontSize: 9.5, borderRadius: 6 }}
+                    >
+                      {p.name
+                        .split(' ')
+                        .map((w) => w[0])
+                        .slice(0, 2)
+                        .join('')}
+                    </span>
+                    <span>{p.name}</span>
+                    {projectIds.has(p.id) ? <Icon name="check" size={11} /> : null}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="form-msg info">
+            <Icon name="info" size={13} />
+            <div>
+              If email is configured, invite links are sent automatically. Otherwise you'll get the
+              links here to share manually.
             </div>
-          </div>
-        </div>
-
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
-            Project access
-          </label>
-          <div className="invite-projects">
-            {projects.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className="invite-proj-chip"
-                aria-pressed={projectIds.has(p.id)}
-                onClick={() => toggleProject(p.id)}
-              >
-                <span
-                  className="proj-avatar"
-                  style={{ width: 22, height: 22, fontSize: 9.5, borderRadius: 6 }}
-                >
-                  {p.name
-                    .split(' ')
-                    .map((w) => w[0])
-                    .slice(0, 2)
-                    .join('')}
-                </span>
-                <span>{p.name}</span>
-                {projectIds.has(p.id) ? <Icon name="check" size={11} /> : null}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="form-msg info">
-          <Icon name="info" size={13} />
-          <div>
-            Invitees receive a one-time link. Their account is created on first sign-in. SAML SSO
-            users (matching <span className="mono">@kocharsoft.com</span>) skip the password step.
           </div>
         </div>
       </Modal.Body>
+
       <Modal.Footer>
         <Button variant="ghost" onClick={handleClose} disabled={submitting}>
           Cancel
@@ -202,7 +269,9 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
           disabled={!canSend}
           onClick={() => void handleSubmit()}
         >
-          Send {parsed.length || ''} {parsed.length === 1 ? 'invite' : 'invites'}
+          {submitting
+            ? 'Sending…'
+            : `Send ${validEmails.length || ''} ${validEmails.length === 1 ? 'invite' : 'invites'}`}
         </Button>
       </Modal.Footer>
     </Modal>

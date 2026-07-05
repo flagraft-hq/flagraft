@@ -15,6 +15,23 @@ const configSchema = z.object({
   DEFAULT_ADMIN_NAME: z.string().default('Admin'),
   DEFAULT_PROJECT_NAME: z.string().default('Default'),
   DEFAULT_PROJECT_SLUG: z.string().default('default'),
+
+  /**
+   * SMTP settings for emailing user invites. All optional: when SMTP_HOST is
+   * unset, email is disabled and invites fall back to manual password sharing.
+   */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  /** z.coerce.boolean treats any non-empty string as true, so parse explicitly. */
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
+  /** Public URL of the admin UI, used to build the sign-in link in invite emails. */
+  APP_BASE_URL: z.string().url().optional(),
 })
 
 export type AppConfig = Readonly<z.infer<typeof configSchema>>

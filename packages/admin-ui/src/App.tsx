@@ -9,6 +9,7 @@ import { FlagsScreen } from './components/screens/FlagsScreen'
 import { FlagDetailScreen } from './components/screens/FlagDetailScreen'
 import { SettingsScreen } from './components/screens/SettingsScreen'
 import { LoginScreen } from './components/screens/LoginScreen'
+import { AcceptInviteScreen } from './components/screens/AcceptInviteScreen'
 import { UsersScreen } from './components/screens/UsersScreen'
 import { EnvironmentsScreen } from './components/screens/EnvironmentsScreen'
 import { KeysScreen } from './components/screens/KeysScreen'
@@ -37,6 +38,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/flags" replace /> : <LoginScreen />} />
+      <Route path="/invite/:token" element={<AcceptInviteScreen />} />
       <Route
         path="/"
         element={

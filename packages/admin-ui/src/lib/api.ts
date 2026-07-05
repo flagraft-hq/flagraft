@@ -44,7 +44,9 @@ http.interceptors.response.use(
   (err: unknown) => {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status ?? 0
-      if (status === 401 && window.location.pathname !== '/login') {
+      const path = window.location.pathname
+      /** The invite-accept page is public; a 401 there must not bounce to login. */
+      if (status === 401 && path !== '/login' && !path.startsWith('/invite/')) {
         window.location.href = '/login'
       }
       const data = err.response?.data as
@@ -171,13 +173,21 @@ export const authApi = {
   me: () => http.get<AuthUser>('/api/v1/admin/auth/me'),
 }
 
+/** Public invite-acceptance flow -- no session required. */
+export const inviteApi = {
+  get: (token: string) =>
+    http.get<{ email: string; name: string }>(`/api/v1/public/invite/${token}`),
+
+  accept: (token: string, password: string) =>
+    http.post<AuthUser>(`/api/v1/public/invite/${token}/accept`, { password }),
+}
+
 export interface WorkspaceUser {
   id: string
   email: string
   name: string
   role: 'owner' | 'admin' | 'editor' | 'viewer'
   status: 'active' | 'invited' | 'suspended'
-  twoFa: 'app' | 'key' | 'sms' | 'none'
   isSystem: boolean
   initials: string
   tone: 'teal' | 'amber' | 'violet' | 'slate'
@@ -201,11 +211,9 @@ export const usersApi = {
     ),
 
   invite: (emails: string[], role: string, projectIds: string[]) =>
-    http.post<{ id: string; email: string; tempPassword: string }[]>('/api/v1/admin/users/invite', {
-      emails,
-      role,
-      projectIds,
-    }),
+    http.post<
+      { id: string; email: string; inviteUrl: string; expiresAt: string; emailed: boolean }[]
+    >('/api/v1/admin/users/invite', { emails, role, projectIds }),
 
   patch: (id: string, data: Partial<Pick<WorkspaceUser, 'role' | 'status' | 'name'>>) =>
     http.patch<WorkspaceUser>(`/api/v1/admin/users/${id}`, data),

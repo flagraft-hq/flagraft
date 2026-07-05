@@ -58,7 +58,6 @@ const mockUsers = [
     email: 'alice@a.com',
     role: 'admin',
     status: 'active',
-    twoFa: 'app',
     isSystem: false,
     initials: 'A',
     tone: 'teal',
@@ -72,7 +71,6 @@ const mockUsers = [
     email: 'bob@a.com',
     role: 'viewer',
     status: 'invited',
-    twoFa: 'none',
     isSystem: false,
     initials: 'B',
     tone: 'slate',
@@ -119,6 +117,16 @@ describe('UsersScreen', () => {
     await waitFor(() => screen.getByText('Alice'))
     fireEvent.click(screen.getByRole('button', { name: /invite user/i }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('keeps row select labels accessible-only (no visible "Select" text)', async () => {
+    renderScreen()
+    await waitFor(() => screen.getByText('Alice'))
+    /** Checkboxes expose their label via aria-label, not visible text. */
+    expect(screen.getByRole('checkbox', { name: 'Select all' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Select Alice' })).toBeInTheDocument()
+    expect(screen.queryByText('Select all')).not.toBeInTheDocument()
+    expect(screen.queryByText('Select Alice')).not.toBeInTheDocument()
   })
 
   it('shows bulk bar when a user is selected', async () => {

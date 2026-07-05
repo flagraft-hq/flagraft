@@ -140,11 +140,6 @@ export function UsersScreen() {
     )
   }
 
-  const totalNon = users.filter((u) => !u.isSystem).length
-  const with2fa = users.filter((u) => u.twoFa !== 'none' && !u.isSystem).length
-  const without2fa = totalNon - with2fa
-  const twoFaPct = totalNon === 0 ? 0 : Math.round((with2fa / totalNon) * 100)
-
   if (loading) {
     return (
       <div className="users-loading" style={{ padding: 24 }}>
@@ -175,10 +170,10 @@ export function UsersScreen() {
 
   return (
     <div className="users-screen">
-      <div className="users-page-header">
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>Users</h1>
-          <p className="muted" style={{ margin: '4px 0 0', fontSize: 13 }}>
+      <div className="page-header">
+        <div className="page-header-text">
+          <h1>Users</h1>
+          <p className="page-header-sub">
             Everyone with access to this workspace — across all projects. Project-specific access
             lives under{' '}
             <a className="users-settings-link" href="/settings/projects">
@@ -187,13 +182,11 @@ export function UsersScreen() {
             .
           </p>
         </div>
-        <div style={{ flex: 1 }} />
-        <Button variant="ghost" leftIcon="code">
-          Export CSV
-        </Button>
-        <Button variant="primary" leftIcon="plus" onClick={() => setShowInvite(true)}>
-          Invite user
-        </Button>
+        <div className="page-header-actions">
+          <Button variant="primary" leftIcon="plus" onClick={() => setShowInvite(true)}>
+            Invite user
+          </Button>
+        </div>
       </div>
 
       <div className="users-stats">
@@ -223,13 +216,6 @@ export function UsersScreen() {
           icon="sparkles"
           tone="amber"
           warn={counts.invited > 0}
-        />
-        <StatCard
-          label="2FA enforced"
-          value={twoFaPct + '%'}
-          sub={`${without2fa} without 2FA`}
-          icon="shield"
-          tone="teal"
         />
         <StatCard
           label="Seats"
@@ -313,13 +299,12 @@ export function UsersScreen() {
                   checked={allChecked}
                   indeterminate={someChecked}
                   onChange={toggleAll}
-                  label="Select all"
+                  ariaLabel="Select all"
                 />
               </th>
               <th>{sortHead('name', 'Person')}</th>
               <th>{sortHead('role', 'Role')}</th>
               <th>{sortHead('projects', 'Project access')}</th>
-              <th>2FA</th>
               <th>{sortHead('last', 'Last active')}</th>
               <th></th>
             </tr>
@@ -327,7 +312,7 @@ export function UsersScreen() {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={6}>
                   <div className="empty-filtered" style={{ padding: 32, textAlign: 'center' }}>
                     <div className="ill" style={{ marginBottom: 10 }}>
                       <Icon name="user" size={28} style={{ color: 'var(--text-3)' }} />
@@ -392,9 +377,6 @@ export function UsersScreen() {
           <span className="bulk-section-label">Access</span>
           <Button size="sm" leftIcon="layers">
             Add to project
-          </Button>
-          <Button size="sm" leftIcon="shield">
-            Require 2FA
           </Button>
           <span className="bulk-sep" />
           <Button size="sm" variant="danger">
@@ -469,31 +451,6 @@ function RoleBadge({ role }: { role: WorkspaceUser['role'] }) {
   )
 }
 
-function TwoFAPill({ value }: { value: WorkspaceUser['twoFa'] }) {
-  if (value === 'none') {
-    return (
-      <span className="twofa none">
-        <Icon name="alert" size={11} /> none
-      </span>
-    )
-  }
-  const labels: Record<Exclude<WorkspaceUser['twoFa'], 'none'>, string> = {
-    app: 'authenticator',
-    key: 'security key',
-    sms: 'sms',
-  }
-  const icons: Record<Exclude<WorkspaceUser['twoFa'], 'none'>, 'shield' | 'key' | 'info'> = {
-    app: 'shield',
-    key: 'key',
-    sms: 'info',
-  }
-  return (
-    <span className="twofa ok">
-      <Icon name={icons[value]} size={11} /> {labels[value]}
-    </span>
-  )
-}
-
 interface UserRowProps {
   user: WorkspaceUser
   selected: boolean
@@ -518,7 +475,7 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
       onClick={onOpen}
     >
       <td className="col-check" onClick={(e) => e.stopPropagation()}>
-        <Checkbox checked={selected} onChange={onSelect} label={'Select ' + u.name} />
+        <Checkbox checked={selected} onChange={onSelect} ariaLabel={'Select ' + u.name} />
       </td>
       <td>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -562,10 +519,7 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
         </div>
       </td>
       <td>
-        <TwoFAPill value={u.twoFa} />
-      </td>
-      <td>
-        <span className={'users-last' + (u.lastActiveAt == null ? ' never' : '')}>
+        <span className={'users-last mono' + (u.lastActiveAt == null ? ' never' : '')}>
           {u.lastActiveAt == null ? 'never' : relativeDate}
         </span>
       </td>

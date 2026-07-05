@@ -237,6 +237,63 @@
   background: var(--border);
 }
 
+/* Form fields (login + invite accept) */
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auth-form .field {
+  gap: 6px;
+}
+.auth-form .field label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.auth-form .input {
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev);
+  font-size: 13.5px;
+  color: var(--text-1);
+  transition:
+    border-color 0.1s,
+    box-shadow 0.1s;
+}
+.auth-form .input::placeholder {
+  color: var(--text-4);
+}
+.auth-form .input:focus {
+  outline: none;
+  border-color: var(--pri);
+  box-shadow: var(--focus);
+}
+.auth-form .err {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+  font-size: 12.5px;
+}
+.theme-dark .auth-form .err {
+  color: #fca5a5;
+}
+.auth-form .hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
 /* Input with icon */
 .auth-input-wrap {
   position: relative;
@@ -377,6 +434,53 @@
   margin: 0 auto;
   font-size: 13px;
   max-width: 320px;
+}
+.auth-magic-sent .ill[data-tone='danger'] {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+}
+.theme-dark .auth-magic-sent .ill[data-tone='danger'] {
+  color: #fca5a5;
+}
+
+/* Password strength meter (invite accept screen) */
+.pw-meter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+.pw-meter span {
+  height: 4px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.15s;
+}
+.pw-meter em {
+  flex: 0 0 auto;
+  margin-left: 6px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text-4);
+}
+.pw-meter[data-score='1'] span:nth-child(1) {
+  background: #ef4444;
+}
+.pw-meter[data-score='2'] span:nth-child(1),
+.pw-meter[data-score='2'] span:nth-child(2) {
+  background: var(--acc, #f59e0b);
+}
+.pw-meter[data-score='3'] span {
+  background: #22c55e;
+}
+.pw-meter[data-score='1'] em {
+  color: #ef4444;
+}
+.pw-meter[data-score='3'] em {
+  color: #16a34a;
 }
 
 /* Animation keyframes */

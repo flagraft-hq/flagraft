@@ -67,11 +67,16 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   }
 
   async function handleAddToProject(projectId: string) {
+    const proj = projects.find((p) => p.id === projectId)
+    if (!proj) return
     setBusy(true)
     try {
       await usersApi.addToProject(user.id, projectId)
       toast.push({ title: 'Added to project' })
       setShowAddProject(false)
+      if (!user.projects.includes(proj.name)) {
+        onUpdated?.({ ...user, projects: [...user.projects, proj.name] })
+      }
     } catch (err) {
       toast.push({
         title: 'Failed to add to project',
@@ -90,6 +95,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
     try {
       await usersApi.removeFromProject(user.id, proj.id)
       toast.push({ title: 'Removed from project' })
+      onUpdated?.({ ...user, projects: user.projects.filter((p) => p !== projectName) })
     } catch (err) {
       toast.push({
         title: 'Failed to remove from project',
@@ -161,7 +167,6 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                 </span>
               }
             />
-            <DRow label="2FA" value={<TwoFAValue value={user.twoFa} />} />
             <DRow
               label="Source"
               value={
@@ -204,10 +209,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                 </div>
               ))}
               {showAddProject ? (
-                <div
-                  className="user-add-project-picker"
-                  style={{ display: 'flex', gap: 6, alignItems: 'center' }}
-                >
+                <div className="user-add-project-picker">
                   <select
                     className="select"
                     aria-label="Choose project"
@@ -258,14 +260,6 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
           >
             Reset password
           </Button>
-          <Button
-            variant="ghost"
-            leftIcon="shield"
-            onClick={() => toast.push({ title: '2FA reset link sent', msg: user.email })}
-            disabled={busy}
-          >
-            Reset 2FA
-          </Button>
           <span className="spacer" style={{ flex: 1 }} />
           {user.status === 'suspended' ? (
             <Button
@@ -298,30 +292,6 @@ function DRow({ label, value }: { label: string; value: React.ReactNode }) {
       <span className="lbl">{label}</span>
       <span className="val">{value}</span>
     </div>
-  )
-}
-
-function TwoFAValue({ value }: { value: WorkspaceUser['twoFa'] }) {
-  if (value === 'none')
-    return (
-      <span className="twofa none">
-        <Icon name="alert" size={11} /> none
-      </span>
-    )
-  const labels: Record<Exclude<WorkspaceUser['twoFa'], 'none'>, string> = {
-    app: 'authenticator',
-    key: 'security key',
-    sms: 'sms',
-  }
-  const icons: Record<Exclude<WorkspaceUser['twoFa'], 'none'>, 'shield' | 'key' | 'info'> = {
-    app: 'shield',
-    key: 'key',
-    sms: 'info',
-  }
-  return (
-    <span className="twofa ok">
-      <Icon name={icons[value]} size={11} /> {labels[value]}
-    </span>
   )
 }
 

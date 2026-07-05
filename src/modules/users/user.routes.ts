@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { inviteUserSchema, patchUserSchema } from './user.schema.js'
 import * as service from './user.service.js'
 import { AppError } from '../../plugins/errorHandler.js'
+import { isMailerConfigured, sendInviteEmail } from '../../mailer.js'
 
 export async function userRoutes(fastify: FastifyInstance) {
   fastify.get('/admin/users', { preHandler: fastify.requireAdminKey }, async () => {
@@ -24,13 +25,43 @@ export async function userRoutes(fastify: FastifyInstance) {
       const results = await Promise.all(
         emails.map((email) => service.inviteUser(fastify.db, { email, role, projectIds })),
       )
-      return reply.status(201).send(
-        results.map((r) => ({
-          id: r.user.id,
-          email: r.user.email,
-          tempPassword: r.tempPassword,
-        })),
+
+      /**
+       * Base URL for the invite link: prefer the configured APP_BASE_URL, then
+       * the requesting origin, so the link works on self-hosted setups that
+       * never set APP_BASE_URL.
+       */
+      const base = (
+        fastify.config.APP_BASE_URL ??
+        (req.headers.origin as string | undefined) ??
+        `${req.protocol}://${req.headers.host}`
+      ).replace(/\/$/, '')
+
+      const mailerOn = isMailerConfigured(fastify.config)
+      const payload = await Promise.all(
+        results.map(async (r) => {
+          const inviteUrl = `${base}/invite/${r.token}`
+          let emailed = false
+          if (mailerOn) {
+            try {
+              await sendInviteEmail(fastify.config, { to: r.user.email, inviteUrl })
+              emailed = true
+            } catch (err) {
+              /** Account is already created; admin can share the link manually. */
+              fastify.log.warn({ err, email: r.user.email }, 'Failed to send invite email')
+            }
+          }
+          return {
+            id: r.user.id,
+            email: r.user.email,
+            inviteUrl,
+            expiresAt: r.expiresAt.toISOString(),
+            emailed,
+          }
+        }),
       )
+
+      return reply.status(201).send(payload)
     },
   )
 
