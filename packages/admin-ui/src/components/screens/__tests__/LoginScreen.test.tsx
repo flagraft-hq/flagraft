@@ -38,7 +38,7 @@ beforeEach(() => {
 describe('LoginScreen', () => {
   it('renders email and password fields with sign in button', () => {
     renderLogin()
-    expect(screen.getByLabelText(/work email/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
@@ -46,7 +46,7 @@ describe('LoginScreen', () => {
   it('calls login with email and password on submit', async () => {
     mockLogin.mockResolvedValue(undefined)
     renderLogin()
-    fireEvent.change(screen.getByLabelText(/work email/i), { target: { value: 'a@b.com' } })
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'secret123' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('a@b.com', 'secret123'))
@@ -55,7 +55,7 @@ describe('LoginScreen', () => {
   it('shows error alert on failed login', async () => {
     mockLogin.mockRejectedValue(new Error('Invalid email or password'))
     renderLogin()
-    fireEvent.change(screen.getByLabelText(/work email/i), { target: { value: 'a@b.com' } })
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrong' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
@@ -64,7 +64,7 @@ describe('LoginScreen', () => {
   it('displays the exact server error message in the alert', async () => {
     mockLogin.mockRejectedValue(new Error('Invalid email or password'))
     renderLogin()
-    fireEvent.change(screen.getByLabelText(/work email/i), { target: { value: 'a@b.com' } })
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrong' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() =>
@@ -75,7 +75,7 @@ describe('LoginScreen', () => {
   it('displays a validation message from the server (e.g. invalid email format)', async () => {
     mockLogin.mockRejectedValue(new Error('Invalid email'))
     renderLogin()
-    fireEvent.change(screen.getByLabelText(/work email/i), { target: { value: 'notanemail' } })
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'notanemail' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'pw' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Invalid email'))
@@ -84,7 +84,7 @@ describe('LoginScreen', () => {
   it('clears the error when the user starts editing the password', async () => {
     mockLogin.mockRejectedValue(new Error('Invalid email or password'))
     renderLogin()
-    fireEvent.change(screen.getByLabelText(/work email/i), { target: { value: 'a@b.com' } })
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrong' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
@@ -100,7 +100,7 @@ describe('LoginScreen', () => {
       }),
     )
     renderLogin()
-    fireEvent.change(screen.getByLabelText(/work email/i), { target: { value: 'a@b.com' } })
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'secret123' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     expect(screen.getByRole('button', { name: /signing in/i })).toBeDisabled()
@@ -127,11 +127,18 @@ describe('LoginScreen', () => {
     }
   })
 
-  it('"Continue with Google" button shows a "Coming soon" toast', async () => {
+  it('reveals the admin-reset hint when "Forgot password?" is clicked', () => {
     renderLogin()
-    fireEvent.click(screen.getByRole('button', { name: /continue with google/i }))
-    await waitFor(() =>
-      expect(mockToastPush).toHaveBeenCalledWith({ title: 'Coming soon', variant: 'error' }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: /forgot password/i }))
+    expect(screen.getByText(/a workspace admin can reset it/i)).toBeInTheDocument()
+  })
+
+  it('offers no auth methods the backend does not support', () => {
+    renderLogin()
+    expect(screen.queryByText(/continue with google/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/saml/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sign-in link/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/create workspace/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /forgot/i })).not.toBeInTheDocument()
   })
 })
