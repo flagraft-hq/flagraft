@@ -7,9 +7,9 @@ import { useToast } from '../../hooks/useToast'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
-import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
+import { ResetPasswordModal } from './ResetPasswordModal'
 
 interface UserDetailDrawerProps {
   user: WorkspaceUser
@@ -25,29 +25,17 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   const toast = useToast()
   const { projects } = useProject()
   const [showAddProject, setShowAddProject] = useState(false)
+  const [showResetPassword, setShowResetPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const relativeLastActive = useRelativeDate(user.lastActiveAt ?? undefined)
 
-  useKeyboardShortcuts({ Escape: onClose })
-
-  async function handleResetPassword() {
-    setBusy(true)
-    try {
-      const res = await usersApi.resetPassword(user.id)
-      toast.push({
-        title: 'Password reset',
-        msg: 'Temporary password: ' + res.data.tempPassword,
-      })
-    } catch (err) {
-      toast.push({
-        title: 'Failed to reset password',
-        msg: err instanceof Error ? err.message : 'Unknown error',
-        variant: 'error',
-      })
-    } finally {
-      setBusy(false)
-    }
-  }
+  /** While the reset modal is open, Escape closes it instead of the drawer. */
+  useKeyboardShortcuts({
+    Escape: () => {
+      if (showResetPassword) setShowResetPassword(false)
+      else onClose()
+    },
+  })
 
   async function handleSuspendToggle() {
     setBusy(true)
@@ -122,13 +110,6 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
           <button className="icon-btn" onClick={onClose} aria-label="Close">
             <Icon name="x" size={16} />
           </button>
-          <span className="spacer" style={{ flex: 1 }} />
-          <CopyButton value={user.id} iconOnly tip="Copy user ID" />
-          <Tip tip="Open audit">
-            <button className="icon-btn" aria-label="Open audit">
-              <Icon name="history" size={14} />
-            </button>
-          </Tip>
         </div>
 
         <div className="user-drawer-hero">
@@ -256,7 +237,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
           <Button
             variant="ghost"
             leftIcon="refresh"
-            onClick={() => void handleResetPassword()}
+            onClick={() => setShowResetPassword(true)}
             disabled={busy}
           >
             Reset password
@@ -282,6 +263,12 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             </Button>
           )}
         </div>
+
+        <ResetPasswordModal
+          user={user}
+          open={showResetPassword}
+          onClose={() => setShowResetPassword(false)}
+        />
       </aside>
     </div>
   )

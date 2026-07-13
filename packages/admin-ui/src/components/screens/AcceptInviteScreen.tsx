@@ -1,30 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { inviteApi } from '../../lib/api'
 import { Icon } from '../primitives/Icon'
 import { Button } from '../primitives/Button'
+import { PasswordStrength } from '../primitives/PasswordStrength'
 
 type LinkState =
   | { status: 'loading' }
   | { status: 'valid'; email: string; name: string }
   | { status: 'invalid'; message: string }
-
-/**
- * Rough password strength for the meter only. The 8-char minimum is the real
- * gate (enforced client- and server-side); the tiers are just user feedback.
- */
-function strength(pw: string): { score: 0 | 1 | 2 | 3; label: string } {
-  if (pw.length < 8) return { score: 0, label: 'Too short' }
-  let variety = 0
-  if (/[a-z]/.test(pw)) variety++
-  if (/[A-Z]/.test(pw)) variety++
-  if (/\d/.test(pw)) variety++
-  if (/[^a-zA-Z0-9]/.test(pw)) variety++
-  if (pw.length >= 12 && variety >= 3) return { score: 3, label: 'Strong' }
-  if (variety >= 2) return { score: 2, label: 'Good' }
-  return { score: 1, label: 'Weak' }
-}
 
 /**
  * Public page reached from an invite link (/invite/:token). Validates the
@@ -63,7 +48,6 @@ export function AcceptInviteScreen() {
     }
   }, [token])
 
-  const pwStrength = useMemo(() => strength(password), [password])
   const mismatch = confirm.length > 0 && confirm !== password
   const canSubmit = password.length >= 8 && confirm === password && !submitting
 
@@ -188,14 +172,7 @@ export function AcceptInviteScreen() {
                         </span>
                       </button>
                     </div>
-                    {password.length > 0 ? (
-                      <div className="pw-meter" data-score={pwStrength.score}>
-                        <span />
-                        <span />
-                        <span />
-                        <em>{pwStrength.label}</em>
-                      </div>
-                    ) : null}
+                    <PasswordStrength password={password} />
                   </div>
 
                   <div className="field">

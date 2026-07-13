@@ -175,9 +175,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
         <div className="page-header-text">
           <h1>Feature flags</h1>
           <p className="page-header-sub">
-            Toggle, target, and roll out behavior across <span className="mono">development</span>,{' '}
-            <span className="mono">staging</span>, and{' '}
-            <span className="mono page-header-prod">production</span>.
+            Toggle, target, and roll out behavior across different environments.
           </p>
         </div>
         <div className="page-header-actions">

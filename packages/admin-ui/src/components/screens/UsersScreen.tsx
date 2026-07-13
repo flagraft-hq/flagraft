@@ -356,13 +356,6 @@ export function UsersScreen() {
             {filtered.length} of {users.length} users
           </span>
           <span style={{ flex: 1 }} />
-          <span className="muted" style={{ fontSize: 12 }}>
-            Provisioning via{' '}
-            <span className="mono" style={{ color: 'var(--text-2)' }}>
-              SCIM 2.0
-            </span>{' '}
-            · Okta
-          </span>
         </div>
       </div>
 

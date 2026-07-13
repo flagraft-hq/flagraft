@@ -166,20 +166,32 @@ export async function patchUser(
 }
 
 /**
- * Generates a new temp password, hashes it, and stores it.
- * Returns the plaintext password so the admin can share it manually.
- * Bumps sessionVersion so every existing session is invalidated.
+ * Sets the admin-chosen password and bumps sessionVersion so every existing
+ * session is invalidated. Invited accounts are activated and their pending
+ * invite link voided, because login requires status 'active' — without this
+ * the new password could never be used. Returns the updated user, or
+ * undefined when no user has that id.
  */
-export async function resetPassword(db: Db, id: string): Promise<string> {
-  const tempPassword = randomBytes(10).toString('base64url')
-  await db
+export async function resetPassword(
+  db: Db,
+  id: string,
+  password: string,
+): Promise<User | undefined> {
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  if (!user) return undefined
+  const [updated] = await db
     .update(users)
     .set({
-      passwordHash: await hashPassword(tempPassword),
+      passwordHash: await hashPassword(password),
       sessionVersion: sql`${users.sessionVersion} + 1`,
+      updatedAt: new Date(),
+      ...(user.status === 'invited'
+        ? { status: 'active', inviteTokenHash: null, inviteExpiresAt: null }
+        : {}),
     })
     .where(eq(users.id, id))
-  return tempPassword
+    .returning()
+  return updated
 }
 
 export async function deleteUser(db: Db, id: string): Promise<void> {
