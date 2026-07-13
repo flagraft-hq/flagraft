@@ -208,6 +208,37 @@ describeIfDb('session RBAC', () => {
     await app.close()
   })
 
+  it('suspended login with correct password says suspended; wrong password stays generic', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const editor = await sessionUser(app, rootKey, 'editor', [])
+
+    const suspend = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${editor.id}`,
+      headers: { authorization: rootKey },
+      payload: { status: 'suspended' },
+    })
+    expect(suspend.statusCode).toBe(200)
+
+    const correct = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email: editor.email, password: 'rbac-password-1' },
+    })
+    expect(correct.statusCode).toBe(403)
+    expect(correct.json<{ message: string }>().message).toMatch(/suspended/i)
+
+    const wrong = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email: editor.email, password: 'wrong-password-1' },
+    })
+    expect(wrong.statusCode).toBe(401)
+    expect(wrong.json<{ message: string }>().message).toBe('Invalid email or password')
+    await app.close()
+  })
+
   it('a password reset invalidates existing sessions and the new password logs in', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)

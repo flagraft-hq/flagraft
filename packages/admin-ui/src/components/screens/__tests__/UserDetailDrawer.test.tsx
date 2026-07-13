@@ -156,6 +156,22 @@ describe('UserDetailDrawer', () => {
     await waitFor(() => expect(mockOnUpdated).toHaveBeenCalledWith(updatedUser))
   })
 
+  it('keeps projects when the PATCH response omits them (no white-screen regression)', async () => {
+    const { projects: _dropped, ...responseWithoutProjects } = {
+      ...activeUser,
+      status: 'suspended' as const,
+    }
+    mockUsersApi.patch.mockResolvedValue({ data: responseWithoutProjects })
+    const mockOnUpdated = vi.fn()
+    renderDrawer(activeUser, vi.fn(), mockOnUpdated)
+    fireEvent.click(screen.getByRole('button', { name: /suspend/i }))
+    await waitFor(() =>
+      expect(mockOnUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'suspended', projects: ['Demo'] }),
+      ),
+    )
+  })
+
   it('removing a project calls onUpdated with the project dropped', async () => {
     mockUsersApi.removeFromProject.mockResolvedValue({})
     const mockOnUpdated = vi.fn()

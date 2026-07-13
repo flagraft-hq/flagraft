@@ -61,16 +61,22 @@ export async function createUser(
 }
 
 /**
- * Returns the user if credentials are valid and the account is active, null otherwise.
- * Always runs argon2.verify even if the user is not found to prevent timing-based email enumeration.
+ * Returns the user if credentials are valid and the account is active.
+ * Returns 'suspended' when the password is correct but the account is
+ * suspended — safe to reveal, since only the account holder can prove the
+ * password; wrong-password attempts on suspended accounts still get null.
+ * Always runs argon2.verify even if the user is not found to prevent
+ * timing-based email enumeration.
  */
 export async function validateCredentials(
   db: Db,
   email: string,
   password: string,
-): Promise<User | null> {
+): Promise<User | 'suspended' | null> {
   const user = await getUserByEmail(db, email)
   const hash = user?.passwordHash ?? DUMMY_HASH
   const valid = await argon2.verify(hash, password)
-  return user && valid && user.status === 'active' ? user : null
+  if (!user || !valid) return null
+  if (user.status === 'suspended') return 'suspended'
+  return user.status === 'active' ? user : null
 }

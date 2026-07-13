@@ -43,7 +43,8 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
     try {
       const res = await usersApi.patch(user.id, { status: nextStatus })
       toast.push({ title: nextStatus === 'suspended' ? 'User suspended' : 'User reinstated' })
-      onUpdated?.(res.data)
+      /** The PATCH response has no projects relation; keep the ones we have. */
+      onUpdated?.({ ...user, ...res.data, projects: user.projects })
     } catch (err) {
       toast.push({
         title: 'Failed to update user',

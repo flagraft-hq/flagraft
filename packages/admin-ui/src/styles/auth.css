@@ -261,7 +261,8 @@
 }
 .auth-form .err {
   display: flex;
-  align-items: center;
+  /* Top-aligned so the icon sits on the first line when the message wraps */
+  align-items: flex-start;
   gap: 6px;
   padding: 10px 12px;
   border-radius: var(--r-md);
@@ -269,6 +270,10 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #b91c1c;
   font-size: 12.5px;
+}
+.auth-form .err svg {
+  flex-shrink: 0;
+  margin-top: 3px;
 }
 .theme-dark .auth-form .err {
   color: #fca5a5;

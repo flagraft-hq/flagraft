@@ -197,11 +197,7 @@ export function AcceptInviteScreen() {
                   </div>
 
                   {error ? (
-                    <div
-                      role="alert"
-                      className="err"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
+                    <div role="alert" className="err">
                       <Icon name="alert" size={13} />
                       {error}
                     </div>

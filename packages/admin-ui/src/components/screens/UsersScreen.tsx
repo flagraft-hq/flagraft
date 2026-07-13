@@ -175,7 +175,7 @@ export function UsersScreen() {
         <div className="page-header-text">
           <h1>Users</h1>
           <p className="page-header-sub">
-            Everyone with access to this workspace — across all projects. Project-specific access
+            Everyone with access to this workspace across all projects. Project-specific access
             lives under{' '}
             <a className="users-settings-link" href="/settings/projects">
               Project settings → Members
