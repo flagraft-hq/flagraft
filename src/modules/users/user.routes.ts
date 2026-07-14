@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 
-import { inviteUserSchema, patchUserSchema } from './user.schema.js'
+import { inviteUserSchema, patchUserSchema, resetPasswordSchema } from './user.schema.js'
 import * as service from './user.service.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import { isMailerConfigured, sendInviteEmail } from '../../mailer.js'
@@ -74,10 +74,12 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/admin/users/:id/reset-password',
     { preHandler: fastify.requireRootKey },
-    async (req) => {
+    async (req, reply) => {
       const { id } = req.params as { id: string }
-      const tempPassword = await service.resetPassword(fastify.db, id)
-      return { tempPassword }
+      const { password } = resetPasswordSchema.parse(req.body)
+      const user = await service.resetPassword(fastify.db, id, password)
+      if (!user) throw new AppError('User not found', 404, 'Not Found')
+      return reply.status(204).send()
     },
   )
 

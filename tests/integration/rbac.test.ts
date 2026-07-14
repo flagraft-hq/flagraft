@@ -208,7 +208,38 @@ describeIfDb('session RBAC', () => {
     await app.close()
   })
 
-  it('a password reset invalidates existing sessions', async () => {
+  it('suspended login with correct password says suspended; wrong password stays generic', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const editor = await sessionUser(app, rootKey, 'editor', [])
+
+    const suspend = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${editor.id}`,
+      headers: { authorization: rootKey },
+      payload: { status: 'suspended' },
+    })
+    expect(suspend.statusCode).toBe(200)
+
+    const correct = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email: editor.email, password: 'rbac-password-1' },
+    })
+    expect(correct.statusCode).toBe(403)
+    expect(correct.json<{ message: string }>().message).toMatch(/suspended/i)
+
+    const wrong = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email: editor.email, password: 'wrong-password-1' },
+    })
+    expect(wrong.statusCode).toBe(401)
+    expect(wrong.json<{ message: string }>().message).toBe('Invalid email or password')
+    await app.close()
+  })
+
+  it('a password reset invalidates existing sessions and the new password logs in', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)
     const project = await createProject(app, rootKey, 'reset-proj')
@@ -218,8 +249,9 @@ describeIfDb('session RBAC', () => {
       method: 'POST',
       url: `/api/v1/admin/users/${editor.id}/reset-password`,
       headers: { authorization: rootKey },
+      payload: { password: 'brand-new-pass-1' },
     })
-    expect(reset.statusCode).toBe(200)
+    expect(reset.statusCode).toBe(204)
 
     const after = await app.inject({
       method: 'GET',
@@ -227,6 +259,58 @@ describeIfDb('session RBAC', () => {
       cookies: editor.cookies,
     })
     expect(after.statusCode).toBe(401)
+
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email: editor.email, password: 'brand-new-pass-1' },
+    })
+    expect(login.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('rejects a password reset shorter than 8 characters', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const editor = await sessionUser(app, rootKey, 'editor', [])
+
+    const reset = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${editor.id}/reset-password`,
+      headers: { authorization: rootKey },
+      payload: { password: 'short' },
+    })
+    expect(reset.statusCode).toBe(400)
+    await app.close()
+  })
+
+  it('resetting an invited user activates the account so the password works', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+
+    const inviteRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/users/invite',
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+      payload: { emails: ['invited-reset@co.com'], role: 'viewer', projectIds: [] },
+    })
+    expect(inviteRes.statusCode).toBe(201)
+    const { id } = inviteRes.json<{ id: string }[]>()[0]
+
+    const reset = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/reset-password`,
+      headers: { authorization: rootKey },
+      payload: { password: 'invited-new-pass' },
+    })
+    expect(reset.statusCode).toBe(204)
+
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email: 'invited-reset@co.com', password: 'invited-new-pass' },
+    })
+    expect(login.statusCode).toBe(200)
     await app.close()
   })
 

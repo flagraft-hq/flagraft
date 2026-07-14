@@ -111,7 +111,7 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
           id="invite-modal-title"
           subtitle={
             anyManual
-              ? 'Share these links — each expires in 24 hours.'
+              ? 'Share these links, each expires in 24 hours.'
               : 'Invite links were emailed. Each expires in 24 hours.'
           }
         >

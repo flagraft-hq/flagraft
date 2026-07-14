@@ -220,8 +220,8 @@ export const usersApi = {
   patch: (id: string, data: Partial<Pick<WorkspaceUser, 'role' | 'status' | 'name'>>) =>
     http.patch<WorkspaceUser>(`/api/v1/admin/users/${id}`, data),
 
-  resetPassword: (id: string) =>
-    http.post<{ tempPassword: string }>(`/api/v1/admin/users/${id}/reset-password`),
+  resetPassword: (id: string, password: string) =>
+    http.post(`/api/v1/admin/users/${id}/reset-password`, { password }),
 
   delete: (id: string) => http.delete(`/api/v1/admin/users/${id}`),
 

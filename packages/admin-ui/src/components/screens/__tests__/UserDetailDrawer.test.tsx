@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UserDetailDrawer } from '../UserDetailDrawer'
 import type { WorkspaceUser } from '../../../lib/api'
@@ -95,17 +95,41 @@ describe('UserDetailDrawer', () => {
     expect(screen.getByRole('button', { name: /reset password/i })).toBeInTheDocument()
   })
 
-  it('clicking Reset password calls usersApi.resetPassword and shows toast with temp password', async () => {
-    mockUsersApi.resetPassword.mockResolvedValue({ data: { tempPassword: 'tmp-abc' } })
+  it('clicking Reset password opens the reset password modal', () => {
     renderDrawer()
     fireEvent.click(screen.getByRole('button', { name: /reset password/i }))
-    await waitFor(() => expect(mockUsersApi.resetPassword).toHaveBeenCalledWith('u1'))
+    expect(screen.getByLabelText(/new password/i, { selector: 'input' })).toBeInTheDocument()
+    expect(screen.getByLabelText(/confirm password/i, { selector: 'input' })).toBeInTheDocument()
+  })
+
+  it('submitting the reset modal calls usersApi.resetPassword with the chosen password', async () => {
+    mockUsersApi.resetPassword.mockResolvedValue({})
+    renderDrawer()
+    fireEvent.click(screen.getByRole('button', { name: /reset password/i }))
+    fireEvent.change(screen.getByLabelText(/new password/i, { selector: 'input' }), {
+      target: { value: 'brand-new-pass' },
+    })
+    fireEvent.change(screen.getByLabelText(/confirm password/i, { selector: 'input' }), {
+      target: { value: 'brand-new-pass' },
+    })
+    fireEvent.click(screen.getAllByRole('button', { name: /^reset password$/i })[1])
     await waitFor(() =>
-      expect(mockToastPush).toHaveBeenCalledWith({
-        title: 'Password reset',
-        msg: 'Temporary password: tmp-abc',
-      }),
+      expect(mockUsersApi.resetPassword).toHaveBeenCalledWith('u1', 'brand-new-pass'),
     )
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Password reset' }),
+      ),
+    )
+  })
+
+  it('Escape closes the reset modal first, not the drawer', () => {
+    const mockOnClose = vi.fn()
+    renderDrawer(activeUser, mockOnClose)
+    fireEvent.click(screen.getByRole('button', { name: /reset password/i }))
+    act(() => capturedHandlers.Escape?.())
+    expect(mockOnClose).not.toHaveBeenCalled()
+    expect(screen.queryByLabelText(/new password/i, { selector: 'input' })).not.toBeInTheDocument()
   })
 
   it('shows "Suspend" button for active user', () => {
@@ -130,6 +154,23 @@ describe('UserDetailDrawer', () => {
     renderDrawer(activeUser, vi.fn(), mockOnUpdated)
     fireEvent.click(screen.getByRole('button', { name: /suspend/i }))
     await waitFor(() => expect(mockOnUpdated).toHaveBeenCalledWith(updatedUser))
+  })
+
+  it('keeps projects when the PATCH response omits them (no white-screen regression)', async () => {
+    const { projects: _dropped, ...responseWithoutProjects } = {
+      ...activeUser,
+      status: 'suspended' as const,
+    }
+    void _dropped
+    mockUsersApi.patch.mockResolvedValue({ data: responseWithoutProjects })
+    const mockOnUpdated = vi.fn()
+    renderDrawer(activeUser, vi.fn(), mockOnUpdated)
+    fireEvent.click(screen.getByRole('button', { name: /suspend/i }))
+    await waitFor(() =>
+      expect(mockOnUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'suspended', projects: ['Demo'] }),
+      ),
+    )
   })
 
   it('removing a project calls onUpdated with the project dropped', async () => {

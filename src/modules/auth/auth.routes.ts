@@ -13,6 +13,12 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/admin/auth/login', { config: { skipAuth: true } }, async (req, reply) => {
     const { email, password } = loginSchema.parse(req.body)
     const user = await service.validateCredentials(fastify.db, email, password)
+    if (user === 'suspended')
+      throw new AppError(
+        'Your account has been suspended. Contact your workspace admin.',
+        403,
+        'Forbidden',
+      )
     if (!user) throw new AppError('Invalid email or password', 401, 'Unauthorized')
 
     setSessionCookie(fastify, reply, user)

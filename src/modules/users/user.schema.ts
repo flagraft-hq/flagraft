@@ -16,6 +16,9 @@ export const acceptInviteSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
+/** Admin-chosen replacement password; same rule as invite acceptance. */
+export const resetPasswordSchema = acceptInviteSchema
+
 export const patchUserSchema = z
   .object({
     role: z
