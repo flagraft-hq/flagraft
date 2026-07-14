@@ -99,6 +99,30 @@ export async function inviteUser(
 }
 
 /**
+ * Re-issues the invite for a still-invited user: a fresh token and a fresh
+ * 24h expiry. The old link stops working because the stored hash is replaced.
+ * Returns undefined when the user does not exist or is not in invited status.
+ */
+export async function reissueInvite(
+  db: Db,
+  id: string,
+): Promise<{ user: User; token: string; expiresAt: Date } | undefined> {
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  if (!user || user.status !== 'invited') return undefined
+  const token = randomBytes(32).toString('base64url')
+  const expiresAt = new Date(Date.now() + INVITE_TTL_MS)
+  await db
+    .update(users)
+    .set({
+      inviteTokenHash: hashInviteToken(token),
+      inviteExpiresAt: expiresAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, id))
+  return { user, token, expiresAt }
+}
+
+/**
  * Looks up a pending invite by its plaintext token. Returns the invited user
  * only when the token matches and has not expired; otherwise undefined.
  */

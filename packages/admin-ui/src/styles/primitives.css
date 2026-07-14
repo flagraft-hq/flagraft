@@ -197,30 +197,66 @@
   color: var(--text-1);
 }
 
+/*
+ * The one dropdown style for the whole app. `.select-input` is rendered by
+ * the Select primitive; `.select` is for the few raw <select> elements that
+ * cannot use the primitive (e.g. OverrideForm's mono variants). The native
+ * arrow is replaced with a custom chevron so it looks the same everywhere.
+ */
+.select,
 .select-input {
-  padding: var(--s-3) var(--s-4);
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 32px 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-1);
   background-color: var(--bg-elev);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
+.theme-dark .select,
+.theme-dark .select-input {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.select:hover:not(:disabled),
+.select-input:hover:not(:disabled) {
+  border-color: var(--text-3);
+}
+
+.select:focus,
 .select-input:focus {
   outline: none;
   border-color: var(--pri);
   box-shadow: var(--focus);
 }
 
+.select:disabled,
 .select-input:disabled {
   background-color: var(--bg-subtle);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
+/* Compact variant for toolbars and the bulk bar */
+.select.select-sm,
+.select-input.select-sm {
+  padding: 5px 28px 5px 10px;
+  font-size: 12.5px;
+  background-position: right 8px center;
+}
+
+.select.error,
 .select-wrapper.error .select-input {
   border-color: var(--danger);
 }

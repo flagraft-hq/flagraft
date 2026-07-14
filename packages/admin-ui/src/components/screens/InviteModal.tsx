@@ -7,6 +7,7 @@ import { Button } from '../primitives/Button'
 import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
 import { Modal } from '../primitives/Modal'
+import { Select } from '../primitives/Select'
 
 interface InviteResult {
   id: string
@@ -200,24 +201,15 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
             </span>
           </div>
 
-          <div className="select-wrapper">
-            <label className="select-label" htmlFor="invite-role">
-              Workspace role
-            </label>
-            <select
-              id="invite-role"
-              className="select-input"
-              value={role}
-              onChange={(e) => setRole(e.target.value as InvitableRole)}
-            >
-              {INVITABLE_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            <span className="text-field-hint">{ROLE_HINTS[role]}</span>
-          </div>
+          <Select
+            id="invite-role"
+            label="Workspace role"
+            placeholder=""
+            value={role}
+            onChange={(v) => setRole(v as InvitableRole)}
+            options={INVITABLE_ROLES.map((r) => ({ value: r, label: r }))}
+            hint={ROLE_HINTS[role]}
+          />
 
           <div className="text-field">
             <label className="text-field-label">

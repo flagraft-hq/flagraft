@@ -795,6 +795,9 @@
 .bulk-count {
   font-size: 13px;
   color: var(--text-2);
+  /* Never let "N selected" wrap onto two lines inside the flex bar */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .bulk-count .num {
   font-weight: 700;

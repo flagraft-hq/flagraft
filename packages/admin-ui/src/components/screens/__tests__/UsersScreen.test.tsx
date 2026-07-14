@@ -27,6 +27,7 @@ vi.mock('../../../lib/api', () => ({
     patch: vi.fn(),
     delete: vi.fn(),
     resetPassword: vi.fn(),
+    resendInvite: vi.fn(),
     invite: vi.fn(),
     addToProject: vi.fn(),
     removeFromProject: vi.fn(),
@@ -236,6 +237,32 @@ describe('UsersScreen', () => {
     expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
     fireEvent.click(bulkBar().getByRole('button', { name: 'Reinstate' }))
     await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'active' }))
+  })
+
+  it('bulk resend invites hits the resend endpoint for invited users only', async () => {
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: true },
+    } as AxiosResponse)
+    await selectUser('Bob')
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
+    await waitFor(() => expect(usersApi.resendInvite).toHaveBeenCalledWith('u2'))
+    expect(usersApi.resendInvite).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables bulk resend when no invited user is selected', async () => {
+    await selectUser('Alice')
+    expect(bulkBar().getByRole('button', { name: 'Resend invites' })).toBeDisabled()
+  })
+
+  it('row Resend invite action hits the resend endpoint', async () => {
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: true },
+    } as AxiosResponse)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    await waitFor(() => expect(usersApi.resendInvite).toHaveBeenCalledWith('u2'))
+    await waitFor(() => expect(screen.getByText('Invite resent')).toBeInTheDocument())
   })
 
   it('row Suspend action patches the user status', async () => {

@@ -34,7 +34,7 @@ describeIfDb('invite flow', () => {
       payload: { emails: [email], role: 'editor', projectIds: [project.id] },
     })
     expect(res.statusCode).toBe(201)
-    return res.json<{ email: string; inviteUrl: string; emailed: boolean }[]>()[0]
+    return res.json<{ id: string; email: string; inviteUrl: string; emailed: boolean }[]>()[0]
   }
 
   it('issues an invite link (not emailed, no SMTP) built from the request origin', async () => {
@@ -89,6 +89,57 @@ describeIfDb('invite flow', () => {
       payload: { email, password: 'my-new-password' },
     })
     expect(login.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('resend issues a fresh link and invalidates the old one', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl } = await invite(app, rootKey)
+    const oldToken = tokenFromUrl(inviteUrl)
+
+    const resend = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+    })
+    expect(resend.statusCode).toBe(200)
+    const fresh = resend.json<{ inviteUrl: string; emailed: boolean }>()
+    expect(fresh.emailed).toBe(false)
+    const newToken = tokenFromUrl(fresh.inviteUrl)
+    expect(newToken).not.toBe(oldToken)
+
+    /** Old link is dead, new one works. */
+    const oldCheck = await app.inject({ method: 'GET', url: `/api/v1/public/invite/${oldToken}` })
+    expect(oldCheck.statusCode).toBe(410)
+    const newCheck = await app.inject({ method: 'GET', url: `/api/v1/public/invite/${newToken}` })
+    expect(newCheck.statusCode).toBe(200)
+
+    const accept = await app.inject({
+      method: 'POST',
+      url: `/api/v1/public/invite/${newToken}/accept`,
+      payload: { password: 'my-new-password' },
+    })
+    expect(accept.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('resend returns 404 for an already-active user', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl } = await invite(app, rootKey)
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/public/invite/${tokenFromUrl(inviteUrl)}/accept`,
+      payload: { password: 'my-new-password' },
+    })
+
+    const resend = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey },
+    })
+    expect(resend.statusCode).toBe(404)
     await app.close()
   })
 

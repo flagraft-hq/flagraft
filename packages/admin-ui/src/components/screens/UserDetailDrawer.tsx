@@ -4,10 +4,12 @@ import { usersApi } from '../../lib/api'
 import { USER_ROLES } from '../../lib/roles'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
+import { useResendInvite } from '../../hooks/useResendInvite'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
 import { Icon } from '../primitives/Icon'
+import { Select } from '../primitives/Select'
 import { Tip } from '../primitives/Tip'
 import { ResetPasswordModal } from './ResetPasswordModal'
 
@@ -23,6 +25,7 @@ interface UserDetailDrawerProps {
  */
 export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerProps) {
   const toast = useToast()
+  const resendInvite = useResendInvite()
   const { projects } = useProject()
   const [showAddProject, setShowAddProject] = useState(false)
   const [showResetPassword, setShowResetPassword] = useState(false)
@@ -193,23 +196,16 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
               ))}
               {showAddProject ? (
                 <div className="user-add-project-picker">
-                  <select
-                    className="select"
+                  <Select
+                    className="select-sm"
                     aria-label="Choose project"
-                    onChange={(e) => {
-                      if (e.target.value) void handleAddToProject(e.target.value)
+                    placeholder="Choose project..."
+                    value=""
+                    onChange={(v) => {
+                      if (v) void handleAddToProject(v)
                     }}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Choose project...
-                    </option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={projects.map((p) => ({ value: p.id, label: p.name }))}
+                  />
                   <Button size="sm" variant="ghost" onClick={() => setShowAddProject(false)}>
                     Cancel
                   </Button>
@@ -235,6 +231,16 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
         </div>
 
         <div className="user-drawer-foot">
+          {user.status === 'invited' ? (
+            <Button
+              variant="ghost"
+              leftIcon="refresh"
+              onClick={() => void resendInvite(user)}
+              disabled={busy}
+            >
+              Resend invite
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             leftIcon="refresh"

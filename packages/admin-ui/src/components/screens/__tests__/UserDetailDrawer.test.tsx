@@ -6,6 +6,7 @@ import type { WorkspaceUser } from '../../../lib/api'
 vi.mock('../../../lib/api', () => ({
   usersApi: {
     resetPassword: vi.fn(),
+    resendInvite: vi.fn(),
     patch: vi.fn(),
     addToProject: vi.fn(),
     removeFromProject: vi.fn(),
@@ -48,6 +49,7 @@ import { usersApi } from '../../../lib/api'
 
 const mockUsersApi = usersApi as unknown as {
   resetPassword: ReturnType<typeof vi.fn>
+  resendInvite: ReturnType<typeof vi.fn>
   patch: ReturnType<typeof vi.fn>
   addToProject: ReturnType<typeof vi.fn>
   removeFromProject: ReturnType<typeof vi.fn>
@@ -70,6 +72,11 @@ const activeUser: WorkspaceUser = {
 const suspendedUser: WorkspaceUser = {
   ...activeUser,
   status: 'suspended',
+}
+
+const invitedUser: WorkspaceUser = {
+  ...activeUser,
+  status: 'invited',
 }
 
 function renderDrawer(user: WorkspaceUser = activeUser, onClose = vi.fn(), onUpdated = vi.fn()) {
@@ -130,6 +137,18 @@ describe('UserDetailDrawer', () => {
     act(() => capturedHandlers.Escape?.())
     expect(mockOnClose).not.toHaveBeenCalled()
     expect(screen.queryByLabelText(/new password/i, { selector: 'input' })).not.toBeInTheDocument()
+  })
+
+  it('shows Resend invite only for invited users and calls the resend endpoint', async () => {
+    mockUsersApi.resendInvite.mockResolvedValue({ data: { emailed: true } })
+    renderDrawer(invitedUser)
+    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    await waitFor(() => expect(mockUsersApi.resendInvite).toHaveBeenCalledWith('u1'))
+  })
+
+  it('hides Resend invite for active users', () => {
+    renderDrawer(activeUser)
+    expect(screen.queryByRole('button', { name: 'Resend invite' })).not.toBeInTheDocument()
   })
 
   it('shows "Suspend" button for active user', () => {

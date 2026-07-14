@@ -223,6 +223,15 @@ export const usersApi = {
   resetPassword: (id: string, password: string) =>
     http.post(`/api/v1/admin/users/${id}/reset-password`, { password }),
 
+  resendInvite: (id: string) =>
+    http.post<{
+      id: string
+      email: string
+      inviteUrl: string
+      expiresAt: string
+      emailed: boolean
+    }>(`/api/v1/admin/users/${id}/resend-invite`),
+
   delete: (id: string) => http.delete(`/api/v1/admin/users/${id}`),
 
   addToProject: (id: string, projectId: string) =>

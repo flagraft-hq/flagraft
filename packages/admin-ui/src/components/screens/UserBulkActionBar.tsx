@@ -7,6 +7,7 @@ import { useToast } from '../../hooks/useToast'
 import { BulkBar, BulkSep } from '../primitives/BulkBar'
 import { Button } from '../primitives/Button'
 import { Modal } from '../primitives/Modal'
+import { Select } from '../primitives/Select'
 
 interface UserBulkActionBarProps {
   selectedUsers: WorkspaceUser[]
@@ -35,6 +36,7 @@ export function UserBulkActionBar({ selectedUsers, onDone, onCancel }: UserBulkA
   const editable = selectedUsers.filter((u) => u.role !== USER_ROLES.OWNER && !u.isSystem)
   const suspendTargets = editable.filter((u) => u.status !== 'suspended')
   const reinstateTargets = editable.filter((u) => u.status === 'suspended')
+  const inviteTargets = selectedUsers.filter((u) => u.status === 'invited')
   const skippedCount = selectedUsers.length - editable.length
   const skippedNote =
     skippedCount > 0 ? ` Owners and service accounts were skipped (${skippedCount}).` : ''
@@ -100,51 +102,74 @@ export function UserBulkActionBar({ selectedUsers, onDone, onCancel }: UserBulkA
     )
   }
 
+  async function handleResendInvites() {
+    setBusy(true)
+    try {
+      const results = await Promise.all(inviteTargets.map((u) => usersApi.resendInvite(u.id)))
+      /** Without SMTP the server can't deliver, so hand the links to the admin. */
+      const manual = results.filter((r) => !r.data.emailed)
+      if (manual.length > 0) {
+        await navigator.clipboard.writeText(manual.map((r) => r.data.inviteUrl).join('\n'))
+      }
+      toast.push({
+        title: `Resent ${plural(inviteTargets.length, 'invite')}`,
+        msg:
+          manual.length > 0
+            ? `Email is not configured, ${plural(manual.length, 'link')} copied to the clipboard.`
+            : undefined,
+        variant: 'success',
+      })
+      await onDone()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to resend invites',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <>
       <BulkBar count={selectedUsers.length} onClear={onCancel} busy={busy}>
         <BulkSep />
         <span className="bulk-section-label">Role</span>
-        <select
-          className="select"
+        <Select
+          className="select-sm"
           aria-label="Change role"
+          placeholder="Change role…"
           value=""
-          onChange={(e) => {
-            if (e.target.value) handleRole(e.target.value as InvitableRole)
+          onChange={(v) => {
+            if (v) handleRole(v as InvitableRole)
           }}
           disabled={busy || editable.length === 0}
           title={editable.length === 0 ? 'Owners and service accounts keep their role' : ''}
-        >
-          <option value="" disabled>
-            Change role…
-          </option>
-          {INVITABLE_ROLES.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+          options={INVITABLE_ROLES.map((r) => ({ value: r, label: r }))}
+        />
         <BulkSep />
         <span className="bulk-section-label">Access</span>
-        <select
-          className="select"
+        <Select
+          className="select-sm"
           aria-label="Add to project"
+          placeholder="Add to project…"
           value=""
-          onChange={(e) => {
-            if (e.target.value) handleAddToProject(e.target.value)
+          onChange={(v) => {
+            if (v) handleAddToProject(v)
           }}
           disabled={busy}
-        >
-          <option value="" disabled>
-            Add to project…
-          </option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+          options={projects.map((p) => ({ value: p.id, label: p.name }))}
+        />
         <BulkSep />
+        <Button
+          size="sm"
+          onClick={() => void handleResendInvites()}
+          disabled={busy || inviteTargets.length === 0}
+          title={inviteTargets.length === 0 ? 'Only invited users can be re-invited' : ''}
+        >
+          Resend invites
+        </Button>
         <Button
           size="sm"
           onClick={handleReinstate}

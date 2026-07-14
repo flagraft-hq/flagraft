@@ -3,10 +3,12 @@ import { usersApi } from '../../lib/api'
 import type { WorkspaceUser } from '../../lib/api'
 import { USER_ROLES } from '../../lib/roles'
 import { useToast } from '../../hooks/useToast'
+import { useResendInvite } from '../../hooks/useResendInvite'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
 import { Checkbox } from '../primitives/Checkbox'
 import { Icon } from '../primitives/Icon'
+import { Select } from '../primitives/Select'
 import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
 import { UserBulkActionBar } from './UserBulkActionBar'
@@ -23,6 +25,7 @@ type SortDir = 'asc' | 'desc'
  */
 export function UsersScreen() {
   const toast = useToast()
+  const resendInvite = useResendInvite()
   const [users, setUsers] = useState<WorkspaceUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -317,19 +320,20 @@ export function UsersScreen() {
 
         <span style={{ flex: 1 }} />
 
-        <select
-          className="select"
-          style={{ height: 32, width: 'auto' }}
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+        <Select
+          className="select-sm"
           aria-label="Role filter"
-        >
-          <option value="all">All roles</option>
-          <option value="owner">owner</option>
-          <option value="admin">admin</option>
-          <option value="editor">editor</option>
-          <option value="viewer">viewer</option>
-        </select>
+          placeholder=""
+          value={roleFilter}
+          onChange={setRoleFilter}
+          options={[
+            { value: 'all', label: 'All roles' },
+            { value: 'owner', label: 'owner' },
+            { value: 'admin', label: 'admin' },
+            { value: 'editor', label: 'editor' },
+            { value: 'viewer', label: 'viewer' },
+          ]}
+        />
       </div>
 
       <div className="users-table-wrap">
@@ -385,7 +389,7 @@ export function UsersScreen() {
                   active={detail?.id === u.id}
                   onSelect={() => toggleOne(u.id)}
                   onOpen={() => setDetail(u)}
-                  onResend={() => toast.push({ title: 'Invite resent', msg: u.email })}
+                  onResend={() => void resendInvite(u)}
                   onSuspendToggle={() => void handleRowSuspendToggle(u)}
                   onCancelInvite={() => void handleCancelInvite(u)}
                 />
