@@ -171,7 +171,9 @@ describe('FlagBulkActionBar', () => {
   })
 
   it('X button does not render when onCancel is not provided', () => {
-    render(<FlagBulkActionBar selectedKeys={['a']} projectId="p" activeEnv="dev" onDone={vi.fn()} />)
+    render(
+      <FlagBulkActionBar selectedKeys={['a']} projectId="p" activeEnv="dev" onDone={vi.fn()} />,
+    )
     expect(screen.queryByRole('button', { name: /clear selection/i })).not.toBeInTheDocument()
   })
 })
