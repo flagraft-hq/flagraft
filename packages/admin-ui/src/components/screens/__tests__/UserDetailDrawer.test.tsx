@@ -161,6 +161,7 @@ describe('UserDetailDrawer', () => {
       ...activeUser,
       status: 'suspended' as const,
     }
+    void _dropped
     mockUsersApi.patch.mockResolvedValue({ data: responseWithoutProjects })
     const mockOnUpdated = vi.fn()
     renderDrawer(activeUser, vi.fn(), mockOnUpdated)
