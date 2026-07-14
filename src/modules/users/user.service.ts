@@ -9,6 +9,12 @@ import { createUser, hashPassword } from '../auth/auth.service.js'
 /** Invite links live for 24 hours. */
 const INVITE_TTL_MS = 24 * 60 * 60 * 1000
 
+/**
+ * Minimum time between invite emails to the same user, so resend cannot be
+ * used to spam an invitee's inbox.
+ */
+export const RESEND_COOLDOWN_MS = 2 * 60 * 1000
+
 /** Tokens are stored hashed so a database leak cannot yield usable invite links. */
 function hashInviteToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
@@ -101,14 +107,20 @@ export async function inviteUser(
 /**
  * Re-issues the invite for a still-invited user: a fresh token and a fresh
  * 24h expiry. The old link stops working because the stored hash is replaced.
- * Returns undefined when the user does not exist or is not in invited status.
+ * Returns undefined when the user does not exist or is not in invited status,
+ * and 'cooldown' when the current invite was issued too recently.
  */
 export async function reissueInvite(
   db: Db,
   id: string,
-): Promise<{ user: User; token: string; expiresAt: Date } | undefined> {
+): Promise<{ user: User; token: string; expiresAt: Date } | 'cooldown' | undefined> {
   const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
   if (!user || user.status !== 'invited') return undefined
+  if (user.inviteExpiresAt) {
+    /** The issue time is not stored, but expiry is always issue time + TTL. */
+    const issuedAt = user.inviteExpiresAt.getTime() - INVITE_TTL_MS
+    if (Date.now() - issuedAt < RESEND_COOLDOWN_MS) return 'cooldown'
+  }
   const token = randomBytes(32).toString('base64url')
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS)
   await db

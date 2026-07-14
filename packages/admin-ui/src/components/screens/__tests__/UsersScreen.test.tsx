@@ -242,7 +242,7 @@ describe('UsersScreen', () => {
   it('bulk resend invites hits the resend endpoint for invited users only', async () => {
     vi.mocked(usersApi.resendInvite).mockResolvedValue({
       data: { emailed: true },
-    } as AxiosResponse)
+    } as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
     await selectUser('Bob')
     fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
     await waitFor(() => expect(usersApi.resendInvite).toHaveBeenCalledWith('u2'))
@@ -257,7 +257,7 @@ describe('UsersScreen', () => {
   it('row Resend invite action hits the resend endpoint', async () => {
     vi.mocked(usersApi.resendInvite).mockResolvedValue({
       data: { emailed: true },
-    } as AxiosResponse)
+    } as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
     fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))

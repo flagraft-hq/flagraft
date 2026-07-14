@@ -75,6 +75,12 @@ export async function userRoutes(fastify: FastifyInstance) {
       const { id } = req.params as { id: string }
       const result = await service.reissueInvite(fastify.db, id)
       if (!result) throw new AppError('No pending invite for this user', 404, 'Not Found')
+      if (result === 'cooldown')
+        throw new AppError(
+          'This invite was sent moments ago. Wait a couple of minutes before resending.',
+          429,
+          'Too Many Requests',
+        )
 
       const inviteUrl = `${inviteBaseUrl(fastify, req)}/invite/${result.token}`
       let emailed = false

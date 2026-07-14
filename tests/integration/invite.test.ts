@@ -92,11 +92,19 @@ describeIfDb('invite flow', () => {
     await app.close()
   })
 
+  /** Simulates time passing so the resend cooldown does not block the test. */
+  async function ageInvite(userId: string) {
+    await db!.execute(
+      sql`UPDATE users SET invite_expires_at = invite_expires_at - interval '3 minutes' WHERE id = ${userId}`,
+    )
+  }
+
   it('resend issues a fresh link and invalidates the old one', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)
     const { id, inviteUrl } = await invite(app, rootKey)
     const oldToken = tokenFromUrl(inviteUrl)
+    await ageInvite(id)
 
     const resend = await app.inject({
       method: 'POST',
@@ -121,6 +129,29 @@ describeIfDb('invite flow', () => {
       payload: { password: 'my-new-password' },
     })
     expect(accept.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('resend right after the invite is rejected with 429 (cooldown)', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id } = await invite(app, rootKey)
+
+    const resend = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+    })
+    expect(resend.statusCode).toBe(429)
+
+    /** After the cooldown window it works again. */
+    await ageInvite(id)
+    const later = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+    })
+    expect(later.statusCode).toBe(200)
     await app.close()
   })
 
