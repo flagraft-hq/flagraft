@@ -279,7 +279,7 @@
   white-space: nowrap;
 }
 
-/* BulkActionBar */
+/* FlagBulkActionBar */
 .bulk-bar {
   display: flex;
   align-items: center;

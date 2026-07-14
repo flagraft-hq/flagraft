@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UsersScreen } from '../UsersScreen'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
@@ -175,5 +175,91 @@ describe('UsersScreen', () => {
     // Click the X
     fireEvent.click(screen.getByRole('button', { name: /clear selection/i }))
     expect(screen.queryByText(/selected/i)).not.toBeInTheDocument()
+  })
+
+  async function selectUser(name: string) {
+    renderScreen()
+    await waitFor(() => screen.getByText('Alice'))
+    fireEvent.click(screen.getByRole('checkbox', { name: `Select ${name}` }))
+  }
+
+  /** Row hover actions also have a "Suspend" button; scope to the bulk bar. */
+  function bulkBar() {
+    return within(document.querySelector('.bulk-bar') as HTMLElement)
+  }
+
+  it('bulk role change patches every selected user and clears the selection', async () => {
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    await selectUser('Alice')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Change role' }), {
+      target: { value: 'editor' },
+    })
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { role: 'editor' }))
+    await waitFor(() => expect(screen.queryByText(/selected/i)).not.toBeInTheDocument())
+  })
+
+  it('bulk add to project calls addToProject for every selected user', async () => {
+    vi.mocked(usersApi.addToProject).mockResolvedValue({ data: {} } as AxiosResponse)
+    await selectUser('Bob')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Add to project' }), {
+      target: { value: 'p1' },
+    })
+    await waitFor(() => expect(usersApi.addToProject).toHaveBeenCalledWith('u2', 'p1'))
+  })
+
+  it('bulk suspend asks for confirmation, then patches status', async () => {
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    await selectUser('Alice')
+    fireEvent.click(bulkBar().getByRole('button', { name: /^suspend$/i }))
+    expect(screen.getByText('Suspend this user?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Suspend user' }))
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'suspended' }))
+  })
+
+  it('shows an error toast when a bulk action fails', async () => {
+    vi.mocked(usersApi.patch).mockRejectedValue(new Error('boom'))
+    await selectUser('Alice')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Change role' }), {
+      target: { value: 'editor' },
+    })
+    await waitFor(() => expect(screen.getByText('Failed to change roles')).toBeInTheDocument())
+    // Selection is kept so the user can retry
+    expect(screen.getByText(/selected/i)).toBeInTheDocument()
+  })
+
+  it('bulk reinstate patches suspended users back to active', async () => {
+    vi.mocked(usersApi.list).mockResolvedValue({
+      data: [{ ...mockUsers[0], status: 'suspended' }],
+    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    await selectUser('Alice')
+    expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Reinstate' }))
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'active' }))
+  })
+
+  it('row Suspend action patches the user status', async () => {
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    renderScreen()
+    await waitFor(() => screen.getByText('Alice'))
+    fireEvent.click(screen.getByRole('button', { name: 'Suspend' }))
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'suspended' }))
+  })
+
+  it('row Cancel invite action deletes the invited user', async () => {
+    vi.mocked(usersApi.delete).mockResolvedValue({ data: {} } as AxiosResponse)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))
+    await waitFor(() => expect(usersApi.delete).toHaveBeenCalledWith('u2'))
+  })
+
+  it('disables role change and suspend when only owners are selected', async () => {
+    vi.mocked(usersApi.list).mockResolvedValue({
+      data: [{ ...mockUsers[0], role: 'owner' }],
+    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    await selectUser('Alice')
+    expect(screen.getByRole('combobox', { name: 'Change role' })).toBeDisabled()
+    expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
   })
 })

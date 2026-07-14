@@ -9,7 +9,7 @@ import { ErrorState } from '../primitives/ErrorState'
 import { Icon } from '../primitives/Icon'
 import { FilterBar } from './FilterBar'
 import { FlagRow } from './FlagRow'
-import { BulkActionBar } from './BulkActionBar'
+import { FlagBulkActionBar } from './FlagBulkActionBar'
 import { CreateFlagModal } from './CreateFlagModal'
 import { flagsApi } from '../../lib/api'
 import type { Flag, StateFilter } from '../../lib/types'
@@ -201,7 +201,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
         onClearAll={clearFilters}
       />
 
-      <BulkActionBar
+      <FlagBulkActionBar
         selectedKeys={selectedKeys}
         projectId={projectId}
         activeEnv={activeEnv}

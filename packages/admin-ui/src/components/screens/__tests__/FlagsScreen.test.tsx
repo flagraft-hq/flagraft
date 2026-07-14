@@ -46,8 +46,8 @@ vi.mock('../FlagRow', () => ({
   ),
 }))
 
-vi.mock('../BulkActionBar', () => ({
-  BulkActionBar: ({ selectedKeys }: { selectedKeys: string[] }) =>
+vi.mock('../FlagBulkActionBar', () => ({
+  FlagBulkActionBar: ({ selectedKeys }: { selectedKeys: string[] }) =>
     selectedKeys.length > 0 ? (
       <div data-testid="bulk-bar">{selectedKeys.length} selected</div>
     ) : null,

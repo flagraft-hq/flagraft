@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BulkBar } from '../primitives/BulkBar'
 import { Button } from '../primitives/Button'
 import { Modal } from '../primitives/Modal'
 import { flagsApi } from '../../lib/api'
@@ -12,7 +13,7 @@ interface BulkActionBarProps {
   onCancel?: () => void
 }
 
-export function BulkActionBar({
+export function FlagBulkActionBar({
   selectedKeys,
   projectId,
   activeEnv,
@@ -85,8 +86,7 @@ export function BulkActionBar({
   const flagWord = selectedKeys.length === 1 ? 'flag' : 'flags'
 
   return (
-    <div className="bulk-bar">
-      <span className="bulk-count">{selectedKeys.length} selected</span>
+    <BulkBar count={selectedKeys.length} onClear={onCancel} busy={loading}>
       <Button
         variant="ghost"
         size="sm"
@@ -116,17 +116,6 @@ export function BulkActionBar({
         Delete
       </Button>
 
-      {onCancel && (
-        <button
-          className="bulk-close"
-          onClick={onCancel}
-          aria-label="Clear selection"
-          disabled={loading}
-        >
-          ×
-        </button>
-      )}
-
       <Modal
         open={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
@@ -154,6 +143,6 @@ export function BulkActionBar({
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </BulkBar>
   )
 }

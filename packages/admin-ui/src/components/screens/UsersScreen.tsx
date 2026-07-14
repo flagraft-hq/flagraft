@@ -9,6 +9,7 @@ import { Checkbox } from '../primitives/Checkbox'
 import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
+import { UserBulkActionBar } from './UserBulkActionBar'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { InviteModal } from './InviteModal'
 
@@ -118,6 +119,46 @@ export function UsersScreen() {
     if (ns.has(id)) ns.delete(id)
     else ns.add(id)
     setSelected(ns)
+  }
+
+  const selectedUsers = users.filter((u) => selected.has(u.id))
+
+  async function refreshUsers() {
+    const res = await usersApi.list()
+    setUsers(res.data)
+  }
+
+  async function handleRowSuspendToggle(u: WorkspaceUser) {
+    const nextStatus = u.status === 'suspended' ? 'active' : 'suspended'
+    try {
+      await usersApi.patch(u.id, { status: nextStatus })
+      toast.push({
+        title: nextStatus === 'suspended' ? 'User suspended' : 'User reinstated',
+        msg: u.email,
+        variant: 'success',
+      })
+      await refreshUsers()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to update user',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
+    }
+  }
+
+  async function handleCancelInvite(u: WorkspaceUser) {
+    try {
+      await usersApi.delete(u.id)
+      toast.push({ title: 'Invite canceled', msg: u.email, variant: 'success' })
+      await refreshUsers()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to cancel invite',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
+    }
   }
 
   function setSort(key: SortKey) {
@@ -345,6 +386,8 @@ export function UsersScreen() {
                   onSelect={() => toggleOne(u.id)}
                   onOpen={() => setDetail(u)}
                   onResend={() => toast.push({ title: 'Invite resent', msg: u.email })}
+                  onSuspendToggle={() => void handleRowSuspendToggle(u)}
+                  onCancelInvite={() => void handleCancelInvite(u)}
                 />
               ))
             )}
@@ -359,32 +402,14 @@ export function UsersScreen() {
         </div>
       </div>
 
-      {selected.size > 0 ? (
-        <div className="bulk-bar">
-          <span className="bulk-count">
-            <span className="num">{selected.size}</span> selected
-          </span>
-          <span className="bulk-sep" />
-          <span className="bulk-section-label">Role</span>
-          <Button size="sm">Change role…</Button>
-          <span className="bulk-sep" />
-          <span className="bulk-section-label">Access</span>
-          <Button size="sm" leftIcon="layers">
-            Add to project
-          </Button>
-          <span className="bulk-sep" />
-          <Button size="sm" variant="danger">
-            Suspend
-          </Button>
-          <button
-            className="bulk-close"
-            onClick={() => setSelected(new Set())}
-            aria-label="Clear selection"
-          >
-            <Icon name="x" size={14} />
-          </button>
-        </div>
-      ) : null}
+      <UserBulkActionBar
+        selectedUsers={selectedUsers}
+        onDone={async () => {
+          await refreshUsers()
+          setSelected(new Set())
+        }}
+        onCancel={() => setSelected(new Set())}
+      />
 
       {detail ? (
         <UserDetailDrawer
@@ -452,9 +477,20 @@ interface UserRowProps {
   onSelect: () => void
   onOpen: () => void
   onResend: () => void
+  onSuspendToggle: () => void
+  onCancelInvite: () => void
 }
 
-function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: UserRowProps) {
+function UserRow({
+  user: u,
+  selected,
+  active,
+  onSelect,
+  onOpen,
+  onResend,
+  onSuspendToggle,
+  onCancelInvite,
+}: UserRowProps) {
   const relativeDate = useRelativeDate(u.lastActiveAt ?? undefined)
 
   return (
@@ -527,7 +563,11 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
                 </button>
               </Tip>
               <Tip tip="Cancel invite">
-                <button className="icon-btn danger" aria-label="Cancel invite">
+                <button
+                  className="icon-btn danger"
+                  aria-label="Cancel invite"
+                  onClick={onCancelInvite}
+                >
                   <Icon name="x" size={13} />
                 </button>
               </Tip>
@@ -552,6 +592,7 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
                   className="icon-btn"
                   disabled={u.role === USER_ROLES.OWNER}
                   aria-label={u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
+                  onClick={onSuspendToggle}
                 >
                   <Icon name={u.status === 'suspended' ? 'check' : 'minus'} size={13} />
                 </button>
