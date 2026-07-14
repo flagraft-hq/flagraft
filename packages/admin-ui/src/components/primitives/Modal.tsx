@@ -1,4 +1,5 @@
 import { ReactNode, createContext, useContext, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 
 /**
@@ -109,7 +110,11 @@ function Modal({ open, onClose, children, titleId, size = 'default' }: ModalProp
   /** Size modifier class — omitted for the default (520 px) width. */
   const sizeClass = size !== 'default' ? ` modal-content--${size}` : ''
 
-  return (
+  /**
+   * Portaled to <body> so position: fixed is viewport-relative even when the
+   * modal is mounted inside a transformed ancestor (e.g. the bulk action bar).
+   */
+  return createPortal(
     <ModalCloseCtx.Provider value={onClose}>
       <div className="modal-backdrop" onClick={onClose} />
       <div
@@ -122,7 +127,8 @@ function Modal({ open, onClose, children, titleId, size = 'default' }: ModalProp
       >
         <div className={`modal-content${sizeClass}`}>{children}</div>
       </div>
-    </ModalCloseCtx.Provider>
+    </ModalCloseCtx.Provider>,
+    document.body,
   )
 }
 

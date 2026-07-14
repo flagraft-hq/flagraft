@@ -31,6 +31,12 @@ export function BulkActionBar({
       await Promise.all(selectedKeys.map((key) => flagsApi.toggle(projectId, key, activeEnv, true)))
       toast.push({ title: 'Flags enabled', variant: 'success' })
       onDone()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to enable flags',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
     } finally {
       setLoading(false)
     }
@@ -44,6 +50,12 @@ export function BulkActionBar({
       )
       toast.push({ title: 'Flags disabled', variant: 'success' })
       onDone()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to disable flags',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
     } finally {
       setLoading(false)
     }
@@ -53,12 +65,24 @@ export function BulkActionBar({
     setLoading(true)
     try {
       await Promise.all(selectedKeys.map((key) => flagsApi.delete(projectId, key)))
+      toast.push({
+        title: selectedKeys.length === 1 ? 'Flag deleted' : `${selectedKeys.length} flags deleted`,
+        variant: 'success',
+      })
       setShowDeleteConfirm(false)
       onDone()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to delete flags',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
     } finally {
       setLoading(false)
     }
   }
+
+  const flagWord = selectedKeys.length === 1 ? 'flag' : 'flags'
 
   return (
     <div className="bulk-bar">
@@ -103,26 +127,30 @@ export function BulkActionBar({
         </button>
       )}
 
-      <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
-        <Modal.Header>Delete {selectedKeys.length} flags?</Modal.Header>
+      <Modal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        titleId="bulk-delete-title"
+      >
+        <Modal.Header
+          id="bulk-delete-title"
+          subtitle={`The selected ${flagWord} will be permanently removed from all environments. This cannot be undone.`}
+        >
+          Delete {selectedKeys.length === 1 ? 'this flag' : `${selectedKeys.length} flags`}?
+        </Modal.Header>
         <Modal.Footer>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDeleteConfirm(false)}
-            disabled={loading}
-          >
+          <span style={{ flex: 1 }} />
+          <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)} disabled={loading}>
             Cancel
           </Button>
           <Button
             variant="danger"
-            size="sm"
             onClick={() => {
               void handleConfirmDelete()
             }}
             disabled={loading}
           >
-            Confirm Delete
+            {loading ? 'Deleting…' : `Delete ${flagWord}`}
           </Button>
         </Modal.Footer>
       </Modal>

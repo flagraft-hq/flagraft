@@ -85,16 +85,53 @@ describe('BulkActionBar', () => {
     expect(screen.getByText('Delete 2 flags?')).toBeInTheDocument()
   })
 
-  it('confirming delete calls flagsApi.delete for each key and calls onDone', async () => {
+  it('uses singular wording when a single flag is selected', () => {
+    render(<BulkActionBar {...defaultProps} selectedKeys={['flag-a']} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(screen.getByText('Delete this flag?')).toBeInTheDocument()
+  })
+
+  it('confirming delete calls flagsApi.delete for each key, shows a toast, and calls onDone', async () => {
     render(<BulkActionBar {...defaultProps} />)
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm Delete' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete flags' }))
     await waitFor(() => {
       expect(mockDelete).toHaveBeenCalledTimes(2)
       expect(mockDelete).toHaveBeenCalledWith('proj-1', 'flag-a')
       expect(mockDelete).toHaveBeenCalledWith('proj-1', 'flag-b')
       expect(defaultProps.onDone).toHaveBeenCalledTimes(1)
     })
+    expect(mockToastPush).toHaveBeenCalledWith({ title: '2 flags deleted', variant: 'success' })
+  })
+
+  it('shows an error toast and keeps the modal open when deletion fails', async () => {
+    mockDelete.mockRejectedValue(new Error('boom'))
+    render(<BulkActionBar {...defaultProps} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete flags' }))
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith({
+        title: 'Failed to delete flags',
+        msg: 'boom',
+        variant: 'error',
+      }),
+    )
+    expect(screen.getByText('Delete 2 flags?')).toBeInTheDocument()
+    expect(defaultProps.onDone).not.toHaveBeenCalled()
+  })
+
+  it('shows an error toast when Enable All fails', async () => {
+    mockToggle.mockRejectedValue(new Error('boom'))
+    render(<BulkActionBar {...defaultProps} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Enable All' }))
+    await waitFor(() =>
+      expect(mockToastPush).toHaveBeenCalledWith({
+        title: 'Failed to enable flags',
+        msg: 'boom',
+        variant: 'error',
+      }),
+    )
+    expect(defaultProps.onDone).not.toHaveBeenCalled()
   })
 
   it('canceling delete hides the modal without calling flagsApi.delete', async () => {
