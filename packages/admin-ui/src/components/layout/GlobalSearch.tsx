@@ -101,7 +101,8 @@ export function GlobalSearch() {
           id: u.id,
           primary: u.name,
           secondary: u.email,
-          to: '/users',
+          /** Deep link: UsersScreen opens this user's drawer and drops the param. */
+          to: `/users?user=${u.id}`,
         }))
       setHits([...flagHits, ...userHits])
       setActiveIndex(0)
@@ -141,6 +142,10 @@ export function GlobalSearch() {
       setActiveIndex((i) => (i - 1 + hits.length) % hits.length)
     } else if (e.key === 'Enter') {
       e.preventDefault()
+      /** Hits may still belong to the previous query while the debounce is
+          pending; Enter must never open a result for text that was typed
+          over. Clicks stay allowed — a click lands on a visible row. */
+      if (query.trim() !== debouncedQuery) return
       go(hits[activeIndex])
     }
   }

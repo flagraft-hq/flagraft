@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import { UsersScreen } from '../UsersScreen'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
 import { ToastProvider } from '../../../contexts/ToastContext'
@@ -82,13 +83,15 @@ const mockUsers = [
   } as WorkspaceUser,
 ]
 
-function renderScreen() {
+function renderScreen(initialEntry = '/users') {
   return render(
-    <ThemeProvider>
-      <ToastProvider>
-        <UsersScreen />
-      </ToastProvider>
-    </ThemeProvider>,
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <ThemeProvider>
+        <ToastProvider>
+          <UsersScreen />
+        </ToastProvider>
+      </ThemeProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -158,6 +161,19 @@ describe('UsersScreen', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: /^users$/i })).toBeInTheDocument(),
     )
+  })
+
+  it('opens the drawer for the user named in the ?user= deep link', async () => {
+    renderScreen('/users?user=u2')
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /user detail: bob/i })).toBeInTheDocument(),
+    )
+  })
+
+  it('ignores a ?user= deep link that matches nobody', async () => {
+    renderScreen('/users?user=nope')
+    await waitFor(() => screen.getByText('Alice'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('clicking a user row opens the UserDetailDrawer', async () => {

@@ -98,7 +98,22 @@ describe('GlobalSearch', () => {
     await waitFor(() => expect(screen.getByText('Dark Mode')).toBeInTheDocument())
     fireEvent.keyDown(input, { key: 'ArrowDown' })
     fireEvent.keyDown(input, { key: 'Enter' })
-    expect(mockNavigate).toHaveBeenCalledWith('/users')
+    expect(mockNavigate).toHaveBeenCalledWith('/users?user=u1')
+  })
+
+  it('Enter is ignored while the results are stale (typed past the debounce)', async () => {
+    render(<GlobalSearch />)
+    const input = screen.getByRole('combobox', { name: 'Search' })
+    search('dark')
+    await waitFor(() => expect(screen.getByText('Dark Mode')).toBeInTheDocument())
+    /** New text typed; old hits still shown until the debounce fires. */
+    search('billing')
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(mockNavigate).not.toHaveBeenCalled()
+    /** Once the debounce catches up, Enter works on the fresh results. */
+    await waitFor(() => expect(screen.getByText('New Billing')).toBeInTheDocument())
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(mockNavigate).toHaveBeenCalledWith('/flags/new-billing')
   })
 
   it('Escape closes the dropdown and clears the query', async () => {
