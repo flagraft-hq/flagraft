@@ -108,6 +108,8 @@ describe('ToastContext', () => {
     const status = screen.getByRole('status')
     expect(status).toHaveTextContent('Hello')
     expect(status).toHaveClass('toast', 'success')
+    /** The progress bar animation must run exactly as long as the dismiss timer. */
+    expect(status.style.getPropertyValue('--toast-duration')).toBe('4000ms')
   })
 
   it('removes a rendered toast when its Dismiss button is clicked', () => {
@@ -124,6 +126,67 @@ describe('ToastContext', () => {
       screen.getByRole('button', { name: 'Dismiss' }).click()
     })
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('auto-dismisses a short toast after the 4s floor', () => {
+    vi.useFakeTimers()
+    render(
+      <ToastProvider>
+        <TestConsumer />
+      </ToastProvider>,
+    )
+    act(() => {
+      screen.getByTestId('push-two').click()
+    })
+    expect(screen.getByTestId('count').textContent).toBe('2')
+    act(() => {
+      vi.advanceTimersByTime(4100)
+    })
+    expect(screen.getByTestId('count').textContent).toBe('0')
+    vi.useRealTimers()
+  })
+
+  it('keeps a long error toast on screen longer than the floor', () => {
+    vi.useFakeTimers()
+    function LongErrorConsumer() {
+      const { toasts, push } = useToast()
+      return (
+        <div>
+          <span data-testid="count">{toasts.length}</span>
+          <button
+            data-testid="push-long"
+            onClick={() =>
+              push({
+                title: 'Failed to resend invites',
+                msg: 'This invite was sent moments ago. Wait a couple of minutes before resending.',
+                variant: 'error',
+              })
+            }
+          >
+            push long
+          </button>
+        </div>
+      )
+    }
+    render(
+      <ToastProvider>
+        <LongErrorConsumer />
+      </ToastProvider>,
+    )
+    act(() => {
+      screen.getByTestId('push-long').click()
+    })
+    /** ~100 chars * 60ms ≈ 6s: still visible after the 4s floor... */
+    act(() => {
+      vi.advanceTimersByTime(4100)
+    })
+    expect(screen.getByTestId('count').textContent).toBe('1')
+    /** ...but gone by the 12s ceiling. */
+    act(() => {
+      vi.advanceTimersByTime(8000)
+    })
+    expect(screen.getByTestId('count').textContent).toBe('0')
+    vi.useRealTimers()
   })
 
   it('useToast throws when called outside ToastProvider', () => {

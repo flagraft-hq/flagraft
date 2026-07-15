@@ -59,7 +59,8 @@
   height: 2px;
   background: var(--pri);
   transform-origin: left;
-  animation: toastBar 4s linear forwards;
+  /* Duration is set per-toast by ToastProvider to match its dismiss timer */
+  animation: toastBar var(--toast-duration, 4s) linear forwards;
 }
 .toast.error::after {
   background: var(--danger);

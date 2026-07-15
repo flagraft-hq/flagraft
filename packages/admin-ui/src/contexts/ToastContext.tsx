@@ -1,4 +1,12 @@
-import { createContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react'
+import {
+  createContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  ReactNode,
+  CSSProperties,
+} from 'react'
 import { Icon } from '../components/primitives/Icon'
 
 export interface Toast {
@@ -6,11 +14,13 @@ export interface Toast {
   title: string
   msg?: string
   variant?: 'default' | 'success' | 'error'
+  /** Auto-dismiss delay in ms; also drives the progress bar animation. */
+  duration: number
 }
 
 interface ToastContextType {
   toasts: Toast[]
-  push: (toast: Omit<Toast, 'id'>) => void
+  push: (toast: Omit<Toast, 'id' | 'duration'>) => void
   dismiss: (id: string) => void
 }
 
@@ -20,13 +30,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
-  const push = useCallback((toast: Omit<Toast, 'id'>) => {
+  const push = useCallback((toast: Omit<Toast, 'id' | 'duration'>) => {
     const id = Math.random().toString(36).slice(2, 9)
-    setToasts((prev) => [...prev, { ...toast, id }])
+    /**
+     * Stay time scales with how much there is to read (~60ms per character,
+     * about average reading speed), between a 4s floor (6s for errors, they
+     * matter most) and a 12s ceiling.
+     */
+    const chars = toast.title.length + (toast.msg?.length ?? 0)
+    const duration = Math.min(12_000, Math.max(toast.variant === 'error' ? 6000 : 4000, chars * 60))
+    setToasts((prev) => [...prev, { ...toast, id, duration }])
     const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
       timersRef.current.delete(id)
-    }, 4000)
+    }, duration)
     timersRef.current.set(id, timer)
   }, [])
 
@@ -50,7 +67,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="toast-stack" aria-live="polite" aria-atomic="true">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.variant ?? 'default'}`} role="status">
+          <div
+            key={t.id}
+            className={`toast ${t.variant ?? 'default'}`}
+            role="status"
+            style={{ '--toast-duration': `${t.duration}ms` } as CSSProperties}
+          >
             <Icon
               name={t.variant === 'error' ? 'alert' : t.variant === 'success' ? 'check' : 'info'}
               size={18}
