@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UsersScreen } from '../UsersScreen'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
@@ -26,7 +26,9 @@ vi.mock('../../../lib/api', () => ({
     list: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    cancelInvite: vi.fn(),
     resetPassword: vi.fn(),
+    resendInvite: vi.fn(),
     invite: vi.fn(),
     addToProject: vi.fn(),
     removeFromProject: vi.fn(),
@@ -175,5 +177,191 @@ describe('UsersScreen', () => {
     // Click the X
     fireEvent.click(screen.getByRole('button', { name: /clear selection/i }))
     expect(screen.queryByText(/selected/i)).not.toBeInTheDocument()
+  })
+
+  async function selectUser(name: string) {
+    renderScreen()
+    await waitFor(() => screen.getByText('Alice'))
+    fireEvent.click(screen.getByRole('checkbox', { name: `Select ${name}` }))
+  }
+
+  /** Row hover actions also have a "Suspend" button; scope to the bulk bar. */
+  function bulkBar() {
+    return within(document.querySelector('.bulk-bar') as HTMLElement)
+  }
+
+  it('bulk role change patches every selected user and clears the selection', async () => {
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    await selectUser('Alice')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Change role' }), {
+      target: { value: 'editor' },
+    })
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { role: 'editor' }))
+    await waitFor(() => expect(screen.queryByText(/selected/i)).not.toBeInTheDocument())
+  })
+
+  it('bulk add to project calls addToProject for every selected user', async () => {
+    vi.mocked(usersApi.addToProject).mockResolvedValue({ data: {} } as AxiosResponse)
+    await selectUser('Bob')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Add to project' }), {
+      target: { value: 'p1' },
+    })
+    await waitFor(() => expect(usersApi.addToProject).toHaveBeenCalledWith('u2', 'p1'))
+  })
+
+  it('bulk suspend asks for confirmation, then patches status', async () => {
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    await selectUser('Alice')
+    fireEvent.click(bulkBar().getByRole('button', { name: /^suspend$/i }))
+    expect(screen.getByText('Suspend this user?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Suspend user' }))
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'suspended' }))
+  })
+
+  it('shows an error toast when a bulk action fails', async () => {
+    vi.mocked(usersApi.patch).mockRejectedValue(new Error('boom'))
+    await selectUser('Alice')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Change role' }), {
+      target: { value: 'editor' },
+    })
+    await waitFor(() => expect(screen.getByText('Failed to change roles')).toBeInTheDocument())
+    // Selection is kept so the user can retry
+    expect(screen.getByText(/selected/i)).toBeInTheDocument()
+  })
+
+  it('bulk reinstate patches suspended users back to active', async () => {
+    vi.mocked(usersApi.list).mockResolvedValue({
+      data: [{ ...mockUsers[0], status: 'suspended' }],
+    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    await selectUser('Alice')
+    expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Reinstate' }))
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'active' }))
+  })
+
+  it('bulk resend invites hits the resend endpoint for invited users only', async () => {
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: true },
+    } as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+    await selectUser('Bob')
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
+    await waitFor(() => expect(usersApi.resendInvite).toHaveBeenCalledWith('u2'))
+    expect(usersApi.resendInvite).toHaveBeenCalledTimes(1)
+  })
+
+  it('bulk resend reports partial success when some invites hit the cooldown', async () => {
+    const carl = { ...mockUsers[1], id: 'u3', name: 'Carl', email: 'carl@a.com' }
+    vi.mocked(usersApi.list).mockResolvedValue({
+      data: [mockUsers[1], carl],
+    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    vi.mocked(usersApi.resendInvite)
+      .mockResolvedValueOnce({
+        data: { emailed: true },
+      } as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+      .mockRejectedValueOnce(
+        new Error('This invite was sent moments ago. Wait a couple of minutes before resending.'),
+      )
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Bob' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Carl' }))
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
+    await waitFor(() => expect(screen.getByText('Resent 1 of 2 invites')).toBeInTheDocument())
+    expect(screen.getByText(/1 skipped: this invite was sent moments ago/i)).toBeInTheDocument()
+    expect(usersApi.resendInvite).toHaveBeenCalledTimes(2)
+  })
+
+  it('bulk resend shows an error toast when every invite fails', async () => {
+    vi.mocked(usersApi.resendInvite).mockRejectedValue(new Error('boom'))
+    await selectUser('Bob')
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
+    await waitFor(() => expect(screen.getByText('Failed to resend invite')).toBeInTheDocument())
+  })
+
+  it('disables bulk resend when no invited user is selected', async () => {
+    await selectUser('Alice')
+    expect(bulkBar().getByRole('button', { name: 'Resend invites' })).toBeDisabled()
+  })
+
+  it('row Resend invite action hits the resend endpoint', async () => {
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: true },
+    } as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    await waitFor(() => expect(usersApi.resendInvite).toHaveBeenCalledWith('u2'))
+    await waitFor(() => expect(screen.getByText('Invite resent')).toBeInTheDocument())
+  })
+
+  it('shows the invite links dialog when email is off and the clipboard fails', async () => {
+    /** jsdom has no navigator.clipboard, so the copy attempt throws. */
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: false, email: 'bob@a.com', inviteUrl: 'https://x/invite/tok-1' },
+    } as unknown as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    await waitFor(() => expect(screen.getByText('Share invite links')).toBeInTheDocument())
+    expect(screen.getByText('https://x/invite/tok-1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /copy invite link for bob@a.com/i })).toBeVisible()
+  })
+
+  it('copies the link and skips the dialog when the clipboard works', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: false, email: 'bob@a.com', inviteUrl: 'https://x/invite/tok-2' },
+    } as unknown as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://x/invite/tok-2'))
+    await waitFor(() => expect(screen.getByText(/copied to the clipboard/i)).toBeInTheDocument())
+    expect(screen.queryByText('Share invite links')).not.toBeInTheDocument()
+    /** Remove the mock so other tests keep exercising the no-clipboard path. */
+    delete (navigator as unknown as Record<string, unknown>).clipboard
+  })
+
+  it('row Suspend action patches the user status', async () => {
+    vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
+    renderScreen()
+    await waitFor(() => screen.getByText('Alice'))
+    fireEvent.click(screen.getByRole('button', { name: 'Suspend' }))
+    await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'suspended' }))
+  })
+
+  it('row Cancel invite action uses the guarded cancel endpoint, not delete', async () => {
+    vi.mocked(usersApi.cancelInvite).mockResolvedValue({ data: {} } as unknown as AxiosResponse<
+      Awaited<ReturnType<typeof usersApi.resendInvite>>['data']
+    >)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))
+    await waitFor(() => expect(usersApi.cancelInvite).toHaveBeenCalledWith('u2'))
+    expect(usersApi.delete).not.toHaveBeenCalled()
+  })
+
+  it('shows the server conflict message when the invite was already accepted', async () => {
+    vi.mocked(usersApi.cancelInvite).mockRejectedValue(
+      new Error('This invite was already accepted — the user is now active.'),
+    )
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))
+    await waitFor(() => expect(screen.getByText(/already accepted/i)).toBeInTheDocument())
+  })
+
+  it('disables role change and suspend when only owners are selected', async () => {
+    vi.mocked(usersApi.list).mockResolvedValue({
+      data: [{ ...mockUsers[0], role: 'owner' }],
+    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    await selectUser('Alice')
+    expect(screen.getByRole('combobox', { name: 'Change role' })).toBeDisabled()
+    expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
   })
 })

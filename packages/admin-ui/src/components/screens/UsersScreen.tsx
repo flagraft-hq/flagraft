@@ -3,12 +3,16 @@ import { usersApi } from '../../lib/api'
 import type { WorkspaceUser } from '../../lib/api'
 import { USER_ROLES } from '../../lib/roles'
 import { useToast } from '../../hooks/useToast'
+import { useResendInvite } from '../../hooks/useResendInvite'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { Button } from '../primitives/Button'
 import { Checkbox } from '../primitives/Checkbox'
 import { Icon } from '../primitives/Icon'
+import { Select } from '../primitives/Select'
 import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
+import { InviteLinksModal } from './InviteLinksModal'
+import { UserBulkActionBar } from './UserBulkActionBar'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { InviteModal } from './InviteModal'
 
@@ -22,6 +26,7 @@ type SortDir = 'asc' | 'desc'
  */
 export function UsersScreen() {
   const toast = useToast()
+  const { resendInvites, fallbackLinks, dismissFallback } = useResendInvite()
   const [users, setUsers] = useState<WorkspaceUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -118,6 +123,46 @@ export function UsersScreen() {
     if (ns.has(id)) ns.delete(id)
     else ns.add(id)
     setSelected(ns)
+  }
+
+  const selectedUsers = users.filter((u) => selected.has(u.id))
+
+  async function refreshUsers() {
+    const res = await usersApi.list()
+    setUsers(res.data)
+  }
+
+  async function handleRowSuspendToggle(u: WorkspaceUser) {
+    const nextStatus = u.status === 'suspended' ? 'active' : 'suspended'
+    try {
+      await usersApi.patch(u.id, { status: nextStatus })
+      toast.push({
+        title: nextStatus === 'suspended' ? 'User suspended' : 'User reinstated',
+        msg: u.email,
+        variant: 'success',
+      })
+      await refreshUsers()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to update user',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
+    }
+  }
+
+  async function handleCancelInvite(u: WorkspaceUser) {
+    try {
+      await usersApi.cancelInvite(u.id)
+      toast.push({ title: 'Invite canceled', msg: u.email, variant: 'success' })
+      await refreshUsers()
+    } catch (err) {
+      toast.push({
+        title: 'Failed to cancel invite',
+        msg: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      })
+    }
   }
 
   function setSort(key: SortKey) {
@@ -276,19 +321,20 @@ export function UsersScreen() {
 
         <span style={{ flex: 1 }} />
 
-        <select
-          className="select"
-          style={{ height: 32, width: 'auto' }}
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+        <Select
+          className="select-sm"
           aria-label="Role filter"
-        >
-          <option value="all">All roles</option>
-          <option value="owner">owner</option>
-          <option value="admin">admin</option>
-          <option value="editor">editor</option>
-          <option value="viewer">viewer</option>
-        </select>
+          placeholder=""
+          value={roleFilter}
+          onChange={setRoleFilter}
+          options={[
+            { value: 'all', label: 'All roles' },
+            { value: 'owner', label: 'owner' },
+            { value: 'admin', label: 'admin' },
+            { value: 'editor', label: 'editor' },
+            { value: 'viewer', label: 'viewer' },
+          ]}
+        />
       </div>
 
       <div className="users-table-wrap">
@@ -344,7 +390,9 @@ export function UsersScreen() {
                   active={detail?.id === u.id}
                   onSelect={() => toggleOne(u.id)}
                   onOpen={() => setDetail(u)}
-                  onResend={() => toast.push({ title: 'Invite resent', msg: u.email })}
+                  onResend={() => void resendInvites([u])}
+                  onSuspendToggle={() => void handleRowSuspendToggle(u)}
+                  onCancelInvite={() => void handleCancelInvite(u)}
                 />
               ))
             )}
@@ -359,32 +407,16 @@ export function UsersScreen() {
         </div>
       </div>
 
-      {selected.size > 0 ? (
-        <div className="bulk-bar">
-          <span className="bulk-count">
-            <span className="num">{selected.size}</span> selected
-          </span>
-          <span className="bulk-sep" />
-          <span className="bulk-section-label">Role</span>
-          <Button size="sm">Change role…</Button>
-          <span className="bulk-sep" />
-          <span className="bulk-section-label">Access</span>
-          <Button size="sm" leftIcon="layers">
-            Add to project
-          </Button>
-          <span className="bulk-sep" />
-          <Button size="sm" variant="danger">
-            Suspend
-          </Button>
-          <button
-            className="bulk-close"
-            onClick={() => setSelected(new Set())}
-            aria-label="Clear selection"
-          >
-            <Icon name="x" size={14} />
-          </button>
-        </div>
-      ) : null}
+      <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
+
+      <UserBulkActionBar
+        selectedUsers={selectedUsers}
+        onDone={async () => {
+          await refreshUsers()
+          setSelected(new Set())
+        }}
+        onCancel={() => setSelected(new Set())}
+      />
 
       {detail ? (
         <UserDetailDrawer
@@ -452,9 +484,20 @@ interface UserRowProps {
   onSelect: () => void
   onOpen: () => void
   onResend: () => void
+  onSuspendToggle: () => void
+  onCancelInvite: () => void
 }
 
-function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: UserRowProps) {
+function UserRow({
+  user: u,
+  selected,
+  active,
+  onSelect,
+  onOpen,
+  onResend,
+  onSuspendToggle,
+  onCancelInvite,
+}: UserRowProps) {
   const relativeDate = useRelativeDate(u.lastActiveAt ?? undefined)
 
   return (
@@ -527,7 +570,11 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
                 </button>
               </Tip>
               <Tip tip="Cancel invite">
-                <button className="icon-btn danger" aria-label="Cancel invite">
+                <button
+                  className="icon-btn danger"
+                  aria-label="Cancel invite"
+                  onClick={onCancelInvite}
+                >
                   <Icon name="x" size={13} />
                 </button>
               </Tip>
@@ -552,6 +599,7 @@ function UserRow({ user: u, selected, active, onSelect, onOpen, onResend }: User
                   className="icon-btn"
                   disabled={u.role === USER_ROLES.OWNER}
                   aria-label={u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
+                  onClick={onSuspendToggle}
                 >
                   <Icon name={u.status === 'suspended' ? 'check' : 'minus'} size={13} />
                 </button>

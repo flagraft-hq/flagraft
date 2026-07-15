@@ -15,8 +15,8 @@ describe('ShortcutsHelpModal', () => {
 
   it('calls onClose when the backdrop is clicked', () => {
     const onClose = vi.fn()
-    const { container } = render(<ShortcutsHelpModal open={true} onClose={onClose} />)
-    const backdrop = container.querySelector('.modal-backdrop')!
+    render(<ShortcutsHelpModal open={true} onClose={onClose} />)
+    const backdrop = document.body.querySelector('.modal-backdrop')!
     fireEvent.click(backdrop)
     expect(onClose).toHaveBeenCalledTimes(1)
   })

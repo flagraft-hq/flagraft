@@ -12,10 +12,31 @@ interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>
   value: string
   onChange: (value: string) => void
   error?: string
+  hint?: React.ReactNode
+  /**
+   * Text of the disabled first option shown while value is ''.
+   * Pass '' to omit it entirely (for filters that always have a value).
+   */
+  placeholder?: string
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, options, value, onChange, disabled, error, id, ...rest }, ref) => {
+  (
+    {
+      label,
+      options,
+      value,
+      onChange,
+      disabled,
+      error,
+      hint,
+      placeholder = 'Select…',
+      className = '',
+      id,
+      ...rest
+    },
+    ref,
+  ) => {
     const selectId = useMemo(
       () =>
         id ||
@@ -35,7 +56,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           id={selectId}
-          className="select-input"
+          className={`select-input ${className}`.trim()}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
@@ -43,15 +64,18 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           aria-describedby={error ? errorId : undefined}
           {...rest}
         >
-          <option value="" disabled>
-            Select...
-          </option>
+          {placeholder ? (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          ) : null}
           {options.map((opt) => (
             <option key={opt.value} value={opt.value} disabled={opt.disabled}>
               {opt.label}
             </option>
           ))}
         </select>
+        {hint && !error && <span className="text-field-hint">{hint}</span>}
         {error && (
           <span id={errorId} className="select-error" aria-live="polite">
             {error}

@@ -19,37 +19,37 @@ describe('Modal', () => {
   })
 
   it('does not render when open is false', () => {
-    const { container } = render(
+    render(
       <Modal open={false} onClose={() => {}}>
         <Modal.Header>Title</Modal.Header>
       </Modal>,
     )
 
-    const backdrop = container.querySelector('.modal-backdrop')
+    const backdrop = document.body.querySelector('.modal-backdrop')
     expect(backdrop).not.toBeInTheDocument()
   })
 
   it('renders with role="dialog" and aria-modal="true"', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}}>
         <Modal.Header>Title</Modal.Header>
       </Modal>,
     )
 
-    const dialog = container.querySelector('[role="dialog"]')
+    const dialog = document.body.querySelector('[role="dialog"]')
     expect(dialog).toBeInTheDocument()
     expect(dialog).toHaveAttribute('aria-modal', 'true')
   })
 
   it('calls onClose when backdrop is clicked', async () => {
     const onClose = vi.fn()
-    const { container } = render(
+    render(
       <Modal open={true} onClose={onClose}>
         <Modal.Header>Title</Modal.Header>
       </Modal>,
     )
 
-    const backdrop = container.querySelector('.modal-backdrop')
+    const backdrop = document.body.querySelector('.modal-backdrop')
     await userEvent.click(backdrop!)
     expect(onClose).toHaveBeenCalledTimes(1)
   })
@@ -148,20 +148,20 @@ describe('Modal', () => {
   })
 
   it('sets aria-labelledby on the dialog when titleId is supplied', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}} titleId="my-title">
         <Modal.Header id="my-title">Titled Modal</Modal.Header>
       </Modal>,
     )
 
-    const dialog = container.querySelector('[role="dialog"]')
+    const dialog = document.body.querySelector('[role="dialog"]')
     expect(dialog).toHaveAttribute('aria-labelledby', 'my-title')
-    const header = container.querySelector('#my-title')
+    const header = document.body.querySelector('#my-title')
     expect(header).toBeInTheDocument()
   })
 
   it('renders all compound components together', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}}>
         <Modal.Header>Complete Modal</Modal.Header>
         <Modal.Body>This is the modal body with content</Modal.Body>
@@ -177,18 +177,18 @@ describe('Modal', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeInTheDocument()
 
-    const dialog = container.querySelector('[role="dialog"]')
+    const dialog = document.body.querySelector('[role="dialog"]')
     expect(dialog).toBeInTheDocument()
   })
 
   it('wraps the header title in an <h2> element', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}}>
         <Modal.Header>My Title</Modal.Header>
       </Modal>,
     )
 
-    const h2 = container.querySelector('.modal-header h2')
+    const h2 = document.body.querySelector('.modal-header h2')
     expect(h2).toBeInTheDocument()
     expect(h2).toHaveTextContent('My Title')
   })
@@ -204,47 +204,47 @@ describe('Modal', () => {
   })
 
   it('does not render subtitle element when subtitle is omitted', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}}>
         <Modal.Header>My Title</Modal.Header>
       </Modal>,
     )
 
-    const sub = container.querySelector('.modal-header__sub')
+    const sub = document.body.querySelector('.modal-header__sub')
     expect(sub).not.toBeInTheDocument()
   })
 
   it('applies no size class to modal-content when size is default', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}} size="default">
         <Modal.Header>Title</Modal.Header>
       </Modal>,
     )
 
-    const content = container.querySelector('.modal-content')
+    const content = document.body.querySelector('.modal-content')
     expect(content).toBeInTheDocument()
     expect(content?.className).toBe('modal-content')
   })
 
   it('applies modal-content--lg class when size is lg', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}} size="lg">
         <Modal.Header>Title</Modal.Header>
       </Modal>,
     )
 
-    const content = container.querySelector('.modal-content--lg')
+    const content = document.body.querySelector('.modal-content--lg')
     expect(content).toBeInTheDocument()
   })
 
   it('applies modal-content--xl class when size is xl', () => {
-    const { container } = render(
+    render(
       <Modal open={true} onClose={() => {}} size="xl">
         <Modal.Header>Title</Modal.Header>
       </Modal>,
     )
 
-    const content = container.querySelector('.modal-content--xl')
+    const content = document.body.querySelector('.modal-content--xl')
     expect(content).toBeInTheDocument()
   })
 

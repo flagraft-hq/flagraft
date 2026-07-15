@@ -34,7 +34,7 @@ describeIfDb('invite flow', () => {
       payload: { emails: [email], role: 'editor', projectIds: [project.id] },
     })
     expect(res.statusCode).toBe(201)
-    return res.json<{ email: string; inviteUrl: string; emailed: boolean }[]>()[0]
+    return res.json<{ id: string; email: string; inviteUrl: string; emailed: boolean }[]>()[0]
   }
 
   it('issues an invite link (not emailed, no SMTP) built from the request origin', async () => {
@@ -83,6 +83,163 @@ describeIfDb('invite flow', () => {
       payload: { password: 'my-new-password' },
     })
 
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email, password: 'my-new-password' },
+    })
+    expect(login.statusCode).toBe(200)
+    await app.close()
+  })
+
+  /** Simulates time passing so the resend cooldown does not block the test. */
+  async function ageInvite(userId: string) {
+    await db!.execute(
+      sql`UPDATE users SET invite_expires_at = invite_expires_at - interval '3 minutes' WHERE id = ${userId}`,
+    )
+  }
+
+  it('resend issues a fresh link and invalidates the old one', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl } = await invite(app, rootKey)
+    const oldToken = tokenFromUrl(inviteUrl)
+    await ageInvite(id)
+
+    const resend = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+    })
+    expect(resend.statusCode).toBe(200)
+    const fresh = resend.json<{ inviteUrl: string; emailed: boolean }>()
+    expect(fresh.emailed).toBe(false)
+    const newToken = tokenFromUrl(fresh.inviteUrl)
+    expect(newToken).not.toBe(oldToken)
+
+    /** Old link is dead, new one works. */
+    const oldCheck = await app.inject({ method: 'GET', url: `/api/v1/public/invite/${oldToken}` })
+    expect(oldCheck.statusCode).toBe(410)
+    const newCheck = await app.inject({ method: 'GET', url: `/api/v1/public/invite/${newToken}` })
+    expect(newCheck.statusCode).toBe(200)
+
+    const accept = await app.inject({
+      method: 'POST',
+      url: `/api/v1/public/invite/${newToken}/accept`,
+      payload: { password: 'my-new-password' },
+    })
+    expect(accept.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('resend right after the invite is rejected with 429 (cooldown)', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id } = await invite(app, rootKey)
+
+    const resend = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+    })
+    expect(resend.statusCode).toBe(429)
+
+    /** After the cooldown window it works again. */
+    await ageInvite(id)
+    const later = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+    })
+    expect(later.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('concurrent resends rotate the token exactly once', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id } = await invite(app, rootKey)
+    await ageInvite(id)
+
+    const [a, b] = await Promise.all([
+      app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${id}/resend-invite`,
+        headers: { authorization: rootKey, origin: 'https://flags.example' },
+      }),
+      app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${id}/resend-invite`,
+        headers: { authorization: rootKey, origin: 'https://flags.example' },
+      }),
+    ])
+    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 429])
+
+    /** The winner's link is the live one. */
+    const winner = a.statusCode === 200 ? a : b
+    const token = tokenFromUrl(winner.json<{ inviteUrl: string }>().inviteUrl)
+    const check = await app.inject({ method: 'GET', url: `/api/v1/public/invite/${token}` })
+    expect(check.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('resend returns 404 for an already-active user', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl } = await invite(app, rootKey)
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/public/invite/${tokenFromUrl(inviteUrl)}/accept`,
+      payload: { password: 'my-new-password' },
+    })
+
+    const resend = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${id}/resend-invite`,
+      headers: { authorization: rootKey },
+    })
+    expect(resend.statusCode).toBe(404)
+    await app.close()
+  })
+
+  it('cancel invite deletes a pending invitee and kills the link', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl } = await invite(app, rootKey)
+
+    const cancel = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${id}/invite`,
+      headers: { authorization: rootKey },
+    })
+    expect(cancel.statusCode).toBe(204)
+
+    const check = await app.inject({
+      method: 'GET',
+      url: `/api/v1/public/invite/${tokenFromUrl(inviteUrl)}`,
+    })
+    expect(check.statusCode).toBe(410)
+    await app.close()
+  })
+
+  it('cancel invite refuses with 409 once the invitee has accepted', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl, email } = await invite(app, rootKey)
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/public/invite/${tokenFromUrl(inviteUrl)}/accept`,
+      payload: { password: 'my-new-password' },
+    })
+
+    const cancel = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${id}/invite`,
+      headers: { authorization: rootKey },
+    })
+    expect(cancel.statusCode).toBe(409)
+
+    /** The activated account must still exist and be able to log in. */
     const login = await app.inject({
       method: 'POST',
       url: '/api/v1/admin/auth/login',

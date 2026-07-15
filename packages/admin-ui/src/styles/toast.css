@@ -40,6 +40,25 @@
   font-size: 12.5px;
   color: var(--text-3);
 }
+/* Structured outcome lines inside a toast msg (e.g. "2 resent" / "1 skipped") */
+.toast .toast-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.toast .toast-line + .toast-line {
+  margin-top: 4px;
+}
+.toast .toast-line svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.toast .toast-line.ok svg {
+  color: var(--pri);
+}
+.toast .toast-line.warn {
+  color: var(--danger);
+}
 .toast.success .ico {
   color: var(--pri);
 }
@@ -59,7 +78,8 @@
   height: 2px;
   background: var(--pri);
   transform-origin: left;
-  animation: toastBar 4s linear forwards;
+  /* Duration is set per-toast by ToastProvider to match its dismiss timer */
+  animation: toastBar var(--toast-duration, 4s) linear forwards;
 }
 .toast.error::after {
   background: var(--danger);
