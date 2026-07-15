@@ -50,7 +50,6 @@ export function MainLayout({ children }: MainLayoutProps) {
           onSwitchProject={() => setShowSwitcher(true)}
           activeEnv={activeEnv ?? 'development'}
           onChangeEnv={setActiveEnv}
-          onOpenSearch={focusSearch}
           onShowHelp={() => setShowShortcuts(true)}
         />
         <SideNav current={current} onNav={(id) => navigate(`/${id}`)} />

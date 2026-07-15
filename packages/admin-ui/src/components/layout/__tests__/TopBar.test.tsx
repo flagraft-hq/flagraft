@@ -6,6 +6,11 @@ import { TopBar } from '../TopBar'
 import type { ProjectInfo, EnvSlug } from '../TopBar'
 import type { Env } from '../../../lib/types'
 
+/** GlobalSearch has its own test file; stub it out here. */
+vi.mock('../GlobalSearch', () => ({
+  GlobalSearch: () => <div data-testid="global-search" />,
+}))
+
 const defaultProject: ProjectInfo = {
   id: 'proj-1',
   name: 'My Project',
@@ -24,7 +29,6 @@ function renderTopBar(
     onSwitchProject: () => void
     activeEnv: EnvSlug
     onChangeEnv: (env: EnvSlug) => void
-    onOpenSearch: () => void
     onShowHelp: () => void
   }> = {},
 ) {
@@ -34,7 +38,6 @@ function renderTopBar(
     onSwitchProject: vi.fn(),
     activeEnv: 'development' as EnvSlug,
     onChangeEnv: vi.fn(),
-    onOpenSearch: vi.fn(),
     onShowHelp: vi.fn(),
     ...overrides,
   }
@@ -133,9 +136,8 @@ describe('TopBar', () => {
     expect(onSwitchProject).toHaveBeenCalledOnce()
   })
 
-  it('search input is read-only', () => {
+  it('renders the global search', () => {
     renderTopBar()
-    const input = screen.getByPlaceholderText(/search flags/i)
-    expect(input).toHaveAttribute('readonly')
+    expect(screen.getByTestId('global-search')).toBeInTheDocument()
   })
 })

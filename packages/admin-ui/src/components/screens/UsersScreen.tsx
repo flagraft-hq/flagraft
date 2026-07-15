@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usersApi } from '../../lib/api'
 import type { WorkspaceUser } from '../../lib/api'
 import { USER_ROLES } from '../../lib/roles'
@@ -40,6 +41,20 @@ export function UsersScreen() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [detail, setDetail] = useState<WorkspaceUser | null>(null)
   const [showInvite, setShowInvite] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  /**
+   * Deep link from the global search: /users?user=<id> opens that user's
+   * drawer once the list is loaded. The param is dropped right away so the
+   * drawer doesn't reopen on refreshes or after list reloads.
+   */
+  useEffect(() => {
+    const userId = searchParams.get('user')
+    if (!userId || users.length === 0) return
+    const target = users.find((u) => u.id === userId)
+    if (target) setDetail(target)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, users, setSearchParams])
 
   useEffect(() => {
     let cancelled = false

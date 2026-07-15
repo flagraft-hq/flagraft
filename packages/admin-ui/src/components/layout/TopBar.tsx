@@ -1,6 +1,6 @@
 import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
-import { Kbd } from '../primitives/Kbd'
+import { GlobalSearch } from './GlobalSearch'
 import { useTheme } from '../../contexts/ThemeContext'
 import type { Env } from '../../lib/types'
 
@@ -19,7 +19,6 @@ export interface TopBarProps {
   onSwitchProject: () => void
   activeEnv: EnvSlug
   onChangeEnv: (env: EnvSlug) => void
-  onOpenSearch: () => void
   onShowHelp: () => void
 }
 
@@ -29,7 +28,6 @@ export function TopBar({
   onSwitchProject,
   activeEnv,
   onChangeEnv,
-  onOpenSearch,
   onShowHelp,
 }: TopBarProps) {
   const { theme, setTheme } = useTheme()
@@ -72,19 +70,7 @@ export function TopBar({
         ))}
       </div>
 
-      {/* Search (read-only, triggers command palette) */}
-      <div className="topbar-search">
-        <Icon name="search" size={14} className="search-icon" />
-        <input
-          placeholder="Search flags, overrides, keys..."
-          readOnly
-          onFocus={onOpenSearch}
-          aria-label="Search"
-        />
-        <span className="kbd-hint">
-          <Kbd keys={['Cmd', 'K']} />
-        </span>
-      </div>
+      <GlobalSearch />
 
       {/* Right panel */}
       <div className="topbar-right">
