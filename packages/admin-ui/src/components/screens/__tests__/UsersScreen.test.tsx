@@ -250,6 +250,35 @@ describe('UsersScreen', () => {
     expect(usersApi.resendInvite).toHaveBeenCalledTimes(1)
   })
 
+  it('bulk resend reports partial success when some invites hit the cooldown', async () => {
+    const carl = { ...mockUsers[1], id: 'u3', name: 'Carl', email: 'carl@a.com' }
+    vi.mocked(usersApi.list).mockResolvedValue({
+      data: [mockUsers[1], carl],
+    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    vi.mocked(usersApi.resendInvite)
+      .mockResolvedValueOnce({
+        data: { emailed: true },
+      } as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+      .mockRejectedValueOnce(
+        new Error('This invite was sent moments ago. Wait a couple of minutes before resending.'),
+      )
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Bob' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Carl' }))
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
+    await waitFor(() => expect(screen.getByText('Resent 1 of 2 invites')).toBeInTheDocument())
+    expect(screen.getByText(/1 skipped: this invite was sent moments ago/i)).toBeInTheDocument()
+    expect(usersApi.resendInvite).toHaveBeenCalledTimes(2)
+  })
+
+  it('bulk resend shows an error toast when every invite fails', async () => {
+    vi.mocked(usersApi.resendInvite).mockRejectedValue(new Error('boom'))
+    await selectUser('Bob')
+    fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
+    await waitFor(() => expect(screen.getByText('Failed to resend invite')).toBeInTheDocument())
+  })
+
   it('disables bulk resend when no invited user is selected', async () => {
     await selectUser('Alice')
     expect(bulkBar().getByRole('button', { name: 'Resend invites' })).toBeDisabled()

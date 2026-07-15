@@ -12,7 +12,8 @@ import { Icon } from '../components/primitives/Icon'
 export interface Toast {
   id: string
   title: string
-  msg?: string
+  /** Plain text, or structured lines (see .toast-line) for mixed outcomes. */
+  msg?: ReactNode
   variant?: 'default' | 'success' | 'error'
   /** Auto-dismiss delay in ms; also drives the progress bar animation. */
   duration: number
@@ -37,7 +38,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
      * about average reading speed), between a 4s floor (6s for errors, they
      * matter most) and a 12s ceiling.
      */
-    const chars = toast.title.length + (toast.msg?.length ?? 0)
+    /** Non-string msg (structured lines) can't be measured; assume medium. */
+    const msgChars = typeof toast.msg === 'string' ? toast.msg.length : toast.msg ? 120 : 0
+    const chars = toast.title.length + msgChars
     const duration = Math.min(12_000, Math.max(toast.variant === 'error' ? 6000 : 4000, chars * 60))
     setToasts((prev) => [...prev, { ...toast, id, duration }])
     const timer = setTimeout(() => {
