@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
 import { users, userProjects, projects } from '../../db/schema.js'
@@ -109,29 +109,43 @@ export async function inviteUser(
  * 24h expiry. The old link stops working because the stored hash is replaced.
  * Returns undefined when the user does not exist or is not in invited status,
  * and 'cooldown' when the current invite was issued too recently.
+ *
+ * Status and cooldown live in the UPDATE's WHERE clause, so concurrent
+ * resends serialize on the row lock and exactly one can rotate the token
+ * per cooldown window, no check-then-update race.
  */
 export async function reissueInvite(
   db: Db,
   id: string,
 ): Promise<{ user: User; token: string; expiresAt: Date } | 'cooldown' | undefined> {
-  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
-  if (!user || user.status !== 'invited') return undefined
-  if (user.inviteExpiresAt) {
-    /** The issue time is not stored, but expiry is always issue time + TTL. */
-    const issuedAt = user.inviteExpiresAt.getTime() - INVITE_TTL_MS
-    if (Date.now() - issuedAt < RESEND_COOLDOWN_MS) return 'cooldown'
-  }
   const token = randomBytes(32).toString('base64url')
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS)
-  await db
+  /**
+   * The issue time is not stored, but expiry is always issue time + TTL, so
+   * "issued less than COOLDOWN ago" is "expiry after now + TTL - COOLDOWN".
+   */
+  const cooldownThreshold = new Date(Date.now() + INVITE_TTL_MS - RESEND_COOLDOWN_MS)
+  const [updated] = await db
     .update(users)
     .set({
       inviteTokenHash: hashInviteToken(token),
       inviteExpiresAt: expiresAt,
       updatedAt: new Date(),
     })
-    .where(eq(users.id, id))
-  return { user, token, expiresAt }
+    .where(
+      and(
+        eq(users.id, id),
+        eq(users.status, 'invited'),
+        or(isNull(users.inviteExpiresAt), lt(users.inviteExpiresAt, cooldownThreshold)),
+      ),
+    )
+    .returning()
+  if (updated) return { user: updated, token, expiresAt }
+
+  /** Zero rows: read once to tell "no pending invite" apart from cooldown. */
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  if (!user || user.status !== 'invited') return undefined
+  return 'cooldown'
 }
 
 /**

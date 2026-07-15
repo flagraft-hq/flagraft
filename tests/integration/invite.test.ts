@@ -155,6 +155,34 @@ describeIfDb('invite flow', () => {
     await app.close()
   })
 
+  it('concurrent resends rotate the token exactly once', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id } = await invite(app, rootKey)
+    await ageInvite(id)
+
+    const [a, b] = await Promise.all([
+      app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${id}/resend-invite`,
+        headers: { authorization: rootKey, origin: 'https://flags.example' },
+      }),
+      app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${id}/resend-invite`,
+        headers: { authorization: rootKey, origin: 'https://flags.example' },
+      }),
+    ])
+    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 429])
+
+    /** The winner's link is the live one. */
+    const winner = a.statusCode === 200 ? a : b
+    const token = tokenFromUrl(winner.json<{ inviteUrl: string }>().inviteUrl)
+    const check = await app.inject({ method: 'GET', url: `/api/v1/public/invite/${token}` })
+    expect(check.statusCode).toBe(200)
+    await app.close()
+  })
+
   it('resend returns 404 for an already-active user', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)
