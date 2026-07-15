@@ -266,6 +266,38 @@ describe('UsersScreen', () => {
     await waitFor(() => expect(screen.getByText('Invite resent')).toBeInTheDocument())
   })
 
+  it('shows the invite links dialog when email is off and the clipboard fails', async () => {
+    /** jsdom has no navigator.clipboard, so the copy attempt throws. */
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: false, email: 'bob@a.com', inviteUrl: 'https://x/invite/tok-1' },
+    } as unknown as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    await waitFor(() => expect(screen.getByText('Share invite links')).toBeInTheDocument())
+    expect(screen.getByText('https://x/invite/tok-1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /copy invite link for bob@a.com/i })).toBeVisible()
+  })
+
+  it('copies the link and skips the dialog when the clipboard works', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    vi.mocked(usersApi.resendInvite).mockResolvedValue({
+      data: { emailed: false, email: 'bob@a.com', inviteUrl: 'https://x/invite/tok-2' },
+    } as unknown as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://x/invite/tok-2'))
+    await waitFor(() => expect(screen.getByText(/copied to the clipboard/i)).toBeInTheDocument())
+    expect(screen.queryByText('Share invite links')).not.toBeInTheDocument()
+    /** Remove the mock so other tests keep exercising the no-clipboard path. */
+    delete (navigator as unknown as Record<string, unknown>).clipboard
+  })
+
   it('row Suspend action patches the user status', async () => {
     vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
     renderScreen()
@@ -275,7 +307,9 @@ describe('UsersScreen', () => {
   })
 
   it('row Cancel invite action uses the guarded cancel endpoint, not delete', async () => {
-    vi.mocked(usersApi.cancelInvite).mockResolvedValue({ data: {} } as AxiosResponse)
+    vi.mocked(usersApi.cancelInvite).mockResolvedValue({ data: {} } as unknown as AxiosResponse<
+      Awaited<ReturnType<typeof usersApi.resendInvite>>['data']
+    >)
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
     fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))

@@ -11,6 +11,7 @@ import { Button } from '../primitives/Button'
 import { Icon } from '../primitives/Icon'
 import { Select } from '../primitives/Select'
 import { Tip } from '../primitives/Tip'
+import { InviteLinksModal } from './InviteLinksModal'
 import { ResetPasswordModal } from './ResetPasswordModal'
 
 interface UserDetailDrawerProps {
@@ -25,7 +26,7 @@ interface UserDetailDrawerProps {
  */
 export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerProps) {
   const toast = useToast()
-  const resendInvite = useResendInvite()
+  const { resendInvites, fallbackLinks, dismissFallback } = useResendInvite()
   const { projects } = useProject()
   const [showAddProject, setShowAddProject] = useState(false)
   const [showResetPassword, setShowResetPassword] = useState(false)
@@ -235,7 +236,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             <Button
               variant="ghost"
               leftIcon="refresh"
-              onClick={() => void resendInvite(user)}
+              onClick={() => void resendInvites([user])}
               disabled={busy}
             >
               Resend invite
@@ -276,6 +277,8 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
           open={showResetPassword}
           onClose={() => setShowResetPassword(false)}
         />
+
+        <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
       </aside>
     </div>
   )

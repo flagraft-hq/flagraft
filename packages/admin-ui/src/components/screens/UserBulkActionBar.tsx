@@ -4,6 +4,8 @@ import type { WorkspaceUser } from '../../lib/api'
 import { INVITABLE_ROLES, USER_ROLES, type InvitableRole } from '../../lib/roles'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
+import { useResendInvite } from '../../hooks/useResendInvite'
+import { InviteLinksModal } from './InviteLinksModal'
 import { BulkBar, BulkSep } from '../primitives/BulkBar'
 import { Button } from '../primitives/Button'
 import { Modal } from '../primitives/Modal'
@@ -29,6 +31,7 @@ function plural(n: number, word: string) {
 export function UserBulkActionBar({ selectedUsers, onDone, onCancel }: UserBulkActionBarProps) {
   const toast = useToast()
   const { projects } = useProject()
+  const { resendInvites, fallbackLinks, dismissFallback } = useResendInvite()
   const [busy, setBusy] = useState(false)
   const [showSuspendConfirm, setShowSuspendConfirm] = useState(false)
 
@@ -104,31 +107,9 @@ export function UserBulkActionBar({ selectedUsers, onDone, onCancel }: UserBulkA
 
   async function handleResendInvites() {
     setBusy(true)
-    try {
-      const results = await Promise.all(inviteTargets.map((u) => usersApi.resendInvite(u.id)))
-      /** Without SMTP the server can't deliver, so hand the links to the admin. */
-      const manual = results.filter((r) => !r.data.emailed)
-      if (manual.length > 0) {
-        await navigator.clipboard.writeText(manual.map((r) => r.data.inviteUrl).join('\n'))
-      }
-      toast.push({
-        title: `Resent ${plural(inviteTargets.length, 'invite')}`,
-        msg:
-          manual.length > 0
-            ? `Email is not configured, ${plural(manual.length, 'link')} copied to the clipboard.`
-            : undefined,
-        variant: 'success',
-      })
-      await onDone()
-    } catch (err) {
-      toast.push({
-        title: 'Failed to resend invites',
-        msg: err instanceof Error ? err.message : 'Unknown error',
-        variant: 'error',
-      })
-    } finally {
-      setBusy(false)
-    }
+    const ok = await resendInvites(inviteTargets)
+    if (ok) await onDone()
+    setBusy(false)
   }
 
   return (
@@ -208,6 +189,8 @@ export function UserBulkActionBar({ selectedUsers, onDone, onCancel }: UserBulkA
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
     </>
   )
 }

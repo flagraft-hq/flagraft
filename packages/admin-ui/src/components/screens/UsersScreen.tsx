@@ -11,6 +11,7 @@ import { Icon } from '../primitives/Icon'
 import { Select } from '../primitives/Select'
 import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
+import { InviteLinksModal } from './InviteLinksModal'
 import { UserBulkActionBar } from './UserBulkActionBar'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { InviteModal } from './InviteModal'
@@ -25,7 +26,7 @@ type SortDir = 'asc' | 'desc'
  */
 export function UsersScreen() {
   const toast = useToast()
-  const resendInvite = useResendInvite()
+  const { resendInvites, fallbackLinks, dismissFallback } = useResendInvite()
   const [users, setUsers] = useState<WorkspaceUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -389,7 +390,7 @@ export function UsersScreen() {
                   active={detail?.id === u.id}
                   onSelect={() => toggleOne(u.id)}
                   onOpen={() => setDetail(u)}
-                  onResend={() => void resendInvite(u)}
+                  onResend={() => void resendInvites([u])}
                   onSuspendToggle={() => void handleRowSuspendToggle(u)}
                   onCancelInvite={() => void handleCancelInvite(u)}
                 />
@@ -405,6 +406,8 @@ export function UsersScreen() {
           <span style={{ flex: 1 }} />
         </div>
       </div>
+
+      <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
 
       <UserBulkActionBar
         selectedUsers={selectedUsers}
