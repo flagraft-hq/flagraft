@@ -174,6 +174,53 @@ describeIfDb('invite flow', () => {
     await app.close()
   })
 
+  it('cancel invite deletes a pending invitee and kills the link', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl } = await invite(app, rootKey)
+
+    const cancel = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${id}/invite`,
+      headers: { authorization: rootKey },
+    })
+    expect(cancel.statusCode).toBe(204)
+
+    const check = await app.inject({
+      method: 'GET',
+      url: `/api/v1/public/invite/${tokenFromUrl(inviteUrl)}`,
+    })
+    expect(check.statusCode).toBe(410)
+    await app.close()
+  })
+
+  it('cancel invite refuses with 409 once the invitee has accepted', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const { id, inviteUrl, email } = await invite(app, rootKey)
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/public/invite/${tokenFromUrl(inviteUrl)}/accept`,
+      payload: { password: 'my-new-password' },
+    })
+
+    const cancel = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${id}/invite`,
+      headers: { authorization: rootKey },
+    })
+    expect(cancel.statusCode).toBe(409)
+
+    /** The activated account must still exist and be able to log in. */
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email, password: 'my-new-password' },
+    })
+    expect(login.statusCode).toBe(200)
+    await app.close()
+  })
+
   it('rejects an unknown token with 410', async () => {
     const app = await buildServer({ db })
     const res = await app.inject({ method: 'GET', url: '/api/v1/public/invite/nope' })

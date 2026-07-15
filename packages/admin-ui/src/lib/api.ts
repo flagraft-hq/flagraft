@@ -234,6 +234,9 @@ export const usersApi = {
 
   delete: (id: string) => http.delete(`/api/v1/admin/users/${id}`),
 
+  /** Cancels a pending invite only; the server refuses if the user is active. */
+  cancelInvite: (id: string) => http.delete(`/api/v1/admin/users/${id}/invite`),
+
   addToProject: (id: string, projectId: string) =>
     http.post(`/api/v1/admin/users/${id}/projects/${projectId}`),
 

@@ -26,6 +26,7 @@ vi.mock('../../../lib/api', () => ({
     list: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    cancelInvite: vi.fn(),
     resetPassword: vi.fn(),
     resendInvite: vi.fn(),
     invite: vi.fn(),
@@ -273,12 +274,23 @@ describe('UsersScreen', () => {
     await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'suspended' }))
   })
 
-  it('row Cancel invite action deletes the invited user', async () => {
-    vi.mocked(usersApi.delete).mockResolvedValue({ data: {} } as AxiosResponse)
+  it('row Cancel invite action uses the guarded cancel endpoint, not delete', async () => {
+    vi.mocked(usersApi.cancelInvite).mockResolvedValue({ data: {} } as AxiosResponse)
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
     fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))
-    await waitFor(() => expect(usersApi.delete).toHaveBeenCalledWith('u2'))
+    await waitFor(() => expect(usersApi.cancelInvite).toHaveBeenCalledWith('u2'))
+    expect(usersApi.delete).not.toHaveBeenCalled()
+  })
+
+  it('shows the server conflict message when the invite was already accepted', async () => {
+    vi.mocked(usersApi.cancelInvite).mockRejectedValue(
+      new Error('This invite was already accepted — the user is now active.'),
+    )
+    renderScreen()
+    await waitFor(() => screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))
+    await waitFor(() => expect(screen.getByText(/already accepted/i)).toBeInTheDocument())
   })
 
   it('disables role change and suspend when only owners are selected', async () => {

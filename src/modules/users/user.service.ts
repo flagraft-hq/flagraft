@@ -135,6 +135,24 @@ export async function reissueInvite(
 }
 
 /**
+ * Cancels a pending invite by deleting the invited account. The delete is
+ * conditional on status = 'invited' in one statement, so a stale click can
+ * never remove an account that was activated in the meantime.
+ */
+export async function cancelInvite(
+  db: Db,
+  id: string,
+): Promise<'canceled' | 'already_active' | 'not_found'> {
+  const [deleted] = await db
+    .delete(users)
+    .where(and(eq(users.id, id), eq(users.status, 'invited')))
+    .returning()
+  if (deleted) return 'canceled'
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  return user ? 'already_active' : 'not_found'
+}
+
+/**
  * Looks up a pending invite by its plaintext token. Returns the invited user
  * only when the token matches and has not expired; otherwise undefined.
  */

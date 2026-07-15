@@ -152,7 +152,7 @@ export function UsersScreen() {
 
   async function handleCancelInvite(u: WorkspaceUser) {
     try {
-      await usersApi.delete(u.id)
+      await usersApi.cancelInvite(u.id)
       toast.push({ title: 'Invite canceled', msg: u.email, variant: 'success' })
       await refreshUsers()
     } catch (err) {

@@ -127,6 +127,24 @@ export async function userRoutes(fastify: FastifyInstance) {
     return reply.status(204).send()
   })
 
+  fastify.delete(
+    '/admin/users/:id/invite',
+    { preHandler: fastify.requireRootKey },
+    async (req, reply) => {
+      const { id } = req.params as { id: string }
+      const result = await service.cancelInvite(fastify.db, id)
+      if (result === 'not_found') throw new AppError('User not found', 404, 'Not Found')
+      if (result === 'already_active') {
+        throw new AppError(
+          'This invite was already accepted — the user is now active. Delete the user instead if that is intended.',
+          409,
+          'Conflict',
+        )
+      }
+      return reply.status(204).send()
+    },
+  )
+
   fastify.post(
     '/admin/users/:id/projects/:projectId',
     { preHandler: fastify.requireRootKey },
