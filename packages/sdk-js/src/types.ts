@@ -8,7 +8,7 @@ export interface Feature {
 export interface EvaluationResult {
   name: string
   enabled: boolean
-  reason: 'override' | 'default'
+  reason: 'disabled' | 'strategy-match' | 'default'
 }
 
 export interface FlagraftClientOptions {
