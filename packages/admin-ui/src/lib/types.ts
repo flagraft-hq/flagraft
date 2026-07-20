@@ -67,6 +67,20 @@ export interface ContextFieldInput {
   enumValues?: string[]
 }
 
+/** One condition within a strategy. All constraints in a strategy AND together. */
+export interface StrategyConstraint {
+  fieldKey: string
+  operator: string
+  values: string[]
+}
+
+/** A targeting strategy for a flag in one environment. A match means "on". */
+export interface Strategy {
+  id: string
+  position: number
+  constraints: StrategyConstraint[]
+}
+
 export interface ApiKey {
   id: string
   label: string

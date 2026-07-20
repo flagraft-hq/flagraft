@@ -15,6 +15,8 @@ vi.mock('../../../lib/api', () => ({
     delete: vi.fn(),
     toggle: vi.fn(),
   },
+  contextFieldsApi: { list: vi.fn().mockResolvedValue({ data: [] }) },
+  strategiesApi: { list: vi.fn().mockResolvedValue({ data: [] }) },
 }))
 
 vi.mock('../../../contexts/ProjectContext', () => ({
@@ -134,7 +136,7 @@ describe('FlagDetailScreen integration', () => {
 
     await screen.findByRole('heading', { name: 'Checkout Web Redesign' })
 
-    const editButton = screen.getByRole('button', { name: /edit/i })
+    const editButton = screen.getByRole('button', { name: /^edit$/i })
     fireEvent.click(editButton)
 
     expect(screen.getByRole('dialog')).toBeInTheDocument()

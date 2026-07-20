@@ -5,6 +5,8 @@ import type {
   Flag,
   ContextField,
   ContextFieldInput,
+  Strategy,
+  StrategyConstraint,
   Project,
   Env,
   ApiKey,
@@ -106,6 +108,25 @@ export const contextFieldsApi = {
 
   delete: (projectId: string, fieldId: string) =>
     http.delete(`/api/v1/admin/projects/${projectId}/context-fields/${fieldId}`),
+}
+
+export const strategiesApi = {
+  list: (projectId: string, flagKey: string, env: string) =>
+    http.get<Strategy[]>(
+      `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${env}/strategies`,
+    ),
+
+  /** Replaces the whole ordered list for this flag+environment. */
+  replace: (
+    projectId: string,
+    flagKey: string,
+    env: string,
+    strategies: { constraints: StrategyConstraint[] }[],
+  ) =>
+    http.put<Strategy[]>(
+      `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${env}/strategies`,
+      { strategies },
+    ),
 }
 
 export const environmentsApi = {

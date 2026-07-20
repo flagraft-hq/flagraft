@@ -12,6 +12,8 @@ vi.mock('../../../lib/api', () => ({
     toggle: vi.fn(),
     update: vi.fn(),
   },
+  contextFieldsApi: { list: vi.fn() },
+  strategiesApi: { list: vi.fn() },
 }))
 
 vi.mock('../../../contexts/ProjectContext', () => ({
@@ -26,8 +28,11 @@ vi.mock('../../../hooks/useToast', () => ({
   useToast: () => ({ push: mockToastPush }),
 }))
 
-import { flagsApi } from '../../../lib/api'
+import { flagsApi, contextFieldsApi, strategiesApi } from '../../../lib/api'
 import { useProject } from '../../../contexts/ProjectContext'
+
+const mockContextFieldsApi = contextFieldsApi as unknown as { list: ReturnType<typeof vi.fn> }
+const mockStrategiesApi = strategiesApi as unknown as { list: ReturnType<typeof vi.fn> }
 
 const mockFlagsApi = flagsApi as unknown as {
   get: ReturnType<typeof vi.fn>
@@ -80,6 +85,8 @@ beforeEach(() => {
   mockFlagsApi.get.mockResolvedValue({ data: mockFlag })
   mockFlagsApi.delete.mockResolvedValue({})
   mockFlagsApi.toggle.mockResolvedValue({})
+  mockContextFieldsApi.list.mockResolvedValue({ data: [] })
+  mockStrategiesApi.list.mockResolvedValue({ data: [] })
   mockUseProject.mockReturnValue(defaultProjectContext)
 })
 
@@ -311,7 +318,7 @@ describe('FlagDetailScreen', () => {
 describe('Edit flag modal', () => {
   it('opens edit modal when Edit button is clicked', async () => {
     renderScreen()
-    const editButton = await screen.findByRole('button', { name: /edit/i })
+    const editButton = await screen.findByRole('button', { name: /^edit$/i })
     fireEvent.click(editButton)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByText('Edit flag')).toBeInTheDocument()
@@ -319,7 +326,7 @@ describe('Edit flag modal', () => {
 
   it('pre-populates name and description fields from flag data', async () => {
     renderScreen()
-    const editButton = await screen.findByRole('button', { name: /edit/i })
+    const editButton = await screen.findByRole('button', { name: /^edit$/i })
     fireEvent.click(editButton)
     const nameInput = screen.getByRole('textbox', { name: /name/i })
     const descInput = screen.getByRole('textbox', { name: /description/i })
@@ -330,7 +337,7 @@ describe('Edit flag modal', () => {
   it('calls flagsApi.update with edited values on Save', async () => {
     mockFlagsApi.update.mockResolvedValue({ data: { ...mockFlag, name: 'Updated Name' } })
     renderScreen()
-    const editButton = await screen.findByRole('button', { name: /edit/i })
+    const editButton = await screen.findByRole('button', { name: /^edit$/i })
     fireEvent.click(editButton)
     const nameInput = screen.getByRole('textbox', { name: /name/i })
     fireEvent.change(nameInput, { target: { value: 'Updated Name' } })
@@ -347,7 +354,7 @@ describe('Edit flag modal', () => {
   it('shows success toast and closes modal on successful save', async () => {
     mockFlagsApi.update.mockResolvedValue({ data: { ...mockFlag, name: 'Updated' } })
     renderScreen()
-    const editButton = await screen.findByRole('button', { name: /edit/i })
+    const editButton = await screen.findByRole('button', { name: /^edit$/i })
     fireEvent.click(editButton)
     const saveButton = screen.getByRole('button', { name: /save changes/i })
     fireEvent.click(saveButton)
@@ -359,7 +366,7 @@ describe('Edit flag modal', () => {
 
   it('cancelling edit closes the modal without calling update', async () => {
     renderScreen()
-    const editButton = await screen.findByRole('button', { name: /edit/i })
+    const editButton = await screen.findByRole('button', { name: /^edit$/i })
     fireEvent.click(editButton)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
@@ -371,7 +378,7 @@ describe('Edit flag modal', () => {
   it('keeps modal open on save error', async () => {
     mockFlagsApi.update.mockRejectedValue(new Error('Network error'))
     renderScreen()
-    const editButton = await screen.findByRole('button', { name: /edit/i })
+    const editButton = await screen.findByRole('button', { name: /^edit$/i })
     fireEvent.click(editButton)
     const saveButton = screen.getByRole('button', { name: /save changes/i })
     fireEvent.click(saveButton)
@@ -385,7 +392,7 @@ describe('Edit flag modal', () => {
     mockFlagsApi.update.mockResolvedValue({ data: { ...mockFlag, name: 'Updated Name' } })
     const user = userEvent.setup()
     renderScreen()
-    const editButton = await screen.findByRole('button', { name: /edit/i })
+    const editButton = await screen.findByRole('button', { name: /^edit$/i })
     await user.click(editButton)
     const nameInput = screen.getByRole('textbox', { name: /name/i })
     await user.clear(nameInput)
