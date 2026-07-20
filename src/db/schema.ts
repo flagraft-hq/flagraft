@@ -4,6 +4,7 @@ import {
   boolean,
   check,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -157,6 +158,32 @@ export const contextFields = pgTable(
   ],
 )
 
+/**
+ * One condition inside a strategy. All constraints in a strategy must pass
+ * (AND). `values` holds one entry for single-value operators and many for
+ * list operators (in / notIn).
+ */
+export interface StrategyConstraint {
+  fieldKey: string
+  operator: string
+  values: string[]
+}
+
+export const targetingStrategies = pgTable('targeting_strategies', {
+  id: id(),
+  flagId: uuid('flag_id')
+    .notNull()
+    .references(() => featureFlags.id, { onDelete: 'cascade' }),
+  environmentId: uuid('environment_id')
+    .notNull()
+    .references(() => environments.id, { onDelete: 'cascade' }),
+  /** Stable display order within a flag+environment. */
+  position: integer('position').notNull().default(0),
+  constraints: jsonb('constraints').$type<StrategyConstraint[]>().notNull().default([]),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+})
+
 export const projectRelations = relations(projects, ({ many }) => ({
   environments: many(environments),
   flags: many(featureFlags),
@@ -169,15 +196,28 @@ export const contextFieldRelations = relations(contextFields, ({ one }) => ({
   project: one(projects, { fields: [contextFields.projectId], references: [projects.id] }),
 }))
 
+export const targetingStrategyRelations = relations(targetingStrategies, ({ one }) => ({
+  flag: one(featureFlags, {
+    fields: [targetingStrategies.flagId],
+    references: [featureFlags.id],
+  }),
+  environment: one(environments, {
+    fields: [targetingStrategies.environmentId],
+    references: [environments.id],
+  }),
+}))
+
 export const environmentRelations = relations(environments, ({ one, many }) => ({
   project: one(projects, { fields: [environments.projectId], references: [projects.id] }),
   flagEnvironments: many(flagEnvironments),
   apiKeys: many(apiKeys),
+  strategies: many(targetingStrategies),
 }))
 
 export const featureFlagRelations = relations(featureFlags, ({ one, many }) => ({
   project: one(projects, { fields: [featureFlags.projectId], references: [projects.id] }),
   environments: many(flagEnvironments),
+  strategies: many(targetingStrategies),
 }))
 
 export const flagEnvironmentsRelations = relations(flagEnvironments, ({ one }) => ({
@@ -220,3 +260,5 @@ export type NewUser = typeof users.$inferInsert
 export type UserProject = typeof userProjects.$inferSelect
 export type ContextField = typeof contextFields.$inferSelect
 export type NewContextField = typeof contextFields.$inferInsert
+export type TargetingStrategy = typeof targetingStrategies.$inferSelect
+export type NewTargetingStrategy = typeof targetingStrategies.$inferInsert
