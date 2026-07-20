@@ -74,31 +74,6 @@ export const flagEnvironments = pgTable(
   ],
 )
 
-export const flagOverrides = pgTable(
-  'flag_overrides',
-  {
-    id: id(),
-    flagId: uuid('flag_id')
-      .notNull()
-      .references(() => featureFlags.id, { onDelete: 'cascade' }),
-    environmentId: uuid('environment_id')
-      .notNull()
-      .references(() => environments.id, { onDelete: 'cascade' }),
-    contextKey: text('context_key').notNull(),
-    contextValue: text('context_value').notNull(),
-    enabled: boolean('enabled').notNull(),
-    createdAt: createdAt(),
-  },
-  (table) => [
-    unique('flag_overrides_tuple_unique').on(
-      table.flagId,
-      table.environmentId,
-      table.contextKey,
-      table.contextValue,
-    ),
-  ],
-)
-
 export const apiKeys = pgTable(
   'api_keys',
   {
@@ -172,28 +147,18 @@ export const projectRelations = relations(projects, ({ many }) => ({
 export const environmentRelations = relations(environments, ({ one, many }) => ({
   project: one(projects, { fields: [environments.projectId], references: [projects.id] }),
   flagEnvironments: many(flagEnvironments),
-  overrides: many(flagOverrides),
   apiKeys: many(apiKeys),
 }))
 
 export const featureFlagRelations = relations(featureFlags, ({ one, many }) => ({
   project: one(projects, { fields: [featureFlags.projectId], references: [projects.id] }),
   environments: many(flagEnvironments),
-  overrides: many(flagOverrides),
 }))
 
 export const flagEnvironmentsRelations = relations(flagEnvironments, ({ one }) => ({
   flag: one(featureFlags, { fields: [flagEnvironments.flagId], references: [featureFlags.id] }),
   environment: one(environments, {
     fields: [flagEnvironments.environmentId],
-    references: [environments.id],
-  }),
-}))
-
-export const flagOverridesRelations = relations(flagOverrides, ({ one }) => ({
-  flag: one(featureFlags, { fields: [flagOverrides.flagId], references: [featureFlags.id] }),
-  environment: one(environments, {
-    fields: [flagOverrides.environmentId],
     references: [environments.id],
   }),
 }))
@@ -223,8 +188,6 @@ export type FeatureFlag = typeof featureFlags.$inferSelect
 export type NewFeatureFlag = typeof featureFlags.$inferInsert
 export type FlagEnvironment = typeof flagEnvironments.$inferSelect
 export type NewFlagEnvironment = typeof flagEnvironments.$inferInsert
-export type FlagOverride = typeof flagOverrides.$inferSelect
-export type NewFlagOverride = typeof flagOverrides.$inferInsert
 export type ApiKey = typeof apiKeys.$inferSelect
 export type NewApiKey = typeof apiKeys.$inferInsert
 export type User = typeof users.$inferSelect

@@ -1,17 +1,20 @@
 import { and, eq } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
-import { environments, featureFlags, flagEnvironments, flagOverrides } from '../../db/schema.js'
-import {
-  evaluateFlag,
-  type EvaluationContext,
-  type EvaluationResult,
-  type FlagEnvironmentState,
-} from '../../evaluation/engine.js'
+import { environments, featureFlags, flagEnvironments } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
 
-export interface EvaluatedFeature extends EvaluationResult {
+/**
+ * The state of a flag within a specific environment
+ */
+export interface FlagState {
+  enabled: boolean
+}
+
+export interface EvaluatedFeature {
   name: string
+  enabled: boolean
+  reason: 'default'
 }
 
 /**
@@ -24,7 +27,7 @@ export async function loadFlagState(
   db: Db,
   projectId: string,
   environmentId: string,
-): Promise<Record<string, FlagEnvironmentState>> {
+): Promise<Record<string, FlagState>> {
   const rows = await db
     .select({ flagKey: featureFlags.key, enabled: flagEnvironments.enabled })
     .from(flagEnvironments)
@@ -38,52 +41,26 @@ export async function loadFlagState(
       ),
     )
 
-  const overrides = await db
-    .select({
-      flagKey: featureFlags.key,
-      contextKey: flagOverrides.contextKey,
-      contextValue: flagOverrides.contextValue,
-      enabled: flagOverrides.enabled,
-    })
-    .from(flagOverrides)
-    .innerJoin(featureFlags, eq(featureFlags.id, flagOverrides.flagId))
-    .where(
-      and(eq(featureFlags.projectId, projectId), eq(flagOverrides.environmentId, environmentId)),
-    )
-    .orderBy(flagOverrides.createdAt)
-
-  const state: Record<string, FlagEnvironmentState> = {}
+  const state: Record<string, FlagState> = {}
   for (const row of rows) {
-    state[row.flagKey] = { enabled: row.enabled, overrides: [] }
-  }
-  for (const override of overrides) {
-    state[override.flagKey]?.overrides.push({
-      contextKey: override.contextKey,
-      contextValue: override.contextValue,
-      enabled: override.enabled,
-    })
+    state[row.flagKey] = { enabled: row.enabled }
   }
   return state
 }
 
 export function evaluateAll(
-  state: Record<string, FlagEnvironmentState>,
-  context: EvaluationContext,
+  state: Record<string, FlagState>,
 ): Array<{ name: string; enabled: boolean }> {
   return Object.entries(state).map(([name, flagState]) => ({
     name,
-    enabled: evaluateFlag(flagState, context).enabled,
+    enabled: flagState.enabled,
   }))
 }
 
-export function evaluateOne(
-  state: Record<string, FlagEnvironmentState>,
-  flagKey: string,
-  context: EvaluationContext,
-): EvaluatedFeature {
+export function evaluateOne(state: Record<string, FlagState>, flagKey: string): EvaluatedFeature {
   const flagState = state[flagKey]
   if (!flagState) {
     throw new AppError('Flag not found', 404, 'NotFound')
   }
-  return { name: flagKey, ...evaluateFlag(flagState, context) }
+  return { name: flagKey, enabled: flagState.enabled, reason: 'default' }
 }

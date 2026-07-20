@@ -12,7 +12,7 @@ export function getTestDb() {
 
 export async function truncateAll(db: ReturnType<typeof getTestDb>) {
   await db.execute(sql`
-    TRUNCATE api_keys, flag_overrides, flag_environments, feature_flags, environments, projects
+    TRUNCATE api_keys, flag_environments, feature_flags, environments, projects
     RESTART IDENTITY CASCADE
   `)
 }

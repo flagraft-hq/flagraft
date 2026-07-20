@@ -32,7 +32,7 @@ interface SourceCache {
  * Topbar search over flags (name, key, tags) and users (name, email).
  * Typing is debounced; the flag/user lists are fetched lazily and refetched
  * at most once per throttle window. Results are keyboard-navigable.
- * ponytail: searches flags + users only; add overrides/API keys as sources
+ * ponytail: searches flags + users only; add API keys as sources
  * when someone actually asks for them.
  */
 export function GlobalSearch() {

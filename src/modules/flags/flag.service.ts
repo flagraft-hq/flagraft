@@ -1,13 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
-import {
-  environments,
-  featureFlags,
-  flagEnvironments,
-  flagOverrides,
-  users,
-} from '../../db/schema.js'
+import { environments, featureFlags, flagEnvironments, users } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateFlagInput, PatchFlagInput } from './flag.schema.js'
 
@@ -80,27 +74,10 @@ export async function fetchFlagWithState(db: Db, projectId: string, flagKey: str
     .where(eq(flagEnvironments.flagId, flag.id))
     .orderBy(environments.createdAt)
 
-  const overrideCounts = await db
-    .select({
-      slug: environments.slug,
-      count: sql<number>`count(${flagOverrides.id})::int`,
-    })
-    .from(flagOverrides)
-    .innerJoin(environments, eq(flagOverrides.environmentId, environments.id))
-    .where(eq(flagOverrides.flagId, flag.id))
-    .groupBy(environments.slug)
-
-  const statesMap: Record<string, { on: boolean; overrides: number }> = {}
+  const statesMap: Record<string, { on: boolean }> = {}
   for (const row of envStates) {
     statesMap[row.slug] = {
       on: row.enabled,
-      overrides: 0,
-    }
-  }
-
-  for (const row of overrideCounts) {
-    if (statesMap[row.slug]) {
-      statesMap[row.slug].overrides = row.count
     }
   }
 
@@ -188,18 +165,7 @@ export async function listFlags(db: Db, projectId: string) {
     .where(inArray(flagEnvironments.flagId, flagIds))
     .orderBy(environments.createdAt)
 
-  const overrideCounts = await db
-    .select({
-      flagId: flagOverrides.flagId,
-      slug: environments.slug,
-      count: sql<number>`count(${flagOverrides.id})::int`,
-    })
-    .from(flagOverrides)
-    .innerJoin(environments, eq(flagOverrides.environmentId, environments.id))
-    .where(inArray(flagOverrides.flagId, flagIds))
-    .groupBy(flagOverrides.flagId, environments.slug)
-
-  const statesMap: Record<string, Record<string, { on: boolean; overrides: number }>> = {}
+  const statesMap: Record<string, Record<string, { on: boolean }>> = {}
 
   for (const row of envStates) {
     if (!statesMap[row.flagId]) {
@@ -207,13 +173,6 @@ export async function listFlags(db: Db, projectId: string) {
     }
     statesMap[row.flagId][row.slug] = {
       on: row.enabled,
-      overrides: 0,
-    }
-  }
-
-  for (const row of overrideCounts) {
-    if (statesMap[row.flagId] && statesMap[row.flagId][row.slug]) {
-      statesMap[row.flagId][row.slug].overrides = row.count
     }
   }
 

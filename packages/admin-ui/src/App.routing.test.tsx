@@ -106,12 +106,6 @@ describe('Routing — authenticated user', () => {
     expect(screen.getByTestId('settings-screen')).toBeInTheDocument()
   })
 
-  it('/overrides renders "Overrides" Coming soon placeholder', () => {
-    renderAt('/overrides')
-    expect(screen.getByText('Overrides')).toBeInTheDocument()
-    expect(screen.getByText('Coming soon.')).toBeInTheDocument()
-  })
-
   it('/audit renders "Audit log" Coming soon placeholder', () => {
     renderAt('/audit')
     expect(screen.getByText('Audit log')).toBeInTheDocument()

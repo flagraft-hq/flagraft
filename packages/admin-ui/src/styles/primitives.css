@@ -200,8 +200,8 @@
 /*
  * The one dropdown style for the whole app. `.select-input` is rendered by
  * the Select primitive; `.select` is for the few raw <select> elements that
- * cannot use the primitive (e.g. OverrideForm's mono variants). The native
- * arrow is replaced with a custom chevron so it looks the same everywhere.
+ * cannot use the primitive. The native arrow is replaced with a custom
+ * chevron so it looks the same everywhere.
  */
 .select,
 .select-input {

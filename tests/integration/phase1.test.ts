@@ -66,7 +66,7 @@ describeIfDb('phase 1 integration', () => {
     await app.close()
   })
 
-  it('evaluates overrides before defaults', async () => {
+  it('evaluation always returns the environment default, ignoring query params', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)
     const project = await createProject(app, rootKey)
@@ -86,24 +86,23 @@ describeIfDb('phase 1 integration', () => {
     })
     await app.inject({
       method: 'POST',
-      url: `/api/v1/admin/projects/${project.id}/flags/checkout/environments/${firstEnv.slug}/overrides`,
+      url: `/api/v1/admin/projects/${project.id}/flags/checkout/environments/${firstEnv.slug}/enable`,
       headers: { authorization: adminKey },
-      payload: { contextKey: 'userId', contextValue: 'user_abc123', enabled: true },
     })
 
-    const match = await app.inject({
+    const withQuery = await app.inject({
       method: 'GET',
       url: '/api/v1/client/features/checkout?userId=user_abc123',
       headers: { authorization: clientKey },
     })
-    const miss = await app.inject({
+    const withoutQuery = await app.inject({
       method: 'GET',
-      url: '/api/v1/client/features/checkout?userId=other',
+      url: '/api/v1/client/features/checkout',
       headers: { authorization: clientKey },
     })
 
-    expect(match.json()).toMatchObject({ enabled: true, reason: 'override' })
-    expect(miss.json()).toMatchObject({ enabled: false, reason: 'default' })
+    expect(withQuery.json()).toMatchObject({ enabled: true, reason: 'default' })
+    expect(withoutQuery.json()).toMatchObject({ enabled: true, reason: 'default' })
     await app.close()
   })
 

@@ -206,7 +206,7 @@ describe('FlagsScreen empty states', () => {
         tags: [],
         created: '2024-01-01',
         updated: '2024-01-02',
-        state: { development: { on: true, overrides: 0 } },
+        state: { development: { on: true } },
         author: 'user',
       },
     ]
@@ -235,7 +235,7 @@ describe('FlagsScreen empty states', () => {
         tags: [],
         created: '2024-01-01',
         updated: '2024-01-02',
-        state: { development: { on: true, overrides: 0 } },
+        state: { development: { on: true } },
         author: 'user',
       },
     ]
@@ -267,7 +267,7 @@ describe('FlagsScreen integration', () => {
       tags: ['core'],
       created: '2024-01-01',
       updated: '2024-03-01',
-      state: { development: { on: true, overrides: 0 } },
+      state: { development: { on: true } },
       author: 'user',
     },
     {
@@ -277,7 +277,7 @@ describe('FlagsScreen integration', () => {
       tags: ['experimental'],
       created: '2024-02-01',
       updated: '2024-04-01',
-      state: { development: { on: false, overrides: 0 } },
+      state: { development: { on: false } },
       author: 'user',
     },
     {
@@ -287,7 +287,7 @@ describe('FlagsScreen integration', () => {
       tags: ['core', 'experimental'],
       created: '2024-03-01',
       updated: '2024-02-01',
-      state: { development: { on: true, overrides: 2 } },
+      state: { development: { on: true } },
       author: 'user',
     },
   ]

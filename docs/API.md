@@ -51,7 +51,7 @@ curl http://localhost:3000/api/admin/projects/$PROJECT_ID/environments \
   -H "Authorization: $ROOT_KEY"
 ```
 
-Returns `development`, `staging`, `production` with their `id` and `slug`. You need the `slug` for enable/disable and override calls.
+Returns `development`, `staging`, `production` with their `id` and `slug`. You need the `slug` for enable/disable calls.
 
 ---
 
@@ -137,7 +137,7 @@ Client keys are scoped to a specific environment. The key itself carries that sc
 Get all flags at once:
 
 ```bash
-curl "http://localhost:3000/api/client/features?userId=usr_123" \
+curl "http://localhost:3000/api/client/features" \
   -H "Authorization: $CLIENT_KEY"
 ```
 
@@ -153,7 +153,7 @@ curl "http://localhost:3000/api/client/features?userId=usr_123" \
 Get one flag with reason:
 
 ```bash
-curl "http://localhost:3000/api/client/features/new-checkout-flow?userId=usr_123" \
+curl "http://localhost:3000/api/client/features/new-checkout-flow" \
   -H "Authorization: $CLIENT_KEY"
 ```
 
@@ -161,21 +161,7 @@ curl "http://localhost:3000/api/client/features/new-checkout-flow?userId=usr_123
 { "name": "new-checkout-flow", "enabled": true, "reason": "default" }
 ```
 
-Every query param becomes evaluation context. `userId`, `companyId`, `plan` -- whatever your app knows about the caller.
-
----
-
-### Bonus -- Add an override for a specific user
-
-```bash
-curl -X POST \
-  "http://localhost:3000/api/admin/projects/$PROJECT_ID/flags/new-checkout-flow/environments/staging/overrides" \
-  -H "Authorization: $ROOT_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "contextKey": "userId", "contextValue": "usr_ceo", "enabled": false }'
-```
-
-Now `?userId=usr_ceo` returns `enabled: false, reason: override` even though staging has the flag on.
+Evaluation always returns the environment default for the flag -- there's no per-user or per-context override. Any query params sent to these endpoints are ignored. `reason` is always `"default"`.
 
 ---
 
@@ -198,9 +184,6 @@ Now `?userId=usr_ceo` returns `enabled: false, reason: override` even though sta
 | `DELETE` | `/api/admin/projects/:id/flags/:key`                                       | admin  | Delete flag                                   |
 | `POST`   | `/api/admin/projects/:id/flags/:key/environments/:envSlug/enable`          | admin  | Enable flag in environment                    |
 | `POST`   | `/api/admin/projects/:id/flags/:key/environments/:envSlug/disable`         | admin  | Disable flag in environment                   |
-| `POST`   | `/api/admin/projects/:id/flags/:key/environments/:envSlug/overrides`       | admin  | Create override                               |
-| `GET`    | `/api/admin/projects/:id/flags/:key/environments/:envSlug/overrides`       | admin  | List overrides                                |
-| `DELETE` | `/api/admin/projects/:id/flags/:key/environments/:envSlug/overrides/:ovId` | admin  | Delete override                               |
 | `POST`   | `/api/admin/projects/:id/keys`                                             | admin  | Create API key (plaintext returned once)      |
 | `GET`    | `/api/admin/projects/:id/keys`                                             | admin  | List keys (prefix only, no plaintext)         |
 | `DELETE` | `/api/admin/projects/:id/keys/:keyId`                                      | admin  | Revoke key                                    |

@@ -3,26 +3,10 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
 import { loadConfig } from '../../config.js'
-import type { EvaluationContext } from '../../evaluation/engine.js'
 import { cacheKeys } from '../../cache/keys.js'
 import * as service from './client.service.js'
 
 const flagParamSchema = z.object({ flagKey: z.string().min(1) })
-
-function queryToContext(query: unknown): EvaluationContext {
-  const context: EvaluationContext = {}
-  if (typeof query !== 'object' || query === null) {
-    return context
-  }
-
-  for (const [key, value] of Object.entries(query as Record<string, unknown>)) {
-    if (typeof value === 'string') {
-      context[key] = value
-    }
-  }
-
-  return context
-}
 
 export async function clientRoutes(fastify: FastifyInstance) {
   const config = loadConfig()
@@ -43,7 +27,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
       preHandler: fastify.requireClientKey,
       schema: {
         tags: ['client'],
-        description: 'Evaluate all feature flags for the authenticated client key and context.',
+        description: 'Evaluate all feature flags for the authenticated client key.',
         response: {
           200: {
             type: 'object',
@@ -69,7 +53,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
         cacheKeys.flagState(ctx.projectId!, ctx.environmentId!),
         () => service.loadFlagState(fastify.db, ctx.projectId!, ctx.environmentId!),
       )
-      return { features: service.evaluateAll(state, queryToContext(request.query)) }
+      return { features: service.evaluateAll(state) }
     },
   )
 
@@ -91,7 +75,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
             properties: {
               name: { type: 'string' },
               enabled: { type: 'boolean' },
-              reason: { type: 'string', enum: ['override', 'default'] },
+              reason: { type: 'string', enum: ['default'] },
             },
           },
         },
@@ -104,7 +88,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
         cacheKeys.flagState(ctx.projectId!, ctx.environmentId!),
         () => service.loadFlagState(fastify.db, ctx.projectId!, ctx.environmentId!),
       )
-      return service.evaluateOne(state, params.flagKey, queryToContext(request.query))
+      return service.evaluateOne(state, params.flagKey)
     },
   )
 }

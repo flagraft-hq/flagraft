@@ -6,7 +6,7 @@ import type { AxiosResponse } from 'axios'
 import { FlagDetailScreen } from '../FlagDetailScreen'
 import { ThemeProvider } from '../../../contexts/ThemeContext'
 import { ToastProvider } from '../../../contexts/ToastContext'
-import type { Flag, Override, ContextField } from '../../../lib/types'
+import type { Flag } from '../../../lib/types'
 
 vi.mock('../../../lib/api', () => ({
   flagsApi: {
@@ -14,14 +14,6 @@ vi.mock('../../../lib/api', () => ({
     update: vi.fn(),
     delete: vi.fn(),
     toggle: vi.fn(),
-  },
-  overridesApi: {
-    list: vi.fn().mockResolvedValue({ data: [] }),
-    create: vi.fn(),
-    delete: vi.fn(),
-  },
-  contextFieldsApi: {
-    list: vi.fn().mockResolvedValue({ data: [] }),
   },
 }))
 
@@ -40,7 +32,7 @@ vi.mock('../../../contexts/ProjectContext', () => ({
   ProjectProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
-import { flagsApi, overridesApi, contextFieldsApi } from '../../../lib/api'
+import { flagsApi } from '../../../lib/api'
 
 const integrationFlag = {
   key: 'checkout-web',
@@ -50,9 +42,9 @@ const integrationFlag = {
   created: '2026-01-15T10:00:00Z',
   updated: '2026-04-20T08:30:00Z',
   state: {
-    development: { on: true, overrides: 3 },
-    staging: { on: true, overrides: 1 },
-    production: { on: false, overrides: 0 },
+    development: { on: true },
+    staging: { on: true },
+    production: { on: false },
   },
   author: 'k_abc',
 }
@@ -77,12 +69,6 @@ beforeEach(() => {
   vi.mocked(flagsApi.get).mockResolvedValue({
     data: integrationFlag,
   } as unknown as AxiosResponse<Flag>)
-  vi.mocked(overridesApi.list).mockResolvedValue({ data: [] } as unknown as AxiosResponse<
-    Override[]
-  >)
-  vi.mocked(contextFieldsApi.list).mockResolvedValue({ data: [] } as unknown as AxiosResponse<
-    ContextField[]
-  >)
 })
 
 describe('FlagDetailScreen integration', () => {
@@ -137,19 +123,6 @@ describe('FlagDetailScreen integration', () => {
     fireEvent.click(screen.getByRole('tab', { name: /history/i }))
 
     expect(screen.getByText(/history coming soon/i)).toBeInTheDocument()
-  })
-
-  it('ContextOverridesSection empty state renders in environments tab', async () => {
-    renderFlagDetail()
-
-    await screen.findByRole('heading', { name: 'Checkout Web Redesign' })
-
-    await waitFor(() => {
-      const addOverrideButtons = screen.getAllByRole('button', { name: /add override/i })
-      expect(addOverrideButtons.length).toBeGreaterThan(0)
-    })
-
-    expect(screen.getByText(/no overrides in/i)).toBeInTheDocument()
   })
 
   it('edit modal full flow: open, edit, save, flag name updates in header', async () => {

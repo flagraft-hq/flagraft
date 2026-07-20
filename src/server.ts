@@ -14,7 +14,6 @@ import { authRoutes } from './modules/auth/auth.routes.js'
 import { clientRoutes } from './modules/client/client.routes.js'
 import { environmentRoutes } from './modules/environments/environment.routes.js'
 import { flagRoutes } from './modules/flags/flag.routes.js'
-import { overrideRoutes } from './modules/flags/override.routes.js'
 import { keyRoutes } from './modules/keys/key.routes.js'
 import { projectRoutes } from './modules/projects/project.routes.js'
 import { userRoutes } from './modules/users/user.routes.js'
@@ -80,7 +79,6 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(projectRoutes, v1Prefix)
   await fastify.register(environmentRoutes, v1Prefix)
   await fastify.register(flagRoutes, v1Prefix)
-  await fastify.register(overrideRoutes, v1Prefix)
   await fastify.register(keyRoutes, v1Prefix)
   await fastify.register(clientRoutes, v1Prefix)
   await fastify.register(userRoutes, v1Prefix)

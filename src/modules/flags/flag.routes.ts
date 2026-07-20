@@ -115,7 +115,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
       preHandler: fastify.requireAdminKey,
       schema: {
         tags: ['admin'],
-        description: 'Delete a feature flag and its overrides.',
+        description: 'Delete a feature flag.',
         params: {
           type: 'object',
           properties: {

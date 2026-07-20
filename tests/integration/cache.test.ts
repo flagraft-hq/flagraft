@@ -81,46 +81,6 @@ describeIfDb('cache invalidation', () => {
     await app.close()
   })
 
-  it('createOverride invalidates cached flag state for a specific context', async () => {
-    const app = await buildServer({ db })
-    const { project, adminKey, clientKey } = await setup(app)
-
-    await app.inject({
-      method: 'POST',
-      url: `/api/v1/admin/projects/${project.id}/flags`,
-      headers: { authorization: adminKey },
-      payload: { name: 'Beta', key: 'beta' },
-    })
-
-    // Populate cache: flag is globally disabled, no override for alice yet
-    const first = await app.inject({
-      method: 'GET',
-      url: '/api/v1/client/features/beta?userId=alice',
-      headers: { authorization: clientKey },
-    })
-    expect(first.statusCode).toBe(200)
-    expect(first.json()).toMatchObject({ enabled: false })
-
-    // Create an override that enables the flag specifically for alice
-    await app.inject({
-      method: 'POST',
-      url: `/api/v1/admin/projects/${project.id}/flags/beta/environments/production/overrides`,
-      headers: { authorization: adminKey },
-      payload: { contextKey: 'userId', contextValue: 'alice', enabled: true },
-    })
-
-    // Cache must be invalidated; alice should now see enabled=true
-    const second = await app.inject({
-      method: 'GET',
-      url: '/api/v1/client/features/beta?userId=alice',
-      headers: { authorization: clientKey },
-    })
-    expect(second.statusCode).toBe(200)
-    expect(second.json()).toMatchObject({ enabled: true })
-
-    await app.close()
-  })
-
   it('TTL expiry causes a fresh DB read after stale cache entry expires', async () => {
     /**
      * We use a 1-second TTL so the test can verify that a stale cache entry is

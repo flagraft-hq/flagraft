@@ -15,9 +15,9 @@ const baseFlag: Flag = {
   created: '2025-01-01',
   updated: '2025-01-10',
   state: {
-    development: { on: true, overrides: 2 },
-    staging: { on: false, overrides: 0 },
-    production: { on: false, overrides: 1 },
+    development: { on: true },
+    staging: { on: false },
+    production: { on: false },
   },
   author: 'alice',
 }
@@ -244,7 +244,7 @@ describe('FlagRow', () => {
         ...baseFlag,
         state: {
           ...baseFlag.state,
-          production: { on: true, overrides: 1 },
+          production: { on: true },
         },
       }
       const { container } = render(<FlagRow {...defaultProps} flag={flag} onToggle={onToggle} />)

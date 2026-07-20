@@ -3,14 +3,7 @@ import { Icon, IconName } from '../primitives/Icon'
 import { Kbd } from '../primitives/Kbd'
 import { useAuth } from '../../contexts/AuthContext'
 
-export type NavItemId =
-  | 'flags'
-  | 'overrides'
-  | 'audit'
-  | 'environments'
-  | 'keys'
-  | 'users'
-  | 'settings'
+export type NavItemId = 'flags' | 'audit' | 'environments' | 'keys' | 'users' | 'settings'
 
 export interface SideNavProps {
   current: NavItemId
@@ -35,7 +28,6 @@ const NAV: NavGroup[] = [
     group: 'WORKSPACE',
     items: [
       { id: 'flags', label: 'Flags', icon: 'flag', shortcut: ['g', 'f'], count: 24 },
-      { id: 'overrides', label: 'Overrides', icon: 'target', shortcut: ['g', 'o'], count: 17 },
       { id: 'audit', label: 'Audit log', icon: 'history', shortcut: ['g', 'a'] },
     ],
   },

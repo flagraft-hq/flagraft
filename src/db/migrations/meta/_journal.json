@@ -57,6 +57,13 @@
       "when": 1783269680044,
       "tag": "0007_magenta_thunderbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784289689685,
+      "tag": "0008_curved_arclight",
+      "breakpoints": true
     }
   ]
 }

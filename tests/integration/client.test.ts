@@ -51,24 +51,6 @@ async function enableFlag(
   })
 }
 
-async function createOverride(
-  app: Awaited<ReturnType<typeof buildServer>>,
-  key: string,
-  projectId: string,
-  flagKey: string,
-  envSlug: string,
-  contextKey: string,
-  contextValue: string,
-  enabled: boolean,
-) {
-  await app.inject({
-    method: 'POST',
-    url: `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${envSlug}/overrides`,
-    headers: { authorization: key },
-    payload: { contextKey, contextValue, enabled },
-  })
-}
-
 describeIfDb('client eval', () => {
   const db = process.env.TEST_DATABASE_URL ? getTestDb() : undefined
 
@@ -214,7 +196,7 @@ describeIfDb('client eval', () => {
       await app.close()
     })
 
-    it('uses context from query params for evaluation', async () => {
+    it('ignores query params and returns the environment default', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -224,36 +206,31 @@ describeIfDb('client eval', () => {
       const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
 
       await createFlag(app, adminKey, project.id, 'ctx-flag')
-      await createOverride(
-        app,
-        adminKey,
-        project.id,
-        'ctx-flag',
-        'production',
-        'userId',
-        'user_abc',
-        true,
-      )
 
-      const matchRes = await app.inject({
+      const withQueryRes = await app.inject({
         method: 'GET',
         url: '/api/v1/client/features?userId=user_abc',
         headers: { authorization: clientKey },
       })
-      const noMatchRes = await app.inject({
+      const withoutQueryRes = await app.inject({
         method: 'GET',
-        url: '/api/v1/client/features?userId=user_xyz',
+        url: '/api/v1/client/features',
         headers: { authorization: clientKey },
       })
 
-      const matchFeatures = matchRes.json<{ features: Array<{ name: string; enabled: boolean }> }>()
-        .features
-      const noMatchFeatures = noMatchRes.json<{
+      const withQueryFeatures = withQueryRes.json<{
+        features: Array<{ name: string; enabled: boolean }>
+      }>().features
+      const withoutQueryFeatures = withoutQueryRes.json<{
         features: Array<{ name: string; enabled: boolean }>
       }>().features
 
-      expect(matchFeatures.find((f) => f.name === 'ctx-flag')).toMatchObject({ enabled: true })
-      expect(noMatchFeatures.find((f) => f.name === 'ctx-flag')).toMatchObject({ enabled: false })
+      expect(withQueryFeatures.find((f) => f.name === 'ctx-flag')).toMatchObject({
+        enabled: false,
+      })
+      expect(withoutQueryFeatures.find((f) => f.name === 'ctx-flag')).toMatchObject({
+        enabled: false,
+      })
       await app.close()
     })
 
@@ -336,39 +313,7 @@ describeIfDb('client eval', () => {
       await app.close()
     })
 
-    it('returns enabled true with reason override when a matching override enables the flag', async () => {
-      const app = await buildServer({ db })
-      const rootKey = await createRootKey(db!)
-      const project = await createProject(app, rootKey)
-      const adminKey = await createAdminKey(app, rootKey, project.id)
-      const envs = await getEnvironments(app, adminKey, project.id)
-      const productionEnv = envs.find((e) => e.slug === 'production')!
-      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
-
-      await createFlag(app, adminKey, project.id, 'beta-flag')
-      await createOverride(
-        app,
-        adminKey,
-        project.id,
-        'beta-flag',
-        'production',
-        'userId',
-        'tester_1',
-        true,
-      )
-
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/client/features/beta-flag?userId=tester_1',
-        headers: { authorization: clientKey },
-      })
-
-      expect(res.statusCode).toBe(200)
-      expect(res.json()).toMatchObject({ name: 'beta-flag', enabled: true, reason: 'override' })
-      await app.close()
-    })
-
-    it('returns enabled false with reason override when override disables a globally-on flag', async () => {
+    it('ignores query params and returns the environment default with reason default', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -379,16 +324,6 @@ describeIfDb('client eval', () => {
 
       await createFlag(app, adminKey, project.id, 'global-on')
       await enableFlag(app, adminKey, project.id, 'global-on', 'production')
-      await createOverride(
-        app,
-        adminKey,
-        project.id,
-        'global-on',
-        'production',
-        'userId',
-        'blocked_user',
-        false,
-      )
 
       const res = await app.inject({
         method: 'GET',
@@ -397,39 +332,7 @@ describeIfDb('client eval', () => {
       })
 
       expect(res.statusCode).toBe(200)
-      expect(res.json()).toMatchObject({ name: 'global-on', enabled: false, reason: 'override' })
-      await app.close()
-    })
-
-    it('does not apply override when context does not match', async () => {
-      const app = await buildServer({ db })
-      const rootKey = await createRootKey(db!)
-      const project = await createProject(app, rootKey)
-      const adminKey = await createAdminKey(app, rootKey, project.id)
-      const envs = await getEnvironments(app, adminKey, project.id)
-      const productionEnv = envs.find((e) => e.slug === 'production')!
-      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
-
-      await createFlag(app, adminKey, project.id, 'selective')
-      await createOverride(
-        app,
-        adminKey,
-        project.id,
-        'selective',
-        'production',
-        'userId',
-        'special_user',
-        true,
-      )
-
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/client/features/selective?userId=other_user',
-        headers: { authorization: clientKey },
-      })
-
-      expect(res.statusCode).toBe(200)
-      expect(res.json()).toMatchObject({ name: 'selective', enabled: false, reason: 'default' })
+      expect(res.json()).toMatchObject({ name: 'global-on', enabled: true, reason: 'default' })
       await app.close()
     })
 
@@ -450,53 +353,6 @@ describeIfDb('client eval', () => {
 
       expect(res.statusCode).toBe(404)
       expect(res.json()).toMatchObject({ error: 'NotFound', statusCode: 404 })
-      await app.close()
-    })
-
-    it('evaluates correctly with multiple context keys', async () => {
-      const app = await buildServer({ db })
-      const rootKey = await createRootKey(db!)
-      const project = await createProject(app, rootKey)
-      const adminKey = await createAdminKey(app, rootKey, project.id)
-      const envs = await getEnvironments(app, adminKey, project.id)
-      const productionEnv = envs.find((e) => e.slug === 'production')!
-      const clientKey = await createClientKey(app, adminKey, project.id, productionEnv.id)
-
-      await createFlag(app, adminKey, project.id, 'pro-feature')
-      await createOverride(
-        app,
-        adminKey,
-        project.id,
-        'pro-feature',
-        'production',
-        'plan',
-        'pro',
-        true,
-      )
-
-      const proRes = await app.inject({
-        method: 'GET',
-        url: '/api/v1/client/features/pro-feature?userId=u1&plan=pro',
-        headers: { authorization: clientKey },
-      })
-      const freeRes = await app.inject({
-        method: 'GET',
-        url: '/api/v1/client/features/pro-feature?userId=u1&plan=free',
-        headers: { authorization: clientKey },
-      })
-
-      expect(proRes.statusCode).toBe(200)
-      expect(proRes.json()).toMatchObject({
-        name: 'pro-feature',
-        enabled: true,
-        reason: 'override',
-      })
-      expect(freeRes.statusCode).toBe(200)
-      expect(freeRes.json()).toMatchObject({
-        name: 'pro-feature',
-        enabled: false,
-        reason: 'default',
-      })
       await app.close()
     })
   })

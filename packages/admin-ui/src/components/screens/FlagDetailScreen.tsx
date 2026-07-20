@@ -11,7 +11,6 @@ import { Icon } from '../primitives/Icon'
 import { Toggle } from '../primitives/Toggle'
 import { Modal } from '../primitives/Modal'
 import { Badge } from '../primitives/Badge'
-import { ContextOverridesSection } from './ContextOverridesSection'
 import { TextField } from '../primitives/TextField'
 
 type TabId = 'environments' | 'usage' | 'history'
@@ -259,14 +258,12 @@ function EnvironmentsTab({
   projectId,
   flagKey,
   envKeys,
-  activeEnv,
   onToggled,
 }: {
   flag: Flag
   projectId: string
   flagKey: string
   envKeys: string[]
-  activeEnv: string
   onToggled: () => void
 }) {
   const toast = useToast()
@@ -306,17 +303,12 @@ function EnvironmentsTab({
     setConfirmState(null)
   }
 
-  function scrollToOverrides() {
-    document.getElementById('ctx-overrides')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
   return (
     <div>
       <div className="env-cards-grid">
         {envKeys.map((env) => {
           const envState = flag.state[env]
           const isOn = envState?.on ?? false
-          const overrideCount = envState?.overrides ?? 0
           return (
             <div key={env} className="env-card">
               <div className="env-card-head">
@@ -337,33 +329,9 @@ function EnvironmentsTab({
                 </span>
                 <span className="muted"> · default value</span>
               </div>
-              <div className="env-card-overrides muted">
-                {overrideCount > 0
-                  ? `+${overrideCount} override${overrideCount > 1 ? 's' : ''} can change this result.`
-                  : 'No overrides — every caller gets the default.'}
-              </div>
-              <div className="env-card-foot">
-                <Button size="sm" variant="ghost" leftIcon="plus" onClick={scrollToOverrides}>
-                  Manage overrides
-                </Button>
-              </div>
             </div>
           )
         })}
-      </div>
-
-      <div id="ctx-overrides" className="ctx-overrides-anchor">
-        <ContextOverridesSection
-          projectId={projectId}
-          flagKey={flagKey}
-          env={activeEnv}
-          environments={envKeys.map((e) => ({
-            slug: e,
-            name: nameFor(e),
-            defaultOn: flag.state[e]?.on ?? false,
-            count: flag.state[e]?.overrides ?? 0,
-          }))}
-        />
       </div>
 
       <Modal open={confirmState !== null} onClose={handleCancel}>
@@ -390,7 +358,7 @@ function EnvironmentsTab({
 export function FlagDetailScreen() {
   const { key: flagKey } = useParams<{ key: string }>()
   const navigate = useNavigate()
-  const { activeProject, activeEnv } = useProject()
+  const { activeProject } = useProject()
   const toast = useToast()
 
   const [flag, setFlag] = useState<Flag | null>(null)
@@ -464,11 +432,6 @@ export function FlagDetailScreen() {
 
   const envKeys = Object.keys(flag.state ?? {})
 
-  const totalOverrides = Object.values(flag.state ?? {}).reduce(
-    (sum, envState) => sum + (envState?.overrides ?? 0),
-    0,
-  )
-
   const handleDelete = async () => {
     setDeleting(true)
     try {
@@ -537,10 +500,6 @@ export function FlagDetailScreen() {
               <Icon name="history" size={12} />
               Created <b>{new Date(flag.created).toLocaleDateString()}</b>
             </span>
-            <span className="meta-item">
-              <Icon name="target" size={12} />
-              {totalOverrides} override{totalOverrides === 1 ? '' : 's'}
-            </span>
           </div>
         </div>
         <div className="detail-header-aside">
@@ -570,8 +529,7 @@ export function FlagDetailScreen() {
           className={`detail-tab${activeTab === 'environments' ? ' detail-tab--active' : ''}`}
           onClick={() => setActiveTab('environments')}
         >
-          Environments &amp; overrides
-          {totalOverrides > 0 && <span className="detail-tab-count num">{totalOverrides}</span>}
+          Environments
         </button>
         <button
           id="tab-usage"
@@ -603,7 +561,6 @@ export function FlagDetailScreen() {
               projectId={activeProject.id}
               flagKey={flag.key}
               envKeys={envKeys}
-              activeEnv={activeEnv}
               onToggled={() => {
                 void fetchFlag()
               }}
