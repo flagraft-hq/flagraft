@@ -53,14 +53,25 @@ export interface Flag {
 }
 
 export interface ContextField {
+  id: string
   key: string
   type: FieldType
   source: FieldSource
   required: boolean
-  example: string
-  desc: string
+  description: string | null
+  example: string | null
+  enumValues: string[] | null
+}
+
+/** Payload for creating a context field; `key` is omitted when updating. */
+export interface ContextFieldInput {
+  key: string
+  type: FieldType
+  source: FieldSource
+  required: boolean
+  description?: string
+  example?: string
   enumValues?: string[]
-  usedIn: number
 }
 
 export interface ApiKey {

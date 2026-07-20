@@ -12,32 +12,34 @@ import { contextFieldsApi } from '../../lib/api'
 
 const mockFields = [
   {
+    id: 'cf-1',
     key: 'userId',
     type: 'string' as const,
     source: 'sdk' as const,
     required: true,
+    description: 'User identifier',
     example: 'user-123',
-    desc: 'User identifier',
-    usedIn: 5,
+    enumValues: null,
   },
   {
+    id: 'cf-2',
     key: 'plan',
     type: 'enum' as const,
     source: 'server' as const,
     required: false,
+    description: 'Subscription plan',
     example: 'pro',
-    desc: 'Subscription plan',
     enumValues: ['free', 'pro', 'enterprise'],
-    usedIn: 3,
   },
   {
+    id: 'cf-3',
     key: 'betaEnabled',
     type: 'boolean' as const,
     source: 'computed' as const,
     required: false,
+    description: 'Beta feature access',
     example: 'true',
-    desc: 'Beta feature access',
-    usedIn: 1,
+    enumValues: null,
   },
 ]
 

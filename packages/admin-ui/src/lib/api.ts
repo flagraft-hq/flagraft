@@ -1,7 +1,16 @@
 import axios from 'axios'
 
 import type { UserRole } from './roles'
-import type { Flag, ContextField, Project, Env, ApiKey, ApiKeyType, CreatedApiKey } from './types'
+import type {
+  Flag,
+  ContextField,
+  ContextFieldInput,
+  Project,
+  Env,
+  ApiKey,
+  ApiKeyType,
+  CreatedApiKey,
+} from './types'
 
 /** Carries the HTTP status alongside the server-provided message. */
 export class ApiError extends Error {
@@ -84,6 +93,19 @@ export const flagsApi = {
 export const contextFieldsApi = {
   list: (projectId: string) =>
     http.get<ContextField[]>(`/api/v1/admin/projects/${projectId}/context-fields`),
+
+  create: (projectId: string, data: ContextFieldInput) =>
+    http.post<ContextField>(`/api/v1/admin/projects/${projectId}/context-fields`, data),
+
+  /** `key` is immutable, so it is not part of the update payload. */
+  update: (projectId: string, fieldId: string, data: Omit<ContextFieldInput, 'key'>) =>
+    http.patch<ContextField>(
+      `/api/v1/admin/projects/${projectId}/context-fields/${fieldId}`,
+      data,
+    ),
+
+  delete: (projectId: string, fieldId: string) =>
+    http.delete(`/api/v1/admin/projects/${projectId}/context-fields/${fieldId}`),
 }
 
 export const environmentsApi = {
