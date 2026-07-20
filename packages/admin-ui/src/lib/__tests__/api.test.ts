@@ -3,7 +3,6 @@ import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import {
   http,
   flagsApi,
-  overridesApi,
   contextFieldsApi,
   environmentsApi,
   keysApi,
@@ -135,14 +134,6 @@ describe('flagsApi', () => {
     expect(typeof flagsApi.create).toBe('function')
     expect(typeof flagsApi.update).toBe('function')
     expect(typeof flagsApi.delete).toBe('function')
-  })
-})
-
-describe('overridesApi', () => {
-  it('exports list, create, delete', () => {
-    expect(typeof overridesApi.list).toBe('function')
-    expect(typeof overridesApi.create).toBe('function')
-    expect(typeof overridesApi.delete).toBe('function')
   })
 })
 

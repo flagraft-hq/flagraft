@@ -78,16 +78,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/overrides"
-        element={
-          <RequireAuth>
-            <MainLayout>
-              <Placeholder title="Overrides" />
-            </MainLayout>
-          </RequireAuth>
-        }
-      />
-      <Route
         path="/audit"
         element={
           <RequireAuth>

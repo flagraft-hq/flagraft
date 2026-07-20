@@ -32,11 +32,10 @@ describe('FilterBar', () => {
     expect(onSearchChange).toHaveBeenCalled()
   })
 
-  it('renders the four state-filter chips', () => {
+  it('renders the three state-filter chips', () => {
     render(<FilterBar {...defaultProps} />)
     expect(screen.getByRole('button', { name: /on anywhere/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /off everywhere/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /has overrides/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /kill switches/i })).toBeInTheDocument()
   })
 

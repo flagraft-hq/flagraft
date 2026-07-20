@@ -25,8 +25,6 @@ function matchesStateFilter(flag: Flag, filter: StateFilter): boolean {
       return states.some((s) => s.on)
     case 'off':
       return states.every((s) => !s.on)
-    case 'overrides':
-      return states.some((s) => (s.overrides ?? 0) > 0)
     case 'kill-switch':
       return (flag.tags ?? []).includes('kill-switch')
     default:

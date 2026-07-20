@@ -66,12 +66,12 @@ describe('MainLayout', () => {
     const flagsBtn = screen.getByText('Flags').closest('button')
     expect(flagsBtn).toHaveAttribute('aria-current', 'page')
 
-    // Click Overrides
-    fireEvent.click(screen.getByText('Overrides'))
+    // Click Audit log
+    fireEvent.click(screen.getByText('Audit log'))
 
-    // Overrides should now be active
-    const overridesBtn = screen.getByText('Overrides').closest('button')
-    expect(overridesBtn).toHaveAttribute('aria-current', 'page')
+    // Audit log should now be active
+    const auditBtn = screen.getByText('Audit log').closest('button')
+    expect(auditBtn).toHaveAttribute('aria-current', 'page')
 
     // Flags should no longer be active
     expect(flagsBtn).not.toHaveAttribute('aria-current')

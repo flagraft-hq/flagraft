@@ -19,12 +19,11 @@ interface FilterBarProps {
 const STATE_OPTIONS: {
   value: Exclude<StateFilter, null>
   label: string
-  tone?: 'amber' | 'red'
+  tone?: 'red'
   icon?: 'shield'
 }[] = [
   { value: 'on', label: 'on anywhere' },
   { value: 'off', label: 'off everywhere' },
-  { value: 'overrides', label: 'has overrides', tone: 'amber' },
   { value: 'kill-switch', label: 'kill switches', tone: 'red', icon: 'shield' },
 ]
 

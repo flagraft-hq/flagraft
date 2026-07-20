@@ -28,7 +28,6 @@ describe('SideNav', () => {
   it('renders all nav item labels', () => {
     render(<SideNav current="flags" onNav={mockOnNav} />)
     expect(screen.getByText('Flags')).toBeInTheDocument()
-    expect(screen.getByText('Overrides')).toBeInTheDocument()
     expect(screen.getByText('Audit log')).toBeInTheDocument()
     expect(screen.getByText('Environments')).toBeInTheDocument()
     expect(screen.getByText('API keys')).toBeInTheDocument()
@@ -38,8 +37,8 @@ describe('SideNav', () => {
 
   it('calls onNav with the correct id when a nav item is clicked', () => {
     render(<SideNav current="flags" onNav={mockOnNav} />)
-    fireEvent.click(screen.getByText('Overrides'))
-    expect(mockOnNav).toHaveBeenCalledWith('overrides')
+    fireEvent.click(screen.getByText('Audit log'))
+    expect(mockOnNav).toHaveBeenCalledWith('audit')
   })
 
   it('calls onNav with the correct id for each item', () => {
@@ -47,7 +46,6 @@ describe('SideNav', () => {
 
     const cases: Array<[string, NavItemId]> = [
       ['Flags', 'flags'],
-      ['Overrides', 'overrides'],
       ['Audit log', 'audit'],
       ['Environments', 'environments'],
       ['API keys', 'keys'],
@@ -70,16 +68,15 @@ describe('SideNav', () => {
 
   it('non-current items do NOT have aria-current', () => {
     render(<SideNav current="flags" onNav={mockOnNav} />)
-    const overridesBtn = screen.getByText('Overrides').closest('button')
-    expect(overridesBtn).not.toHaveAttribute('aria-current')
     const auditBtn = screen.getByText('Audit log').closest('button')
     expect(auditBtn).not.toHaveAttribute('aria-current')
+    const keysBtn = screen.getByText('API keys').closest('button')
+    expect(keysBtn).not.toHaveAttribute('aria-current')
   })
 
-  it('renders badge counts for Flags and Overrides', () => {
+  it('renders the badge count for Flags', () => {
     render(<SideNav current="flags" onNav={mockOnNav} />)
     expect(screen.getByText('24')).toBeInTheDocument()
-    expect(screen.getByText('17')).toBeInTheDocument()
   })
 
   it('renders the sidenav footer with user info', () => {

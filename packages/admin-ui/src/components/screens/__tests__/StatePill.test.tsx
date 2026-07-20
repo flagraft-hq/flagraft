@@ -50,22 +50,4 @@ describe('StatePill', () => {
     await user.click(container.querySelector('[role="switch"]') as HTMLElement)
     expect(onToggle).toHaveBeenCalledWith(true)
   })
-
-  it('shows overrides count and has-overrides class when overrides > 0', () => {
-    const { container } = render(<StatePill {...defaultProps} on={true} overrides={3} />)
-    expect(screen.getByText('3')).toBeTruthy()
-    expect(container.querySelector('.state-pill-overrides')).toBeTruthy()
-    expect(container.querySelector('.state-pill.has-overrides')).toBeTruthy()
-  })
-
-  it('does not show overrides element when overrides is 0', () => {
-    const { container } = render(<StatePill {...defaultProps} on={true} overrides={0} />)
-    expect(container.querySelector('.state-pill-overrides')).toBeNull()
-    expect(container.querySelector('.has-overrides')).toBeNull()
-  })
-
-  it('does not show overrides element when overrides is undefined', () => {
-    const { container } = render(<StatePill {...defaultProps} on={false} />)
-    expect(container.querySelector('.state-pill-overrides')).toBeNull()
-  })
 })

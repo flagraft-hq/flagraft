@@ -1,16 +1,7 @@
 import axios from 'axios'
 
 import type { UserRole } from './roles'
-import type {
-  Flag,
-  Override,
-  ContextField,
-  Project,
-  Env,
-  ApiKey,
-  ApiKeyType,
-  CreatedApiKey,
-} from './types'
+import type { Flag, ContextField, Project, Env, ApiKey, ApiKeyType, CreatedApiKey } from './types'
 
 /** Carries the HTTP status alongside the server-provided message. */
 export class ApiError extends Error {
@@ -88,32 +79,6 @@ export const flagsApi = {
 
   delete: (projectId: string, key: string) =>
     http.delete(`/api/v1/admin/projects/${projectId}/flags/${key}`),
-}
-
-export const overridesApi = {
-  /**
-   * env is now a URL path segment, not a query param.
-   */
-  list: (projectId: string, flagKey: string, env: string) =>
-    http.get<Override[]>(
-      `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${env}/overrides`,
-    ),
-
-  create: (
-    projectId: string,
-    flagKey: string,
-    env: string,
-    data: Omit<Override, 'id' | 'flag' | 'env' | 'created'>,
-  ) =>
-    http.post<Override>(
-      `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${env}/overrides`,
-      data,
-    ),
-
-  delete: (projectId: string, flagKey: string, env: string, id: string) =>
-    http.delete(
-      `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${env}/overrides/${id}`,
-    ),
 }
 
 export const contextFieldsApi = {

@@ -119,7 +119,6 @@ export function FlagRow({
           <StatePill
             on={flag.state?.[env]?.on ?? false}
             env={env}
-            overrides={flag.state?.[env]?.overrides ?? 0}
             flagKey={flag.key}
             onToggle={(checked) => handleToggleChange(env, checked)}
           />

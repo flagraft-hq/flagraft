@@ -26,25 +26,6 @@ vi.mock('../../../hooks/useToast', () => ({
   useToast: () => ({ push: mockToastPush }),
 }))
 
-vi.mock('../ContextOverridesSection', () => ({
-  ContextOverridesSection: ({
-    projectId,
-    flagKey,
-    env,
-  }: {
-    projectId: string
-    flagKey: string
-    env: string
-  }) => (
-    <div
-      data-testid="mocked-overrides-section"
-      data-project={projectId}
-      data-flag={flagKey}
-      data-env={env}
-    />
-  ),
-}))
-
 import { flagsApi } from '../../../lib/api'
 import { useProject } from '../../../contexts/ProjectContext'
 
@@ -65,9 +46,9 @@ const mockFlag: Flag = {
   created: '2026-01-01T00:00:00Z',
   updated: '2026-05-01T00:00:00Z',
   state: {
-    development: { on: true, overrides: 2 },
-    staging: { on: false, overrides: 0 },
-    production: { on: false, overrides: 1 },
+    development: { on: true },
+    staging: { on: false },
+    production: { on: false },
   },
   author: 'k_abc123',
 }
@@ -307,7 +288,7 @@ describe('FlagDetailScreen', () => {
       ...mockFlag,
       state: {
         ...mockFlag.state,
-        production: { on: true, overrides: 1 },
+        production: { on: true },
       },
     }
     mockFlagsApi.get.mockResolvedValue({ data: productionOnFlag })
@@ -324,32 +305,6 @@ describe('FlagDetailScreen', () => {
     await waitFor(() =>
       expect(mockFlagsApi.toggle).toHaveBeenCalledWith('p1', 'my-flag', 'production', false),
     )
-  })
-})
-
-describe('ContextOverridesSection integration', () => {
-  it('renders ContextOverridesSection in environments tab', async () => {
-    renderScreen()
-    await waitFor(() => {
-      expect(screen.getByTestId('mocked-overrides-section')).toBeInTheDocument()
-    })
-  })
-
-  it('passes correct props to ContextOverridesSection', async () => {
-    renderScreen()
-    const section = await screen.findByTestId('mocked-overrides-section')
-    expect(section).toHaveAttribute('data-project', 'p1')
-    expect(section).toHaveAttribute('data-flag', 'my-flag')
-    expect(section).toHaveAttribute('data-env', 'development')
-  })
-
-  it('ContextOverridesSection not rendered in Usage tab', async () => {
-    renderScreen()
-    await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /usage/i })).toBeInTheDocument()
-    })
-    fireEvent.click(screen.getByRole('tab', { name: /usage/i }))
-    expect(screen.queryByTestId('mocked-overrides-section')).not.toBeInTheDocument()
   })
 })
 

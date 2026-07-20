@@ -85,8 +85,8 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
         <div className="page-header-text">
           <h1>Environments</h1>
           <p className="page-header-sub">
-            Flag state is scoped per environment. Each environment can have its own keys and
-            overrides.
+            Flag state is scoped per environment. Each environment can have its own keys and flag
+            values.
           </p>
         </div>
         <div className="page-header-actions">
@@ -284,11 +284,7 @@ function EnvFormModal({
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Modal.Header
-        subtitle={
-          isEdit ? undefined : 'A new environment starts with all flags off and no overrides.'
-        }
-      >
+      <Modal.Header subtitle={isEdit ? undefined : 'A new environment starts with all flags off.'}>
         {isEdit ? 'Edit environment' : 'New environment'}
       </Modal.Header>
       <Modal.Body>
