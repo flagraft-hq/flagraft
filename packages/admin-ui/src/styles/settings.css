@@ -194,3 +194,187 @@
 .setup-submit {
   width: 100%;
 }
+
+/* Context fields section */
+
+.ctx-section-sub {
+  font-size: 13px;
+  color: var(--text-3);
+  line-height: 1.55;
+  margin: 0 0 var(--s-5);
+}
+
+.ctx-inline-state {
+  font-size: 13px;
+  color: var(--text-3);
+  padding: var(--s-4) 0;
+}
+
+.ctx-empty {
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-6);
+}
+
+.ctx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ctx-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-3);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 var(--s-3) var(--s-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.ctx-table td {
+  padding: var(--s-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.ctx-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ctx-key-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.ctx-key {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.ctx-key-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 3px;
+  max-width: 320px;
+}
+
+.ctx-enum-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.ctx-enum {
+  font-size: 11px;
+  padding: 1px 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+}
+
+.ctx-enum-more {
+  font-size: 11px;
+}
+
+.ctx-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+
+.ctx-source .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.ctx-source[data-source='sdk'] .dot {
+  background: var(--pri);
+}
+
+.ctx-source[data-source='server'] .dot {
+  background: var(--warning, #d97706);
+}
+
+.ctx-source[data-source='computed'] .dot {
+  background: var(--text-3);
+}
+
+.ctx-example {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.ctx-row-actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+
+.ctx-section-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--s-4);
+}
+
+/* Context field dialog */
+
+.ctx-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.ctx-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+}
+
+.ctx-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.ctx-required-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 36px;
+}
+
+.ctx-seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.ctx-seg-btn {
+  padding: var(--s-2) var(--s-3);
+  font-size: 13px;
+  background: var(--bg-elev);
+  color: var(--text-2);
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.ctx-seg-btn:last-child {
+  border-right: none;
+}
+
+.ctx-seg-btn[aria-pressed='true'] {
+  background: var(--pri-soft);
+  color: var(--pri);
+  font-weight: 500;
+}
