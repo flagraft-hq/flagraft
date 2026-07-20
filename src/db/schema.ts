@@ -146,10 +146,7 @@ export const contextFields = pgTable(
       .references(() => projects.id, { onDelete: 'cascade' }),
     key: text('key').notNull(),
     type: text('type').notNull().default('string'),
-    source: text('source').notNull().default('sdk'),
-    required: boolean('required').notNull().default(false),
     description: text('description'),
-    example: text('example'),
     enumValues: text('enum_values').array(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -157,7 +154,6 @@ export const contextFields = pgTable(
   (table) => [
     unique('context_fields_project_id_key_unique').on(table.projectId, table.key),
     check('context_fields_type_check', sql`"type" IN ('string','enum','boolean','number','version','date')`),
-    check('context_fields_source_check', sql`"source" IN ('sdk','server','computed')`),
   ],
 )
 

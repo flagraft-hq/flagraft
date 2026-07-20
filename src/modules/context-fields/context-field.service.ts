@@ -13,10 +13,7 @@ function toResponse(row: ContextFieldRow) {
     id: row.id,
     key: row.key,
     type: row.type,
-    source: row.source,
-    required: row.required,
     description: row.description,
-    example: row.example,
     enumValues: row.enumValues,
   }
 }
@@ -56,10 +53,7 @@ export async function createContextField(
       projectId,
       key: input.key,
       type: input.type,
-      source: input.source,
-      required: input.required,
       description: input.description ?? null,
-      example: input.example ?? null,
       enumValues: input.enumValues ?? null,
     })
     .returning()
@@ -80,10 +74,7 @@ export async function updateContextField(
     .update(contextFields)
     .set({
       type: input.type,
-      source: input.source,
-      required: input.required,
       description: input.description ?? null,
-      example: input.example ?? null,
       enumValues: input.enumValues ?? null,
       updatedAt: new Date(),
     })

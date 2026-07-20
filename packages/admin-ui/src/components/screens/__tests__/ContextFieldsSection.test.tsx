@@ -37,20 +37,14 @@ const fields = [
     id: 'cf-1',
     key: 'plan',
     type: 'enum' as const,
-    source: 'sdk' as const,
-    required: true,
     description: 'Subscription tier',
-    example: 'starter',
     enumValues: ['free', 'pro', 'enterprise', 'legacy'],
   },
   {
     id: 'cf-2',
     key: 'country',
     type: 'string' as const,
-    source: 'server' as const,
-    required: false,
     description: null,
-    example: null,
     enumValues: null,
   },
 ]
@@ -61,11 +55,10 @@ beforeEach(() => {
 })
 
 describe('ContextFieldsSection', () => {
-  it('renders fields from the API with required badge and first 3 enum chips', async () => {
+  it('renders fields from the API with the first 3 enum chips', async () => {
     render(<ContextFieldsSection projectId="p1" />)
     expect(await screen.findByText('plan')).toBeInTheDocument()
     expect(screen.getByText('country')).toBeInTheDocument()
-    expect(screen.getByText('required')).toBeInTheDocument()
     // enum shows first 3 values plus a "+1" overflow
     expect(screen.getByText('free')).toBeInTheDocument()
     expect(screen.getByText('pro')).toBeInTheDocument()
@@ -96,7 +89,7 @@ describe('ContextFieldsSection', () => {
     await waitFor(() =>
       expect(mockApi.create).toHaveBeenCalledWith(
         'p1',
-        expect.objectContaining({ key: 'cohort', type: 'string', source: 'sdk' }),
+        expect.objectContaining({ key: 'cohort', type: 'string' }),
       ),
     )
     // initial load + refetch after save

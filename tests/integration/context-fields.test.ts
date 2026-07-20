@@ -10,10 +10,7 @@ interface ContextFieldResponse {
   id: string
   key: string
   type: string
-  source: string
-  required: boolean
   description: string | null
-  example: string | null
   enumValues: string[] | null
 }
 
@@ -54,10 +51,7 @@ describeIfDb('context-fields', () => {
     const created = await create(app, adminKey, projectId, {
       key: 'plan',
       type: 'enum',
-      source: 'sdk',
-      required: true,
       description: 'Subscription tier',
-      example: 'pro',
       enumValues: ['free', 'pro'],
     })
     expect(created.statusCode).toBe(201)
@@ -65,10 +59,7 @@ describeIfDb('context-fields', () => {
     expect(field).toMatchObject({
       key: 'plan',
       type: 'enum',
-      source: 'sdk',
-      required: true,
       description: 'Subscription tier',
-      example: 'pro',
       enumValues: ['free', 'pro'],
     })
     expect(typeof field.id).toBe('string')
@@ -85,14 +76,12 @@ describeIfDb('context-fields', () => {
       method: 'PATCH',
       url: `/api/v1/admin/projects/${projectId}/context-fields/${field.id}`,
       headers: { authorization: adminKey },
-      payload: { type: 'string', source: 'server', required: false, description: 'Now a string' },
+      payload: { type: 'string', description: 'Now a string' },
     })
     expect(patched.statusCode).toBe(200)
     expect(patched.json<ContextFieldResponse>()).toMatchObject({
       key: 'plan',
       type: 'string',
-      source: 'server',
-      required: false,
       description: 'Now a string',
       enumValues: null,
     })

@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 export const FIELD_TYPES = ['string', 'enum', 'boolean', 'number', 'version', 'date'] as const
-export const FIELD_SOURCES = ['sdk', 'server', 'computed'] as const
 
 export const contextFieldParamsSchema = z.object({
   projectId: z.string().uuid(),
@@ -26,10 +25,7 @@ const keySchema = z
  */
 const fieldShape = {
   type: z.enum(FIELD_TYPES).default('string'),
-  source: z.enum(FIELD_SOURCES).default('sdk'),
-  required: z.boolean().default(false),
   description: z.string().optional(),
-  example: z.string().optional(),
   enumValues: z.array(z.string().min(1)).optional(),
 }
 

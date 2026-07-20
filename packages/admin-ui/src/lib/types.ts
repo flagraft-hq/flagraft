@@ -1,6 +1,5 @@
 export type EnvColor = 'teal' | 'amber' | 'red' | 'slate'
 export type FieldType = 'string' | 'enum' | 'boolean' | 'number' | 'version' | 'date'
-export type FieldSource = 'sdk' | 'server' | 'computed'
 export type KeyScope = 'root' | 'admin' | 'client'
 
 export interface Project {
@@ -56,10 +55,7 @@ export interface ContextField {
   id: string
   key: string
   type: FieldType
-  source: FieldSource
-  required: boolean
   description: string | null
-  example: string | null
   enumValues: string[] | null
 }
 
@@ -67,10 +63,7 @@ export interface ContextField {
 export interface ContextFieldInput {
   key: string
   type: FieldType
-  source: FieldSource
-  required: boolean
   description?: string
-  example?: string
   enumValues?: string[]
 }
 

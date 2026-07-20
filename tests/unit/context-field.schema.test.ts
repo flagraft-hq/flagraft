@@ -30,9 +30,9 @@ describe('createContextFieldSchema', () => {
   })
 
   describe('defaults', () => {
-    it('defaults type=string, source=sdk, required=false', () => {
+    it('defaults type=string', () => {
       const result = createContextFieldSchema.parse({ key: 'plan' })
-      expect(result).toMatchObject({ type: 'string', source: 'sdk', required: false })
+      expect(result).toMatchObject({ type: 'string' })
     })
   })
 
@@ -59,11 +59,6 @@ describe('createContextFieldSchema', () => {
       })
       expect(result.success).toBe(false)
     })
-  })
-
-  it('rejects an invalid source', () => {
-    const result = createContextFieldSchema.safeParse({ key: 'plan', source: 'nope' })
-    expect(result.success).toBe(false)
   })
 })
 

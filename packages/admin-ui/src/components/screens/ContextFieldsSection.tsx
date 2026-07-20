@@ -22,12 +22,6 @@ const TYPE_VARIANT: Record<FieldType, 'default' | 'success' | 'warning'> = {
   date: 'default',
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  sdk: 'SDK',
-  server: 'Server',
-  computed: 'Computed',
-}
-
 export function ContextFieldsSection({ projectId }: { projectId: string }) {
   const { fields, loading, error, refetch } = useContextFields(projectId)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -86,8 +80,6 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
                 <tr>
                   <th>Key</th>
                   <th>Type</th>
-                  <th>Source</th>
-                  <th>Example</th>
                   <th aria-label="Actions" />
                 </tr>
               </thead>
@@ -95,10 +87,7 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
                 {fields.map((f) => (
                   <tr key={f.id}>
                     <td>
-                      <div className="ctx-key-row">
-                        <span className="mono ctx-key">{f.key}</span>
-                        {f.required && <Badge variant="warning">required</Badge>}
-                      </div>
+                      <span className="mono ctx-key">{f.key}</span>
                       {f.description && <div className="ctx-key-desc">{f.description}</div>}
                     </td>
                     <td>
@@ -117,15 +106,6 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
                           )}
                         </div>
                       )}
-                    </td>
-                    <td>
-                      <span className="ctx-source" data-source={f.source}>
-                        <span className="dot" />
-                        {SOURCE_LABEL[f.source] ?? f.source}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="mono ctx-example">{f.example ?? '—'}</span>
                     </td>
                     <td>
                       <div className="ctx-row-actions">

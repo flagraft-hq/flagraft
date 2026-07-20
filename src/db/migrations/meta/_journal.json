@@ -71,6 +71,13 @@
       "when": 1784531383678,
       "tag": "0009_fat_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784545135710,
+      "tag": "0010_rainy_richard_fisk",
+      "breakpoints": true
     }
   ]
 }

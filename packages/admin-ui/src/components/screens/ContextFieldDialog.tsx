@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react'
 
 import { contextFieldsApi } from '../../lib/api'
 import { ApiError } from '../../lib/api'
-import type { ContextField, FieldSource, FieldType } from '../../lib/types'
+import type { ContextField, FieldType } from '../../lib/types'
 import { Button } from '../primitives/Button'
 import { FormError } from '../primitives/FormError'
 import { Modal } from '../primitives/Modal'
 import { Select } from '../primitives/Select'
 import { TextField } from '../primitives/TextField'
-import { Toggle } from '../primitives/Toggle'
 
 const KEY_RE = /^[A-Za-z_][A-Za-z0-9_.-]*$/
 
@@ -19,12 +18,6 @@ const TYPE_OPTIONS: { value: FieldType; label: string }[] = [
   { value: 'number', label: 'number' },
   { value: 'version', label: 'version' },
   { value: 'date', label: 'date' },
-]
-
-const SOURCES: { value: FieldSource; label: string }[] = [
-  { value: 'sdk', label: 'SDK' },
-  { value: 'server', label: 'Server' },
-  { value: 'computed', label: 'Computed' },
 ]
 
 interface ContextFieldDialogProps {
@@ -47,10 +40,7 @@ export function ContextFieldDialog({
 
   const [key, setKey] = useState('')
   const [type, setType] = useState<FieldType>('string')
-  const [source, setSource] = useState<FieldSource>('sdk')
-  const [required, setRequired] = useState(false)
   const [description, setDescription] = useState('')
-  const [example, setExample] = useState('')
   const [enumText, setEnumText] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ key?: string; enumValues?: string }>({})
   const [apiError, setApiError] = useState<string | null>(null)
@@ -61,10 +51,7 @@ export function ContextFieldDialog({
     if (!open) return
     setKey(field?.key ?? '')
     setType(field?.type ?? 'string')
-    setSource(field?.source ?? 'sdk')
-    setRequired(field?.required ?? false)
     setDescription(field?.description ?? '')
-    setExample(field?.example ?? '')
     setEnumText((field?.enumValues ?? []).join(', '))
     setFieldErrors({})
     setApiError(null)
@@ -103,10 +90,7 @@ export function ContextFieldDialog({
     const enumValues = type === 'enum' ? parseEnumValues() : undefined
     const common = {
       type,
-      source,
-      required,
       description: description.trim() || undefined,
-      example: example.trim() || undefined,
       enumValues,
     }
     try {
@@ -126,7 +110,7 @@ export function ContextFieldDialog({
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
-      <Modal.Header subtitle="Defines a key that targeting rules can match on. Changes take effect on the next evaluation.">
+      <Modal.Header subtitle="Defines a key that targeting strategies can match on. Changes take effect on the next evaluation.">
         {isEdit ? 'Edit context field' : 'New context field'}
       </Modal.Header>
       <Modal.Body>
@@ -139,8 +123,12 @@ export function ContextFieldDialog({
               value={key}
               onChange={setKey}
               disabled={isEdit}
-              placeholder="e.g. plan"
-              hint={isEdit ? 'Key is immutable — delete and recreate to rename.' : 'Used verbatim in SDK calls and rules.'}
+              placeholder="e.g. tenant"
+              hint={
+                isEdit
+                  ? 'Key is immutable — delete and recreate to rename.'
+                  : 'Used verbatim in SDK calls and strategies.'
+              }
               error={fieldErrors.key}
             />
             <Select
@@ -159,35 +147,6 @@ export function ContextFieldDialog({
             placeholder="What this field means and where it comes from."
           />
 
-          <div className="ctx-form-row">
-            <div className="ctx-form-group">
-              <span className="text-field-label">Source</span>
-              <div className="ctx-seg" role="group" aria-label="Source">
-                {SOURCES.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    className="ctx-seg-btn"
-                    aria-pressed={source === s.value}
-                    onClick={() => setSource(s.value)}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-              <span className="text-field-hint">
-                Server &amp; computed values are not sent by the SDK.
-              </span>
-            </div>
-            <div className="ctx-form-group">
-              <span className="text-field-label">Required</span>
-              <div className="ctx-required-row">
-                <Toggle checked={required} onChange={setRequired} label="Required field" />
-                <span className="muted">Reject evaluations missing this field.</span>
-              </div>
-            </div>
-          </div>
-
           {type === 'enum' && (
             <TextField
               label="Allowed values"
@@ -195,19 +154,10 @@ export function ContextFieldDialog({
               value={enumText}
               onChange={setEnumText}
               placeholder="free, pro, enterprise"
-              hint="Comma-separated. Rules can only compare against these values."
+              hint="Comma-separated. Strategies can only compare against these values."
               error={fieldErrors.enumValues}
             />
           )}
-
-          <TextField
-            label="Example"
-            className="mono"
-            value={example}
-            onChange={setExample}
-            placeholder="pro"
-            hint="Shown in the rule builder so editors know what to expect."
-          />
         </div>
       </Modal.Body>
       <Modal.Footer>
