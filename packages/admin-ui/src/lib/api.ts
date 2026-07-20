@@ -1,15 +1,7 @@
 import axios from 'axios'
 
 import type { UserRole } from './roles'
-import type {
-  Flag,
-  ContextField,
-  Project,
-  Env,
-  ApiKey,
-  ApiKeyType,
-  CreatedApiKey,
-} from './types'
+import type { Flag, ContextField, Project, Env, ApiKey, ApiKeyType, CreatedApiKey } from './types'
 
 /** Carries the HTTP status alongside the server-provided message. */
 export class ApiError extends Error {

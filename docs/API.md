@@ -167,28 +167,28 @@ Evaluation always returns the environment default for the flag -- there's no per
 
 ## All Endpoints at a Glance
 
-| Method   | Path                                                                       | Auth   | What it does                                  |
-| -------- | -------------------------------------------------------------------------- | ------ | --------------------------------------------- |
-| `POST`   | `/api/admin/projects`                                                      | root   | Create project (auto-creates 3 envs)          |
-| `GET`    | `/api/admin/projects`                                                      | admin  | List projects                                 |
-| `GET`    | `/api/admin/projects/:id`                                                  | admin  | Get project                                   |
-| `PATCH`  | `/api/admin/projects/:id`                                                  | admin  | Update name / slug / description              |
-| `DELETE` | `/api/admin/projects/:id`                                                  | root   | Delete project and all children               |
-| `POST`   | `/api/admin/projects/:id/environments`                                     | admin  | Create environment                            |
-| `GET`    | `/api/admin/projects/:id/environments`                                     | admin  | List environments                             |
-| `DELETE` | `/api/admin/projects/:id/environments/:envId`                              | admin  | Delete environment                            |
-| `POST`   | `/api/admin/projects/:id/flags`                                            | admin  | Create flag (auto-creates flag_environments)  |
-| `GET`    | `/api/admin/projects/:id/flags`                                            | admin  | List flags                                    |
-| `GET`    | `/api/admin/projects/:id/flags/:key`                                       | admin  | Get flag                                      |
-| `PATCH`  | `/api/admin/projects/:id/flags/:key`                                       | admin  | Update name / description                     |
-| `DELETE` | `/api/admin/projects/:id/flags/:key`                                       | admin  | Delete flag                                   |
-| `POST`   | `/api/admin/projects/:id/flags/:key/environments/:envSlug/enable`          | admin  | Enable flag in environment                    |
-| `POST`   | `/api/admin/projects/:id/flags/:key/environments/:envSlug/disable`         | admin  | Disable flag in environment                   |
-| `POST`   | `/api/admin/projects/:id/keys`                                             | admin  | Create API key (plaintext returned once)      |
-| `GET`    | `/api/admin/projects/:id/keys`                                             | admin  | List keys (prefix only, no plaintext)         |
-| `DELETE` | `/api/admin/projects/:id/keys/:keyId`                                      | admin  | Revoke key                                    |
-| `GET`    | `/api/client/features`                                                     | client | Evaluate all flags for the scoped environment |
-| `GET`    | `/api/client/features/:flagKey`                                            | client | Evaluate one flag with reason                 |
+| Method   | Path                                                               | Auth   | What it does                                  |
+| -------- | ------------------------------------------------------------------ | ------ | --------------------------------------------- |
+| `POST`   | `/api/admin/projects`                                              | root   | Create project (auto-creates 3 envs)          |
+| `GET`    | `/api/admin/projects`                                              | admin  | List projects                                 |
+| `GET`    | `/api/admin/projects/:id`                                          | admin  | Get project                                   |
+| `PATCH`  | `/api/admin/projects/:id`                                          | admin  | Update name / slug / description              |
+| `DELETE` | `/api/admin/projects/:id`                                          | root   | Delete project and all children               |
+| `POST`   | `/api/admin/projects/:id/environments`                             | admin  | Create environment                            |
+| `GET`    | `/api/admin/projects/:id/environments`                             | admin  | List environments                             |
+| `DELETE` | `/api/admin/projects/:id/environments/:envId`                      | admin  | Delete environment                            |
+| `POST`   | `/api/admin/projects/:id/flags`                                    | admin  | Create flag (auto-creates flag_environments)  |
+| `GET`    | `/api/admin/projects/:id/flags`                                    | admin  | List flags                                    |
+| `GET`    | `/api/admin/projects/:id/flags/:key`                               | admin  | Get flag                                      |
+| `PATCH`  | `/api/admin/projects/:id/flags/:key`                               | admin  | Update name / description                     |
+| `DELETE` | `/api/admin/projects/:id/flags/:key`                               | admin  | Delete flag                                   |
+| `POST`   | `/api/admin/projects/:id/flags/:key/environments/:envSlug/enable`  | admin  | Enable flag in environment                    |
+| `POST`   | `/api/admin/projects/:id/flags/:key/environments/:envSlug/disable` | admin  | Disable flag in environment                   |
+| `POST`   | `/api/admin/projects/:id/keys`                                     | admin  | Create API key (plaintext returned once)      |
+| `GET`    | `/api/admin/projects/:id/keys`                                     | admin  | List keys (prefix only, no plaintext)         |
+| `DELETE` | `/api/admin/projects/:id/keys/:keyId`                              | admin  | Revoke key                                    |
+| `GET`    | `/api/client/features`                                             | client | Evaluate all flags for the scoped environment |
+| `GET`    | `/api/client/features/:flagKey`                                    | client | Evaluate one flag with reason                 |
 
 ---
 

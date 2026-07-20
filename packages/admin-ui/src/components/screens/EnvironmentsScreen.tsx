@@ -284,11 +284,7 @@ function EnvFormModal({
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Modal.Header
-        subtitle={
-          isEdit ? undefined : 'A new environment starts with all flags off.'
-        }
-      >
+      <Modal.Header subtitle={isEdit ? undefined : 'A new environment starts with all flags off.'}>
         {isEdit ? 'Edit environment' : 'New environment'}
       </Modal.Header>
       <Modal.Body>

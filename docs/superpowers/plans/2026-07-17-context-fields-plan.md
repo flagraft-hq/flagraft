@@ -108,7 +108,10 @@ export const contextFields = pgTable(
   },
   (table) => [
     unique('context_fields_project_id_key_unique').on(table.projectId, table.key),
-    check('context_fields_type_check', sql`"type" IN ('string','enum','boolean','number','version','date')`),
+    check(
+      'context_fields_type_check',
+      sql`"type" IN ('string','enum','boolean','number','version','date')`,
+    ),
     check('context_fields_source_check', sql`"source" IN ('sdk','server','computed')`),
   ],
 )
@@ -120,12 +123,12 @@ Plus `contextFieldRelations` (one project), `projectRelations.contextFields: man
 
 New module `src/modules/context-fields/` mirroring the flags module layout (schema / service / routes), all under `preHandler: fastify.requireAdminKey`, registered in `src/server.ts`:
 
-| Method | Path | Behavior |
-| --- | --- | --- |
-| GET | `/admin/projects/:projectId/context-fields` | List, ordered by key |
-| POST | `/admin/projects/:projectId/context-fields` | Create; 409 on duplicate key |
-| PATCH | `/admin/projects/:projectId/context-fields/:fieldId` | Update everything except `key` |
-| DELETE | `/admin/projects/:projectId/context-fields/:fieldId` | 204 |
+| Method | Path                                                 | Behavior                       |
+| ------ | ---------------------------------------------------- | ------------------------------ |
+| GET    | `/admin/projects/:projectId/context-fields`          | List, ordered by key           |
+| POST   | `/admin/projects/:projectId/context-fields`          | Create; 409 on duplicate key   |
+| PATCH  | `/admin/projects/:projectId/context-fields/:fieldId` | Update everything except `key` |
+| DELETE | `/admin/projects/:projectId/context-fields/:fieldId` | 204                            |
 
 Key is immutable after creation — it's the identifier future targeting rules will reference; delete + recreate covers renames. No `usedIn`, no delete guard (nothing references fields anymore). No cache involvement.
 
