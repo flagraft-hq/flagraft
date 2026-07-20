@@ -137,11 +137,40 @@ export const userProjects = pgTable(
   (table) => [unique('user_projects_user_id_project_id_unique').on(table.userId, table.projectId)],
 )
 
+export const contextFields = pgTable(
+  'context_fields',
+  {
+    id: id(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    type: text('type').notNull().default('string'),
+    source: text('source').notNull().default('sdk'),
+    required: boolean('required').notNull().default(false),
+    description: text('description'),
+    example: text('example'),
+    enumValues: text('enum_values').array(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    unique('context_fields_project_id_key_unique').on(table.projectId, table.key),
+    check('context_fields_type_check', sql`"type" IN ('string','enum','boolean','number','version','date')`),
+    check('context_fields_source_check', sql`"source" IN ('sdk','server','computed')`),
+  ],
+)
+
 export const projectRelations = relations(projects, ({ many }) => ({
   environments: many(environments),
   flags: many(featureFlags),
   apiKeys: many(apiKeys),
   members: many(userProjects),
+  contextFields: many(contextFields),
+}))
+
+export const contextFieldRelations = relations(contextFields, ({ one }) => ({
+  project: one(projects, { fields: [contextFields.projectId], references: [projects.id] }),
 }))
 
 export const environmentRelations = relations(environments, ({ one, many }) => ({
@@ -193,3 +222,5 @@ export type NewApiKey = typeof apiKeys.$inferInsert
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type UserProject = typeof userProjects.$inferSelect
+export type ContextField = typeof contextFields.$inferSelect
+export type NewContextField = typeof contextFields.$inferInsert
