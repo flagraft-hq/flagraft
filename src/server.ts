@@ -12,6 +12,7 @@ import { createProject } from './modules/projects/project.service.js'
 import { users, projects } from './db/schema.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { clientRoutes } from './modules/client/client.routes.js'
+import { contextFieldRoutes } from './modules/context-fields/context-field.routes.js'
 import { environmentRoutes } from './modules/environments/environment.routes.js'
 import { flagRoutes } from './modules/flags/flag.routes.js'
 import { keyRoutes } from './modules/keys/key.routes.js'
@@ -79,6 +80,7 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(projectRoutes, v1Prefix)
   await fastify.register(environmentRoutes, v1Prefix)
   await fastify.register(flagRoutes, v1Prefix)
+  await fastify.register(contextFieldRoutes, v1Prefix)
   await fastify.register(keyRoutes, v1Prefix)
   await fastify.register(clientRoutes, v1Prefix)
   await fastify.register(userRoutes, v1Prefix)
