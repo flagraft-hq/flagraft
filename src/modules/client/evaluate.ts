@@ -98,9 +98,10 @@ export function matchConstraint(
   ctxValue: string | undefined,
 ): boolean {
   if (ctxValue === undefined) return false
+  if (fieldType === undefined) return false
   const first = c.values[0] ?? ''
 
-  switch (fieldType ?? 'string') {
+  switch (fieldType) {
     case 'boolean':
       return c.operator === 'is' && toBool(ctxValue) === toBool(first)
 

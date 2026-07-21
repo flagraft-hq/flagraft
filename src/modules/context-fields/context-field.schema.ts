@@ -20,11 +20,10 @@ const keySchema = z
   )
 
 /**
- * Shared shape for create and update. `enumValues` is validated against
- * `type` by the refinement below, not here.
+ * Optional fields shared by create and update. `enumValues` is validated
+ * against `type` by the refinement below, not here.
  */
-const fieldShape = {
-  type: z.enum(FIELD_TYPES).default('string'),
+const optionalFields = {
   description: z.string().optional(),
   enumValues: z.array(z.string().min(1)).optional(),
 }
@@ -55,11 +54,17 @@ function refineEnumValues(
 }
 
 export const createContextFieldSchema = z
-  .object({ key: keySchema, ...fieldShape })
+  .object({ key: keySchema, type: z.enum(FIELD_TYPES).default('string'), ...optionalFields })
   .superRefine(refineEnumValues)
 
-/** Update replaces every mutable field; `key` is immutable after creation. */
-export const updateContextFieldSchema = z.object(fieldShape).superRefine(refineEnumValues)
+/**
+ * Update replaces every mutable field (`key` is immutable). `type` is
+ * REQUIRED here — no default — so a partial PATCH can never silently reset an
+ * enum/number/date field to `string` and drop its `enumValues`.
+ */
+export const updateContextFieldSchema = z
+  .object({ type: z.enum(FIELD_TYPES), ...optionalFields })
+  .superRefine(refineEnumValues)
 
 export type CreateContextFieldInput = z.infer<typeof createContextFieldSchema>
 export type UpdateContextFieldInput = z.infer<typeof updateContextFieldSchema>

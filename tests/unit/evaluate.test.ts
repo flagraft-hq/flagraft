@@ -15,6 +15,12 @@ describe('matchConstraint', () => {
     expect(matchConstraint(c('tenant', 'notIn', 'phyg'), 'string', undefined)).toBe(false)
   })
 
+  it('unregistered/deleted field (undefined type) never matches (fail-closed)', () => {
+    expect(matchConstraint(c('tenant', 'in', 'phyg'), undefined, 'phyg')).toBe(false)
+    expect(matchConstraint(c('tenant', 'equals', 'phyg'), undefined, 'phyg')).toBe(false)
+    expect(matchConstraint(c('tenant', 'notIn', 'other'), undefined, 'phyg')).toBe(false)
+  })
+
   it('string / enum operators', () => {
     expect(matchConstraint(c('t', 'equals', 'phyg'), 'string', 'phyg')).toBe(true)
     expect(matchConstraint(c('t', 'equals', 'phyg'), 'string', 'acme')).toBe(false)
@@ -83,6 +89,15 @@ describe('evaluateFlag', () => {
     expect(evaluateFlag(state, types, { tenant: 'phyg' })).toEqual({
       enabled: true,
       reason: 'strategy-match',
+    })
+  })
+
+  it('a strategy referencing an unregistered field fails closed', () => {
+    // `tenant` is not in the field-type map (e.g. deleted after the strategy was saved)
+    const state: FlagState = { enabled: true, strategies: [strat(c('tenant', 'in', 'phyg'))] }
+    expect(evaluateFlag(state, { plan: 'enum' }, { tenant: 'phyg' })).toEqual({
+      enabled: false,
+      reason: 'default',
     })
   })
 
