@@ -1,6 +1,5 @@
 export type EnvColor = 'teal' | 'amber' | 'red' | 'slate'
 export type FieldType = 'string' | 'enum' | 'boolean' | 'number' | 'version' | 'date'
-export type FieldSource = 'sdk' | 'server' | 'computed'
 export type KeyScope = 'root' | 'admin' | 'client'
 
 export interface Project {
@@ -53,14 +52,33 @@ export interface Flag {
 }
 
 export interface ContextField {
+  id: string
   key: string
   type: FieldType
-  source: FieldSource
-  required: boolean
-  example: string
-  desc: string
+  description: string | null
+  enumValues: string[] | null
+}
+
+/** Payload for creating a context field; `key` is omitted when updating. */
+export interface ContextFieldInput {
+  key: string
+  type: FieldType
+  description?: string
   enumValues?: string[]
-  usedIn: number
+}
+
+/** One condition within a strategy. All constraints in a strategy AND together. */
+export interface StrategyConstraint {
+  fieldKey: string
+  operator: string
+  values: string[]
+}
+
+/** A targeting strategy for a flag in one environment. A match means "on". */
+export interface Strategy {
+  id: string
+  position: number
+  constraints: StrategyConstraint[]
 }
 
 export interface ApiKey {

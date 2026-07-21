@@ -8,6 +8,23 @@ import * as service from './client.service.js'
 
 const flagParamSchema = z.object({ flagKey: z.string().min(1) })
 
+/**
+ * Turns the request query string into an evaluation context. Query values are
+ * always strings; a repeated param collapses to its first value. The SDK sends
+ * context this way (e.g. ?tenant=phyg&plan=pro).
+ */
+function queryToContext(query: unknown): Record<string, string> {
+  const context: Record<string, string> = {}
+  if (query && typeof query === 'object') {
+    for (const [key, value] of Object.entries(query as Record<string, unknown>)) {
+      const first = Array.isArray(value) ? (value[0] as unknown) : value
+      if (typeof first === 'string') context[key] = first
+      else if (typeof first === 'number' || typeof first === 'boolean') context[key] = String(first)
+    }
+  }
+  return context
+}
+
 export async function clientRoutes(fastify: FastifyInstance) {
   const config = loadConfig()
 
@@ -51,9 +68,9 @@ export async function clientRoutes(fastify: FastifyInstance) {
       const ctx = request.keyContext!
       const state = await fastify.cache.getOrSet(
         cacheKeys.flagState(ctx.projectId!, ctx.environmentId!),
-        () => service.loadFlagState(fastify.db, ctx.projectId!, ctx.environmentId!),
+        () => service.loadEnvState(fastify.db, ctx.projectId!, ctx.environmentId!),
       )
-      return { features: service.evaluateAll(state) }
+      return { features: service.evaluateAll(state, queryToContext(request.query)) }
     },
   )
 
@@ -75,7 +92,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
             properties: {
               name: { type: 'string' },
               enabled: { type: 'boolean' },
-              reason: { type: 'string', enum: ['default'] },
+              reason: { type: 'string', enum: ['disabled', 'strategy-match', 'default'] },
             },
           },
         },
@@ -86,9 +103,9 @@ export async function clientRoutes(fastify: FastifyInstance) {
       const params = flagParamSchema.parse(request.params)
       const state = await fastify.cache.getOrSet(
         cacheKeys.flagState(ctx.projectId!, ctx.environmentId!),
-        () => service.loadFlagState(fastify.db, ctx.projectId!, ctx.environmentId!),
+        () => service.loadEnvState(fastify.db, ctx.projectId!, ctx.environmentId!),
       )
-      return service.evaluateOne(state, params.flagKey)
+      return service.evaluateOne(state, params.flagKey, queryToContext(request.query))
     },
   )
 }

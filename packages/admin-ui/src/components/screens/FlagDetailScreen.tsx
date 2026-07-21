@@ -12,6 +12,8 @@ import { Toggle } from '../primitives/Toggle'
 import { Modal } from '../primitives/Modal'
 import { Badge } from '../primitives/Badge'
 import { TextField } from '../primitives/TextField'
+import { useContextFields } from '../../hooks/useContextFields'
+import { EnvStrategies } from './EnvStrategies'
 
 type TabId = 'environments' | 'usage' | 'history'
 
@@ -268,6 +270,7 @@ function EnvironmentsTab({
 }) {
   const toast = useToast()
   const { environments } = useProject()
+  const { fields: contextFields } = useContextFields(projectId)
   /** Display the environment's real name; fall back to the slug if unknown. */
   const nameFor = (slug: string) => environments.find((e) => e.slug === slug)?.name ?? slug
   const [confirmState, setConfirmState] = useState<{ env: string; checked: boolean } | null>(null)
@@ -329,6 +332,12 @@ function EnvironmentsTab({
                 </span>
                 <span className="muted"> · default value</span>
               </div>
+              <EnvStrategies
+                projectId={projectId}
+                flagKey={flagKey}
+                env={env}
+                contextFields={contextFields}
+              />
             </div>
           )
         })}

@@ -64,6 +64,27 @@
       "when": 1784289689685,
       "tag": "0008_curved_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784531383678,
+      "tag": "0009_fat_vapor",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784545135710,
+      "tag": "0010_rainy_richard_fisk",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784546185027,
+      "tag": "0011_cool_pixie",
+      "breakpoints": true
     }
   ]
 }

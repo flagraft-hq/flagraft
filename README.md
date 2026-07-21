@@ -37,17 +37,17 @@ SaaS feature flag tools work fine until you hit their pricing tiers, need flags 
 **Projects and environments**
 Flags are scoped per environment. Each project can have any number of environments (production, staging, preview -- whatever matches your workflow). Deleting an environment cascades cleanly.
 
-**Context-aware overrides**
-Pass any key/value context at evaluation time -- user ID, tenant, plan, region -- and get a different flag value back without touching the default. Useful for canary releases and per-tenant rollouts.
+**Context-aware targeting**
+Pass any key/value context at evaluation time -- user ID, tenant, plan, region -- and match it against per-environment targeting strategies to turn a flag on for a subset of callers. Useful for canary releases and per-tenant rollouts.
 
 **Three-tier auth**
 
 - Root admin keys: full access, created via CLI at setup time
-- Project admin keys: scoped to one project, manage flags and overrides
+- Project admin keys: scoped to one project, manage flags, context fields, and strategies
 - Client keys: scoped to one project and environment, evaluate flags only
 
 **In-memory caching**
-Flag state is cached per `projectId + environmentId` using BentoCache. Any write (flag update, override create/delete, environment delete) invalidates the relevant cache entries automatically. TTL is configurable via `CACHE_TTL_SECONDS`.
+Flag state is cached per `projectId + environmentId` using BentoCache. Any write (flag update, strategy change, environment delete) invalidates the relevant cache entries automatically. TTL is configurable via `CACHE_TTL_SECONDS`.
 
 **Rate limiting**
 Client evaluation routes (`/api/v1/client/*`) are rate-limited per IP. The limit and window are configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`. Breaches return a `429` with the standard error envelope.
@@ -69,7 +69,7 @@ Flagraft is designed around the patterns engineering teams actually use feature 
 
 - **Kill switches and circuit breakers.** Disable a misbehaving feature in production within seconds, no redeploy.
 - **Gradual rollouts and canary releases.** Enable a feature for a small set of users (by `userId`, `cohort`, or `region`), then expand as you gain confidence.
-- **A/B testing infrastructure.** Use overrides to direct cohorts to different variants and read the flag from your analytics pipeline.
+- **A/B testing infrastructure.** Use targeting strategies to direct cohorts to different variants and read the flag from your analytics pipeline.
 - **Per-tenant rollouts.** Enable features for specific tenants in a multi-tenant SaaS, useful for paid-tier gating or trusted-customer previews.
 - **Trunk-based development.** Merge incomplete features behind a flag and ship them dark; flip when ready.
 - **Environment promotion.** Keep separate flag state for `development`, `staging`, and `production` without duplicating config across services.
@@ -86,7 +86,7 @@ Flagraft is a deliberately small, focused alternative to the well-known feature 
 | Self-hosted             | Yes (single Postgres) | No (SaaS)    | Yes           | Yes           | Yes (paid) |
 | Open source             | Yes (MIT-style)       | No           | Yes (Apache)  | Yes (BSD)     | No         |
 | Per-seat pricing        | None                  | Yes          | None (OSS)    | None (OSS)    | Yes        |
-| Context-aware overrides | Built-in              | Built-in     | Built-in      | Built-in      | Built-in   |
+| Context-aware targeting | Built-in              | Built-in     | Built-in      | Built-in      | Built-in   |
 | Official TypeScript SDK | `@flagraft/sdk`       | Yes          | Yes           | Yes           | Yes        |
 | OpenAPI / Swagger UI    | Yes, at `/docs`       | Partial      | Yes           | Yes           | Yes        |
 | External services       | Just Postgres         | SaaS         | Postgres + UI | Postgres + UI | SaaS       |
@@ -194,27 +194,39 @@ All config is read from environment variables. See `.env.example` for the full l
 
 All routes are under `/api/v1`. Admin routes require a root or project admin key. Client evaluation routes require a client key. Health routes require no auth.
 
-| Method   | Path                                                                                           | Auth    | Description                          |
-| -------- | ---------------------------------------------------------------------------------------------- | ------- | ------------------------------------ |
-| `GET`    | `/health`                                                                                      | None    | Liveness check                       |
-| `GET`    | `/ready`                                                                                       | None    | Readiness check (verifies DB)        |
-| `GET`    | `/api/v1/admin/projects`                                                                       | Root    | List all projects                    |
-| `POST`   | `/api/v1/admin/projects`                                                                       | Root    | Create a project                     |
-| `GET`    | `/api/v1/admin/projects/:projectId/environments`                                               | Project | List environments                    |
-| `POST`   | `/api/v1/admin/projects/:projectId/environments`                                               | Project | Create an environment                |
-| `GET`    | `/api/v1/admin/projects/:projectId/flags`                                                      | Project | List feature flags                   |
-| `POST`   | `/api/v1/admin/projects/:projectId/flags`                                                      | Project | Create a flag                        |
-| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/enable`                | Project | Enable a flag in an environment      |
-| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/disable`               | Project | Disable a flag in an environment     |
-| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/overrides`             | Project | Create an override                   |
-| `DELETE` | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/overrides/:overrideId` | Project | Delete an override                   |
-| `GET`    | `/api/v1/admin/projects/:projectId/keys`                                                       | Project | List API keys                        |
-| `POST`   | `/api/v1/admin/projects/:projectId/keys`                                                       | Project | Create an API key                    |
-| `DELETE` | `/api/v1/admin/projects/:projectId/keys/:keyId`                                                | Project | Revoke an API key                    |
-| `GET`    | `/api/v1/client/features`                                                                      | Client  | Evaluate all flags for a context     |
-| `GET`    | `/api/v1/client/features/:flagKey`                                                             | Client  | Evaluate a single flag for a context |
+| Method   | Path                                                                                | Auth    | Description                          |
+| -------- | ----------------------------------------------------------------------------------- | ------- | ------------------------------------ |
+| `GET`    | `/health`                                                                           | None    | Liveness check                       |
+| `GET`    | `/ready`                                                                            | None    | Readiness check (verifies DB)        |
+| `GET`    | `/api/v1/admin/projects`                                                            | Root    | List all projects                    |
+| `POST`   | `/api/v1/admin/projects`                                                            | Root    | Create a project                     |
+| `GET`    | `/api/v1/admin/projects/:projectId/environments`                                    | Project | List environments                    |
+| `POST`   | `/api/v1/admin/projects/:projectId/environments`                                    | Project | Create an environment                |
+| `GET`    | `/api/v1/admin/projects/:projectId/flags`                                           | Project | List feature flags                   |
+| `POST`   | `/api/v1/admin/projects/:projectId/flags`                                           | Project | Create a flag                        |
+| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/enable`     | Project | Enable a flag in an environment      |
+| `POST`   | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/disable`    | Project | Disable a flag in an environment     |
+| `GET`    | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/strategies` | Project | List targeting strategies            |
+| `PUT`    | `/api/v1/admin/projects/:projectId/flags/:flagKey/environments/:envSlug/strategies` | Project | Replace targeting strategies         |
+| `GET`    | `/api/v1/admin/projects/:projectId/context-fields`                                  | Project | List context fields                  |
+| `POST`   | `/api/v1/admin/projects/:projectId/context-fields`                                  | Project | Create a context field               |
+| `PATCH`  | `/api/v1/admin/projects/:projectId/context-fields/:fieldId`                         | Project | Update a context field               |
+| `DELETE` | `/api/v1/admin/projects/:projectId/context-fields/:fieldId`                         | Project | Delete a context field               |
+| `GET`    | `/api/v1/admin/projects/:projectId/keys`                                            | Project | List API keys                        |
+| `POST`   | `/api/v1/admin/projects/:projectId/keys`                                            | Project | Create an API key                    |
+| `DELETE` | `/api/v1/admin/projects/:projectId/keys/:keyId`                                     | Project | Revoke an API key                    |
+| `GET`    | `/api/v1/client/features`                                                           | Client  | Evaluate all flags for a context     |
+| `GET`    | `/api/v1/client/features/:flagKey`                                                  | Client  | Evaluate a single flag for a context |
 
-Pass context as query params on client evaluation endpoints: `?userId=123&plan=pro`.
+Pass context as query params on client evaluation endpoints: `?tenant=phyg&plan=pro`. The server
+matches the context against each flag's **targeting strategies** for that environment (only keys
+registered as **context fields** are considered). A flag is on when the environment is enabled and
+either has no strategies (on for everyone) or at least one strategy whose constraints all match.
+The single-flag response includes a `reason`: `strategy-match`, `default`, or `disabled`.
+
+Targeting strategies are managed per flag + environment via the `strategies` endpoint (PUT replaces
+the whole ordered list). Each strategy is a set of constraints (`fieldKey`, `operator`, `values`)
+that AND together; multiple strategies OR together.
 
 ---
 
@@ -272,19 +284,19 @@ Yes. Flagraft is open source and self-hosted. There is no SaaS tier, no per-seat
 Yes, for the core feature flag management workflow (toggle features per environment, target users via context, evaluate from server or client SDK). See [How Flagraft compares](#how-flagraft-compares) for a feature-by-feature table. Some advanced capabilities (percentage rollouts, real-time SSE push, audit log, admin UI) are on the [roadmap](docs/ROADMAP.md).
 
 **Does Flagraft work for A/B testing and canary releases?**
-Yes. Use context-aware overrides keyed by `userId`, `cohort`, `region`, or any custom attribute to direct subsets of users to a variant or canary. The evaluation engine returns a deterministic on/off per (flag, context) pair.
+Yes. Use context-aware targeting strategies keyed by `userId`, `cohort`, `region`, `tenant`, or any custom context field to direct subsets of users to a variant or canary. The evaluation engine returns a deterministic on/off per (flag, context) pair.
 
 **What languages and frameworks are supported?**
 Any language can call the HTTP API directly. Today the official SDK is TypeScript / JavaScript via [`@flagraft/sdk`](packages/sdk-js/README.md), works with Node 20+, Bun, Deno, Cloudflare Workers, and Vercel Edge. Python and Go SDKs are on the [roadmap](docs/ROADMAP.md).
 
 **Does Flagraft support context-aware targeting (user, tenant, plan, region)?**
-Yes. The evaluation engine accepts a `Record<string, string>` context on every call and matches it against override rules stored per environment.
+Yes. The evaluation engine accepts a `Record<string, string>` context on every call and matches it against targeting strategies stored per flag and environment.
 
 **How does Flagraft handle high traffic on the evaluation hot path?**
 Flag state is cached in-process on the server using BentoCache, keyed by `projectId + environmentId`, and invalidated on writes. The TypeScript SDK adds a second layer of in-process TTL caching on the consumer side, which means typical reads never touch the database.
 
 **Is there an admin UI for non-technical team members?**
-Not yet. The admin UI is planned for Phase 5 of the [roadmap](docs/ROADMAP.md). Today, flag and override management is done via the HTTP API or Swagger UI at `/docs`.
+Not yet. The admin UI is planned for Phase 5 of the [roadmap](docs/ROADMAP.md). Today, flag, context-field, and strategy management is done via the HTTP API or Swagger UI at `/docs`.
 
 **Can Flagraft run in an air-gapped or compliance-restricted environment?**
 Yes. Flagraft has no external runtime dependencies beyond Postgres, sends no telemetry, and can run fully behind your firewall.

@@ -1,6 +1,7 @@
 import { useProject } from '../../contexts/ProjectContext'
 import { Tip } from '../primitives/Tip'
 import { Button } from '../primitives/Button'
+import { ContextFieldsSection } from './ContextFieldsSection'
 
 const ENVIRONMENTS = ['development', 'production'] as const
 
@@ -41,6 +42,8 @@ export function SettingsScreen() {
           ))}
         </div>
       </section>
+
+      <ContextFieldsSection projectId={activeProject.id} />
 
       <section className="settings-section settings-danger-zone">
         <h2 className="settings-section-title">Danger Zone</h2>

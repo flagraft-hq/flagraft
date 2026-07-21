@@ -194,3 +194,110 @@
 .setup-submit {
   width: 100%;
 }
+
+/* Context fields section */
+
+.ctx-section-sub {
+  font-size: 13px;
+  color: var(--text-3);
+  line-height: 1.55;
+  margin: 0 0 var(--s-5);
+}
+
+.ctx-inline-state {
+  font-size: 13px;
+  color: var(--text-3);
+  padding: var(--s-4) 0;
+}
+
+.ctx-empty {
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-6);
+}
+
+.ctx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ctx-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-3);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 var(--s-3) var(--s-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.ctx-table td {
+  padding: var(--s-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.ctx-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ctx-key {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.ctx-key-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 3px;
+  max-width: 320px;
+}
+
+.ctx-enum-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.ctx-enum {
+  font-size: 11px;
+  padding: 1px 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+}
+
+.ctx-enum-more {
+  font-size: 11px;
+}
+
+.ctx-row-actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+
+.ctx-section-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--s-4);
+}
+
+/* Context field dialog */
+
+.ctx-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.ctx-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+}

@@ -268,7 +268,7 @@ describeIfDb('client eval', () => {
   })
 
   describe('GET /api/v1/client/features/:flagKey', () => {
-    it('returns enabled false with reason default for a disabled flag', async () => {
+    it('returns enabled false with reason disabled for a disabled flag', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -286,7 +286,7 @@ describeIfDb('client eval', () => {
       })
 
       expect(res.statusCode).toBe(200)
-      expect(res.json()).toMatchObject({ name: 'off-flag', enabled: false, reason: 'default' })
+      expect(res.json()).toMatchObject({ name: 'off-flag', enabled: false, reason: 'disabled' })
       await app.close()
     })
 
