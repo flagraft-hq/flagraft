@@ -47,18 +47,22 @@ describe('EnvStrategies', () => {
     expect(await screen.findByText(/on for everyone while enabled/i)).toBeInTheDocument()
   })
 
-  it('renders a constraint chip for an existing strategy', async () => {
+  it('renders field, operator, and each value distinctly for an existing strategy', async () => {
     mockApi.list.mockResolvedValue({
       data: [
         {
           id: 's1',
           position: 0,
-          constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['phyg'] }],
+          constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['phyg', 'hell'] }],
         },
       ],
     })
     renderIt()
-    expect(await screen.findByText('tenant in phyg')).toBeInTheDocument()
+    expect(await screen.findByText('tenant')).toBeInTheDocument()
+    expect(screen.getByText('in')).toBeInTheDocument()
+    // each value is its own chip
+    expect(screen.getByText('phyg')).toBeInTheDocument()
+    expect(screen.getByText('hell')).toBeInTheDocument()
   })
 
   it('edit flow: add a strategy + condition, save, and refetch', async () => {
@@ -72,7 +76,7 @@ describe('EnvStrategies', () => {
 
     await user.click(within(dialog).getByRole('button', { name: /add strategy/i }))
     await user.click(within(dialog).getByRole('button', { name: /add condition/i }))
-    await user.type(within(dialog).getByPlaceholderText('value'), 'phyg')
+    await user.type(within(dialog).getByPlaceholderText(/type and press/i), 'phyg{enter}')
     await user.click(within(dialog).getByRole('button', { name: /save strategies/i }))
 
     await waitFor(() =>

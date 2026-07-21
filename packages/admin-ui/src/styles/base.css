@@ -201,7 +201,7 @@ body {
 
 .btn.primary {
   background: var(--pri);
-  color: #042b27;
+  color: #ffffff;
   border-color: var(--pri);
   font-weight: 600;
 }

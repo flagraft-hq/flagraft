@@ -149,8 +149,8 @@
 }
 
 .text-field-input {
-  padding: var(--s-3) var(--s-4);
-  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -208,7 +208,7 @@
   appearance: none;
   -webkit-appearance: none;
   padding: 8px 32px 8px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   font-family: var(--font-sans);
   font-size: 13.5px;

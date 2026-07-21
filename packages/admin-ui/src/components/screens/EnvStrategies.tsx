@@ -13,13 +13,32 @@ interface EnvStrategiesProps {
   contextFields: ContextField[]
 }
 
-/** Renders "field operator values" for a constraint, using the field's operator label. */
-function describeConstraint(c: StrategyConstraint, contextFields: ContextField[]): string {
+/** Human label for a constraint's operator, from the field's type. */
+function operatorLabel(c: StrategyConstraint, contextFields: ContextField[]): string {
   const field = contextFields.find((f) => f.key === c.fieldKey)
-  const fieldType = field?.type ?? 'string'
-  const label =
-    OPERATORS_BY_TYPE[fieldType].find((o) => o.value === c.operator)?.label ?? c.operator
-  return `${c.fieldKey} ${label} ${c.values.join(', ')}`
+  return (
+    OPERATORS_BY_TYPE[field?.type ?? 'string'].find((o) => o.value === c.operator)?.label ??
+    c.operator
+  )
+}
+
+/** One condition rendered as: **field** operator [value] [value]. */
+function Condition({ c, contextFields }: { c: StrategyConstraint; contextFields: ContextField[] }) {
+  return (
+    <span className="cond">
+      <span className="cond-field mono" title="Context Field">
+        {c.fieldKey}
+      </span>
+      <span className="cond-op">{operatorLabel(c, contextFields)}</span>
+      <span className="cond-vals">
+        {c.values.map((v, i) => (
+          <span key={`${v}-${i}`} className="cond-val mono" title="Value">
+            {v}
+          </span>
+        ))}
+      </span>
+    </span>
+  )
 }
 
 export function EnvStrategies({ projectId, flagKey, env, contextFields }: EnvStrategiesProps) {
@@ -31,7 +50,7 @@ export function EnvStrategies({ projectId, flagKey, env, contextFields }: EnvStr
       <div className="env-strategies-head">
         <span className="env-strategies-label">Targeting</span>
         <span className="spacer" />
-        <Button size="sm" variant="ghost" leftIcon="target" onClick={() => setEditing(true)}>
+        <Button size="sm" variant="primary" leftIcon="target" onClick={() => setEditing(true)}>
           Edit targeting
         </Button>
       </div>
@@ -48,21 +67,25 @@ export function EnvStrategies({ projectId, flagKey, env, contextFields }: EnvStr
       ) : strategies.length === 0 ? (
         <div className="env-strategies-state muted">On for everyone while enabled.</div>
       ) : (
-        <ul className="env-strategies-list">
-          {strategies.map((s) => (
-            <li key={s.id} className="env-strategy-row">
+        <div className="env-strategies-list">
+          {strategies.map((s, si) => (
+            <div key={s.id} className="env-strategy">
+              {si > 0 && <span className="env-strategy-or">or</span>}
               {s.constraints.length === 0 ? (
                 <span className="muted">matches everyone</span>
               ) : (
-                s.constraints.map((c, i) => (
-                  <span key={i} className="strat-chip mono">
-                    {describeConstraint(c, contextFields)}
-                  </span>
-                ))
+                <div className="cond-group">
+                  {s.constraints.map((c, ci) => (
+                    <span key={ci} className="cond-wrap">
+                      {ci > 0 && <span className="cond-and">and</span>}
+                      <Condition c={c} contextFields={contextFields} />
+                    </span>
+                  ))}
+                </div>
               )}
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       <StrategyEditorModal

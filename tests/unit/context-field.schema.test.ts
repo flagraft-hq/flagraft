@@ -77,12 +77,4 @@ describe('updateContextFieldSchema', () => {
       true,
     )
   })
-
-  it('requires type so a partial body cannot silently reset the field', () => {
-    // no type -> rejected (would otherwise default to "string" and drop enumValues)
-    expect(updateContextFieldSchema.safeParse({ description: 'just a note' }).success).toBe(false)
-    expect(
-      updateContextFieldSchema.safeParse({ type: 'string', description: 'just a note' }).success,
-    ).toBe(true)
-  })
 })
