@@ -75,7 +75,20 @@ describeIfDb('client evaluation with strategies', () => {
         headers: auth,
       })
     }
-    return { app, putStrategies, evalLobby, disableLobby, clientKey }
+    async function deleteTenantField() {
+      const list = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/context-fields`,
+        headers: auth,
+      })
+      const tenant = list.json<{ id: string; key: string }[]>().find((f) => f.key === 'tenant')!
+      return app.inject({
+        method: 'DELETE',
+        url: `/api/v1/admin/projects/${project.id}/context-fields/${tenant.id}`,
+        headers: auth,
+      })
+    }
+    return { app, putStrategies, evalLobby, disableLobby, deleteTenantField, clientKey }
   }
 
   it('enabled with no strategies is on for everyone (reason default)', async () => {
@@ -114,6 +127,26 @@ describeIfDb('client evaluation with strategies', () => {
     expect((await evalLobby('?tenant=phyg')).json()).toMatchObject({
       enabled: false,
       reason: 'disabled',
+    })
+    await app.close()
+  })
+
+  it('deleting a targeted field fails closed on the next evaluation (cache invalidated)', async () => {
+    const { app, putStrategies, evalLobby, deleteTenantField } = await setup()
+    await putStrategies({
+      strategies: [{ constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['phyg'] }] }],
+    })
+    // caches env state (including the tenant field type) via this read
+    expect((await evalLobby('?tenant=phyg')).json()).toMatchObject({
+      enabled: true,
+      reason: 'strategy-match',
+    })
+
+    // deleting the field must invalidate the cache and the orphaned constraint must fail closed
+    expect((await deleteTenantField()).statusCode).toBe(204)
+    expect((await evalLobby('?tenant=phyg')).json()).toMatchObject({
+      enabled: false,
+      reason: 'default',
     })
     await app.close()
   })

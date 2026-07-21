@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 
+import { cacheKeys } from '../../cache/keys.js'
 import {
   contextFieldIdParamsSchema,
   contextFieldParamsSchema,
@@ -73,12 +74,18 @@ export async function contextFieldRoutes(fastify: FastifyInstance) {
     },
     async (request) => {
       const params = contextFieldIdParamsSchema.parse(request.params)
-      return service.updateContextField(
+      const field = await service.updateContextField(
         fastify.db,
         params.projectId,
         params.fieldId,
         updateContextFieldSchema.parse(request.body),
       )
+      /**
+       * Clear the cache so that any updates to the field's type take effect immediately.
+       * Otherwise, the system might continue using the old, incorrect field type.
+       */
+      await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
+      return field
     },
   )
 
@@ -102,6 +109,11 @@ export async function contextFieldRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const params = contextFieldIdParamsSchema.parse(request.params)
       await service.deleteContextField(fastify.db, params.projectId, params.fieldId)
+      /**
+       * Clear the cache to completely remove the deleted field's type.
+       * This ensures any remaining rules that try to use this field will safely fail.
+       */
+      await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
       return reply.status(204).send()
     },
   )

@@ -135,6 +135,36 @@ describeIfDb('context-fields', () => {
     await app.close()
   })
 
+  it('PATCH without type is rejected (no silent reset to string)', async () => {
+    const { app, adminKey, projectId } = await setup()
+    const created = await create(app, adminKey, projectId, {
+      key: 'plan',
+      type: 'enum',
+      enumValues: ['free', 'pro'],
+    })
+    const field = created.json<ContextFieldResponse>()
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/projects/${projectId}/context-fields/${field.id}`,
+      headers: { authorization: adminKey },
+      payload: { description: 'just a note' },
+    })
+    expect(res.statusCode).toBe(400)
+
+    // the enum field is untouched
+    const list = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/projects/${projectId}/context-fields`,
+      headers: { authorization: adminKey },
+    })
+    expect(list.json<ContextFieldResponse[]>()[0]).toMatchObject({
+      type: 'enum',
+      enumValues: ['free', 'pro'],
+    })
+    await app.close()
+  })
+
   it('isolates fields per project: same key allowed in two projects, list is scoped', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)
