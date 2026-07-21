@@ -76,7 +76,7 @@ describe('EnvStrategies', () => {
 
     await user.click(within(dialog).getByRole('button', { name: /add strategy/i }))
     await user.click(within(dialog).getByRole('button', { name: /add condition/i }))
-    await user.type(within(dialog).getByPlaceholderText('value'), 'phyg')
+    await user.type(within(dialog).getByPlaceholderText(/type and press/i), 'phyg{enter}')
     await user.click(within(dialog).getByRole('button', { name: /save strategies/i }))
 
     await waitFor(() =>
