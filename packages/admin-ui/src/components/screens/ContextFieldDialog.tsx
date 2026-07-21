@@ -127,7 +127,7 @@ export function ContextFieldDialog({
               hint={
                 isEdit
                   ? 'Key is immutable — delete and recreate to rename.'
-                  : 'Used verbatim in SDK calls and strategies.'
+                  : 'Used exactly as written in SDK calls and strategies.'
               }
               error={fieldErrors.key}
             />
@@ -141,7 +141,7 @@ export function ContextFieldDialog({
           </div>
 
           <TextField
-            label="Description"
+            label="Description (optional)"
             value={description}
             onChange={setDescription}
             placeholder="What this field means and where it comes from."

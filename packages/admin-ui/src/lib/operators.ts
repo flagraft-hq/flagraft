@@ -38,8 +38,3 @@ export const OPERATORS_BY_TYPE: Record<FieldType, { value: string; label: string
     { value: 'after', label: 'after' },
   ],
 }
-
-/** True when the operator takes a list of values (comma-separated in the UI). */
-export function isMultiValueOperator(operator: string): boolean {
-  return operator === 'in' || operator === 'notIn'
-}

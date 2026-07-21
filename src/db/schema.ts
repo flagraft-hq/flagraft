@@ -154,7 +154,10 @@ export const contextFields = pgTable(
   },
   (table) => [
     unique('context_fields_project_id_key_unique').on(table.projectId, table.key),
-    check('context_fields_type_check', sql`"type" IN ('string','enum','boolean','number','version','date')`),
+    check(
+      'context_fields_type_check',
+      sql`"type" IN ('string','enum','boolean','number','version','date')`,
+    ),
   ],
 )
 

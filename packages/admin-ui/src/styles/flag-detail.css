@@ -336,39 +336,230 @@
 }
 
 .env-strategies-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
 }
 
-.env-strategy-row {
+.env-strategy {
+  display: flex;
+  flex-direction: column;
+}
+
+.env-strategy-or {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-4);
+  margin: var(--s-3) 0;
+}
+
+.env-strategy-or::before,
+.env-strategy-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 var(--s-4);
+}
+
+/* A strategy's conditions live in a premium logic block. */
+.cond-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+}
+
+.theme-dark .cond-group {
+  background: var(--bg-subtle);
+}
+
+.cond-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.cond-and {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-4);
+  width: 32px; /* Fixed width to align condition rows */
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.cond {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+
+.cond-field {
+  display: inline-flex;
+  align-items: center;
+  background: var(--ink-100);
+  border: 1px solid var(--ink-200);
+  color: var(--ink-800);
+  border-radius: var(--r-sm);
+  padding: 3px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.theme-dark .cond-field {
+  background: var(--ink-800);
+  border-color: var(--ink-700);
+  color: var(--ink-200);
+}
+
+.cond-op {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.cond-vals {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cond-val {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  background: var(--teal-50);
+  color: var(--teal-800);
+  border: 1px dashed var(--teal-400);
+  border-radius: var(--r-sm);
+}
+
+.theme-dark .cond-val {
+  background: rgba(45, 212, 191, 0.08);
+  color: var(--teal-300);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+/* Strategy editor modal Token Input */
+.token-input {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
-}
-
-.strat-chip {
-  font-size: 11.5px;
-  padding: 2px 7px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: var(--text-2);
-}
-
-/* Strategy editor modal */
-
-.strat-note {
-  font-size: 12.5px;
-  color: var(--text-3);
-  background: var(--bg-subtle);
+  min-height: 34px;
+  padding: 4px 8px;
+  background-color: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
+  cursor: text;
+  flex: 1;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.token-input:focus-within {
+  border-color: var(--pri);
+  box-shadow: var(--focus);
+  outline: none;
+}
+
+.token-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: var(--teal-50);
+  color: var(--teal-800);
+  border: 1px dashed var(--teal-400);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.theme-dark .token-val {
+  background: rgba(45, 212, 191, 0.08);
+  color: var(--teal-300);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+.token-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+
+.token-remove:hover {
+  opacity: 1;
+}
+
+.token-input-field {
+  flex: 1;
+  min-width: 60px;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--text-1);
+  padding: 2px 0;
+}
+
+.token-input-field::placeholder {
+  color: var(--text-4);
+}
+
+/* Strategy editor modal (General) */
+
+.strat-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--teal-800);
+  background: var(--teal-50);
+  border: 1px solid var(--teal-300);
+  border-radius: var(--r-md);
   padding: var(--s-3);
-  margin-bottom: var(--s-3);
+  margin-bottom: var(--s-4);
+  line-height: 1.4;
+}
+
+.theme-dark .strat-note {
+  background: rgba(45, 212, 191, 0.08);
+  color: var(--teal-300);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+.strat-note svg {
+  color: var(--teal-600);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.theme-dark .strat-note svg {
+  color: var(--teal-400);
 }
 
 .strat-empty {
@@ -384,9 +575,9 @@
 }
 
 .strat-card {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
@@ -400,7 +591,7 @@
 
 .strat-card-title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-1);
 }
 
@@ -410,9 +601,30 @@
 
 .strat-constraint {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr) auto;
   gap: var(--s-2);
-  align-items: center;
+  align-items: flex-start;
+}
+
+/* Full-width controls inside a condition row so the grid governs their width. */
+.strat-constraint .select-wrapper,
+.strat-constraint .select-input,
+.strat-constraint .text-field,
+.strat-constraint .text-field-input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Match the values input to the selects: same padding, size, and mono font. */
+.strat-constraint .text-field-input {
+  font-family: var(--font-mono);
+  padding: 8px 12px;
+  font-size: 13.5px;
+}
+
+/* Left-align "Add condition" under the conditions instead of stretching it. */
+.strat-add-condition {
+  align-self: flex-start;
 }
 
 .strat-add {

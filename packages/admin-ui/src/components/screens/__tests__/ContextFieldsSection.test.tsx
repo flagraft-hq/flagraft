@@ -110,7 +110,9 @@ describe('ContextFieldsSection', () => {
 
   it('surfaces a 409 duplicate-key error inline', async () => {
     const user = userEvent.setup()
-    mockApi.create.mockRejectedValue(new ApiError('A context field with this key already exists', 409))
+    mockApi.create.mockRejectedValue(
+      new ApiError('A context field with this key already exists', 409),
+    )
     render(<ContextFieldsSection projectId="p1" />)
     await screen.findByText('plan')
 

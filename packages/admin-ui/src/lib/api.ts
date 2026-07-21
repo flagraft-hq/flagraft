@@ -101,10 +101,7 @@ export const contextFieldsApi = {
 
   /** `key` is immutable, so it is not part of the update payload. */
   update: (projectId: string, fieldId: string, data: Omit<ContextFieldInput, 'key'>) =>
-    http.patch<ContextField>(
-      `/api/v1/admin/projects/${projectId}/context-fields/${fieldId}`,
-      data,
-    ),
+    http.patch<ContextField>(`/api/v1/admin/projects/${projectId}/context-fields/${fieldId}`, data),
 
   delete: (projectId: string, fieldId: string) =>
     http.delete(`/api/v1/admin/projects/${projectId}/context-fields/${fieldId}`),

@@ -1,22 +1,91 @@
 import { useEffect, useState } from 'react'
 
 import { strategiesApi, ApiError } from '../../lib/api'
-import { OPERATORS_BY_TYPE, isMultiValueOperator } from '../../lib/operators'
+import { OPERATORS_BY_TYPE } from '../../lib/operators'
 import type { ContextField, Strategy } from '../../lib/types'
 import { Button } from '../primitives/Button'
 import { FormError } from '../primitives/FormError'
 import { Icon } from '../primitives/Icon'
 import { Modal } from '../primitives/Modal'
 import { Select } from '../primitives/Select'
-import { TextField } from '../primitives/TextField'
 
 interface DraftConstraint {
   fieldKey: string
   operator: string
-  valuesText: string
+  values: string[]
 }
 interface DraftStrategy {
   constraints: DraftConstraint[]
+}
+
+function MultiValueInput({
+  values,
+  onChange,
+  placeholder,
+}: {
+  values: string[]
+  onChange: (v: string[]) => void
+  placeholder?: string
+}) {
+  const [input, setInput] = useState('')
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      const val = input.trim()
+      if (val && !values.includes(val)) {
+        onChange([...values, val])
+      }
+      setInput('')
+    } else if (e.key === 'Backspace' && !input && values.length > 0) {
+      onChange(values.slice(0, -1))
+    }
+  }
+
+  const handleBlur = () => {
+    const val = input.trim()
+    if (val && !values.includes(val)) {
+      onChange([...values, val])
+    }
+    setInput('')
+  }
+
+  return (
+    <div
+      className="token-input strat-values"
+      onClick={(e) => {
+        const target = e.target as HTMLElement
+        if (target.classList.contains('token-input')) {
+          target.querySelector('input')?.focus()
+        }
+      }}
+    >
+      {values.map((v, i) => (
+        <span key={i} className="token-val mono">
+          {v}
+          <button
+            type="button"
+            className="token-remove"
+            onClick={(e) => {
+              e.stopPropagation()
+              onChange(values.filter((_, j) => j !== i))
+            }}
+          >
+            <Icon name="x" size={10} />
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        className="token-input-field mono"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
+        placeholder={values.length === 0 ? placeholder : ''}
+      />
+    </div>
+  )
 }
 
 interface StrategyEditorModalProps {
@@ -35,7 +104,7 @@ function toDraft(strategies: Strategy[]): DraftStrategy[] {
     constraints: s.constraints.map((c) => ({
       fieldKey: c.fieldKey,
       operator: c.operator,
-      valuesText: c.values.join(', '),
+      values: c.values,
     })),
   }))
 }
@@ -69,7 +138,7 @@ export function StrategyEditorModal({
   function defaultConstraint(): DraftConstraint {
     const fieldKey = contextFields[0]?.key ?? ''
     const ops = fieldKey ? operatorsFor(fieldKey) : []
-    return { fieldKey, operator: ops[0]?.value ?? '', valuesText: '' }
+    return { fieldKey, operator: ops[0]?.value ?? '', values: [] }
   }
 
   /** Immutably replace one strategy's constraints. */
@@ -101,10 +170,7 @@ export function StrategyEditorModal({
       constraints: s.constraints.map((c) => ({
         fieldKey: c.fieldKey,
         operator: c.operator,
-        values: c.valuesText
-          .split(',')
-          .map((v) => v.trim())
-          .filter(Boolean),
+        values: c.values.filter(Boolean),
       })),
     }))
     for (const s of payload) {
@@ -140,7 +206,10 @@ export function StrategyEditorModal({
         <FormError message={error} />
         {noFields && (
           <div className="strat-note">
-            Register a context field in Settings first — strategies match on context fields.
+            <Icon name="info" size={16} />
+            <span>
+              Register a context field in Settings first as strategies match on context fields.
+            </span>
           </div>
         )}
 
@@ -182,11 +251,10 @@ export function StrategyEditorModal({
                       placeholder=""
                       onChange={(v) => updateConstraint(si, ci, { operator: v })}
                     />
-                    <TextField
-                      className="mono strat-values"
-                      value={c.valuesText}
-                      onChange={(v) => updateConstraint(si, ci, { valuesText: v })}
-                      placeholder={isMultiValueOperator(c.operator) ? 'a, b, c' : 'value'}
+                    <MultiValueInput
+                      values={c.values}
+                      onChange={(v) => updateConstraint(si, ci, { values: v })}
+                      placeholder="Type and press Enter or comma..."
                     />
                     <button
                       type="button"
@@ -208,6 +276,7 @@ export function StrategyEditorModal({
                   size="sm"
                   variant="ghost"
                   leftIcon="plus"
+                  className="strat-add-condition"
                   disabled={noFields}
                   onClick={() => patchStrategy(si, [...strategy.constraints, defaultConstraint()])}
                 >

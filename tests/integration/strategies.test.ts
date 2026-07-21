@@ -80,8 +80,12 @@ describeIfDb('targeting strategies', () => {
 
   it('a second PUT replaces the previous list', async () => {
     const { app, put, get } = await setup()
-    await put({ strategies: [{ constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['a'] }] }] })
-    await put({ strategies: [{ constraints: [{ fieldKey: 'plan', operator: 'equals', values: ['free'] }] }] })
+    await put({
+      strategies: [{ constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['a'] }] }],
+    })
+    await put({
+      strategies: [{ constraints: [{ fieldKey: 'plan', operator: 'equals', values: ['free'] }] }],
+    })
     const rows = (await get()).json<StrategyResponse[]>()
     expect(rows).toHaveLength(1)
     expect(rows[0].constraints[0].fieldKey).toBe('plan')
@@ -90,7 +94,9 @@ describeIfDb('targeting strategies', () => {
 
   it('PUT with empty list clears strategies', async () => {
     const { app, put, get } = await setup()
-    await put({ strategies: [{ constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['a'] }] }] })
+    await put({
+      strategies: [{ constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['a'] }] }],
+    })
     await put({ strategies: [] })
     expect((await get()).json<StrategyResponse[]>()).toHaveLength(0)
     await app.close()

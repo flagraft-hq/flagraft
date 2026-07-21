@@ -59,9 +59,9 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
     <section className="settings-section">
       <h2 className="settings-section-title">Context fields</h2>
       <p className="ctx-section-sub">
-        The attributes targeting rules match on. The SDK sends these alongside each evaluation.
-        Only fields registered here can be referenced in rules — unknown keys are ignored, so a
-        typo like <span className="mono">userid</span> can’t silently break a rollout.
+        The attributes targeting rules match on. The SDK sends these alongside each evaluation. Only
+        fields registered here can be referenced in rules, unknown keys are ignored, so a typo like{' '}
+        <span className="mono">userid</span> can’t silently break a rollout.
       </p>
 
       {loading ? (
