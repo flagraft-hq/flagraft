@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { buildServer } from '../../src/server.js'
-import { createAdminKey, createClientKey, createProject, createRootKey } from '../helpers/fixtures.js'
+import {
+  createAdminKey,
+  createClientKey,
+  createProject,
+  createRootKey,
+} from '../helpers/fixtures.js'
 import { getTestDb, truncateAll } from '../helpers/db.js'
 
 const describeIfDb = process.env.TEST_DATABASE_URL ? describe : describe.skip

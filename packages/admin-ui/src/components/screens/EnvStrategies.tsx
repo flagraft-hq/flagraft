@@ -18,8 +18,7 @@ function describeConstraint(c: StrategyConstraint, contextFields: ContextField[]
   const field = contextFields.find((f) => f.key === c.fieldKey)
   const fieldType = field?.type ?? 'string'
   const label =
-    OPERATORS_BY_TYPE[fieldType].find((o) => o.value === c.operator)?.label ??
-    c.operator
+    OPERATORS_BY_TYPE[fieldType].find((o) => o.value === c.operator)?.label ?? c.operator
   return `${c.fieldKey} ${label} ${c.values.join(', ')}`
 }
 

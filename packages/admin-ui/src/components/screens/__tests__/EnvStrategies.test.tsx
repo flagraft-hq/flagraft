@@ -32,12 +32,7 @@ const contextFields: ContextField[] = [
 
 function renderIt() {
   return render(
-    <EnvStrategies
-      projectId="p1"
-      flagKey="lobby"
-      env="production"
-      contextFields={contextFields}
-    />,
+    <EnvStrategies projectId="p1" flagKey="lobby" env="production" contextFields={contextFields} />,
   )
 }
 
@@ -55,7 +50,11 @@ describe('EnvStrategies', () => {
   it('renders a constraint chip for an existing strategy', async () => {
     mockApi.list.mockResolvedValue({
       data: [
-        { id: 's1', position: 0, constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['phyg'] }] },
+        {
+          id: 's1',
+          position: 0,
+          constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['phyg'] }],
+        },
       ],
     })
     renderIt()

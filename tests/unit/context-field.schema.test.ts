@@ -73,8 +73,8 @@ describe('updateContextFieldSchema', () => {
 
   it('applies the same enum rules as create', () => {
     expect(updateContextFieldSchema.safeParse({ type: 'enum' }).success).toBe(false)
-    expect(
-      updateContextFieldSchema.safeParse({ type: 'enum', enumValues: ['a'] }).success,
-    ).toBe(true)
+    expect(updateContextFieldSchema.safeParse({ type: 'enum', enumValues: ['a'] }).success).toBe(
+      true,
+    )
   })
 })
