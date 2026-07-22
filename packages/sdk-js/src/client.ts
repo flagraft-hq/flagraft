@@ -102,7 +102,9 @@ export class FlagraftClient {
     const entries = Object.entries(context)
     if (entries.length === 0) return ''
     const params = new URLSearchParams()
-    for (const [k, v] of entries) params.set(k, v)
+    for (const [k, v] of entries) {
+      params.set(k, v instanceof Date ? v.toISOString() : String(v))
+    }
     return `?${params.toString()}`
   }
 

@@ -109,7 +109,7 @@ The second argument is optional. See [`EvaluationContext`](#evaluationcontext) f
 
 **Behaviour:**
 
-- Returns `true` or `false` based on the server's evaluation, which considers the flag's environment default plus any matching overrides.
+- Returns `true` or `false` based on the server's evaluation, which considers whether the flag is enabled in the environment and whether any of its targeting strategies match the context.
 - Returns `false` if the flag does not exist (the server responds 404).
 - Returns `false` and logs a warning to `console.warn` if the request fails entirely (network down, DNS error, server unreachable, msw error response, abort).
 - Throws `FlagraftError` on any other 4xx or 5xx response, so unexpected misconfiguration (bad key, scope mismatch, rate limit, server bug) surfaces loudly during integration.
@@ -148,7 +148,8 @@ Pick this when you want to iterate, filter, or pass the array straight to a temp
 The optional second argument on every method.
 
 ```ts
-type EvaluationContext = Record<string, string>
+type ContextValue = string | number | boolean | Date
+type EvaluationContext = Record<string, ContextValue>
 ```
 
 Example shape:
@@ -165,15 +166,16 @@ const context: EvaluationContext = {
 await flags.isEnabled('checkout-v2', context)
 ```
 
-Pass the keys your overrides target. Common examples: `userId`, `tenantId`, `plan`, `region`, `cohort`. The server matches override rules against this context to decide whether a flag is on for the current caller.
+Pass the keys your flag's targeting strategies reference (these correspond to the project's registered context fields). Common examples: `userId`, `tenantId`, `plan`, `region`, `cohort`. The server matches each strategy's constraints against this context to decide whether a flag is on for the current caller.
 
-The keys you send must match the keys configured on the server's overrides exactly. Values are always strings; if you have numeric IDs, stringify them before passing.
+The keys you send must match the context fields configured on the server. Values may be strings, numbers, booleans, or `Date`s — the client stringifies them on the wire (`Date` → ISO 8601), matching how the server coerces each field's type.
 
 ```ts
 await flags.isEnabled('experiment-x', {
-  userId: String(req.user.id),
+  userId: req.user.id, // number is fine, no need to stringify
   tenantId: req.user.tenantId,
   plan: req.user.plan,
+  signupDate: req.user.createdAt, // a Date
 })
 ```
 
@@ -407,7 +409,9 @@ import { describe, expect, it, vi } from 'vitest'
 it('renders the new checkout for users in the experiment', async () => {
   const fakeFetch = vi.fn(
     async () =>
-      new Response(JSON.stringify({ name: 'checkout-v2', enabled: true, reason: 'override' })),
+      new Response(
+        JSON.stringify({ name: 'checkout-v2', enabled: true, reason: 'strategy-match' }),
+      ),
   )
 
   const flags = new FlagraftClient({
@@ -434,7 +438,7 @@ afterAll(() => server.close())
 
 server.use(
   http.get('https://flags.example.com/api/v1/client/features/checkout-v2', () =>
-    HttpResponse.json({ name: 'checkout-v2', enabled: true, reason: 'override' }),
+    HttpResponse.json({ name: 'checkout-v2', enabled: true, reason: 'strategy-match' }),
   ),
 )
 ```

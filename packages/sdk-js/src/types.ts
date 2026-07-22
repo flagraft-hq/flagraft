@@ -1,4 +1,11 @@
-export type EvaluationContext = Record<string, string>
+/**
+ * A single context value. Numbers, booleans and Dates are stringified by the
+ * client to match how the server coerces registered context fields, so callers
+ * don't have to hand-stringify.
+ */
+export type ContextValue = string | number | boolean | Date
+
+export type EvaluationContext = Record<string, ContextValue>
 
 export interface Feature {
   name: string

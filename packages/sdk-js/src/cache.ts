@@ -1,9 +1,9 @@
-import type { EvaluationContext } from './types.js'
+import type { ContextValue, EvaluationContext } from './types.js'
 
 export function makeKey(flagKey: string, context: EvaluationContext): string {
   const sorted = Object.keys(context)
     .sort()
-    .reduce<Record<string, string>>((acc, k) => {
+    .reduce<Record<string, ContextValue>>((acc, k) => {
       acc[k] = context[k]
       return acc
     }, {})
