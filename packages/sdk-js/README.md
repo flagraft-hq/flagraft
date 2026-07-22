@@ -409,7 +409,9 @@ import { describe, expect, it, vi } from 'vitest'
 it('renders the new checkout for users in the experiment', async () => {
   const fakeFetch = vi.fn(
     async () =>
-      new Response(JSON.stringify({ name: 'checkout-v2', enabled: true, reason: 'strategy-match' })),
+      new Response(
+        JSON.stringify({ name: 'checkout-v2', enabled: true, reason: 'strategy-match' }),
+      ),
   )
 
   const flags = new FlagraftClient({
