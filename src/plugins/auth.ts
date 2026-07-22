@@ -87,6 +87,15 @@ async function authPlugin(fastify: FastifyInstance) {
     if (request.url.startsWith('/docs')) return
 
     /**
+     * The authenticated surface is the API. Everything else served from this
+     * origin -- the admin UI's HTML, assets, and its client-side routes (served
+     * by @fastify/static with an index.html fallback) -- is public. Guarding
+     * only /api lets the SPA load without a key; its own requests to /api still
+     * carry the session cookie or an API key.
+     */
+    if (!request.url.startsWith('/api')) return
+
+    /**
      * Try JWT session cookie first -- used by browser clients (admin UI).
      * The JWT only proves who the user is; role, status, and session validity
      * are checked against the database on every request so suspensions,

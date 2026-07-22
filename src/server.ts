@@ -1,6 +1,9 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import Fastify from 'fastify'
 import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
+import fastifyStatic from '@fastify/static'
 import jwt from '@fastify/jwt'
 
 import { USER_ROLES } from './auth/constants.js'
@@ -88,6 +91,32 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(userRoutes, v1Prefix)
   await fastify.register(authRoutes, v1Prefix)
   await fastify.register(publicRoutes, v1Prefix)
+
+  /**
+   * Serve the built admin UI from the same origin as the API when a UI build is
+   * present (the Docker image sets UI_DIR to the copied-in build). Unmatched GET
+   * routes fall back to index.html so client-side routing works, while unknown
+   * API routes still return a JSON 404. Skipped entirely in dev/tests where no
+   * build exists, leaving the API-only behavior unchanged.
+   */
+  const uiDir = process.env.UI_DIR
+  if (uiDir && existsSync(join(uiDir, 'index.html'))) {
+    await fastify.register(fastifyStatic, { root: uiDir, wildcard: false })
+    fastify.setNotFoundHandler((request, reply) => {
+      const url = request.raw.url ?? ''
+      if (
+        request.method === 'GET' &&
+        !url.startsWith('/api') &&
+        !url.startsWith('/health') &&
+        !url.startsWith('/ready')
+      ) {
+        return reply.sendFile('index.html')
+      }
+      return reply
+        .status(404)
+        .send({ error: 'NotFound', message: 'Route not found', statusCode: 404 })
+    })
+  }
 
   fastify.addHook('onReady', async () => {
     if (opts.skipBootSeed) return

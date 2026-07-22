@@ -1,4 +1,21 @@
 services:
+  flagraft:
+    # Pull the published image, or `docker compose up --build` to build locally.
+    image: ghcr.io/flagraft-hq/flagraft:latest
+    build: .
+    container_name: flagraft
+    depends_on:
+      flagraft-pg:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://flagraft:flagraft@flagraft-pg:5432/flagraft
+      # Change these before exposing the instance publicly.
+      JWT_SECRET: change-this-jwt-secret-to-a-long-random-value
+      DEFAULT_ADMIN_EMAIL: admin@flagraft.local
+      DEFAULT_ADMIN_PASSWORD: changeme
+    ports:
+      - '3000:3000'
+
   flagraft-pg:
     image: postgres:15
     container_name: flagraft-pg
@@ -11,6 +28,11 @@ services:
     volumes:
       - flagraft-pg-data:/var/lib/postgresql/data
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U flagraft -d flagraft']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   flagraft-pg-data:
