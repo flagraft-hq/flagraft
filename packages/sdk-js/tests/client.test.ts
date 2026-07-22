@@ -19,7 +19,7 @@ describe('FlagraftClient.isEnabled', () => {
     mswServer.use(
       http.get(`${BASE}/api/v1/client/features/checkout-v2`, ({ request }) => {
         expect(request.headers.get('authorization')).toBe('ff_testkey')
-        return HttpResponse.json({ name: 'checkout-v2', enabled: true, reason: 'override' })
+        return HttpResponse.json({ name: 'checkout-v2', enabled: true, reason: 'strategy-match' })
       }),
     )
 
@@ -150,6 +150,30 @@ describe('FlagraftClient.getFeatures', () => {
     await client.getFeatures()
     expect(calls).toBe(2)
     vi.useRealTimers()
+  })
+})
+
+describe('context value coercion', () => {
+  it('stringifies numbers, booleans and Dates into the query string', async () => {
+    let query = ''
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/typed`, ({ request }) => {
+        query = new URL(request.url).search
+        return HttpResponse.json({ name: 'typed', enabled: true, reason: 'strategy-match' })
+      }),
+    )
+
+    const client = makeClient()
+    await client.isEnabled('typed', {
+      userId: 42,
+      isBeta: true,
+      signupDate: new Date('2026-01-15T00:00:00.000Z'),
+    })
+
+    const params = new URLSearchParams(query)
+    expect(params.get('userId')).toBe('42')
+    expect(params.get('isBeta')).toBe('true')
+    expect(params.get('signupDate')).toBe('2026-01-15T00:00:00.000Z')
   })
 })
 
