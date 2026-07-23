@@ -23,7 +23,8 @@ export function SettingsGeneral() {
 
   if (!activeProject) return null
 
-  const dirty = name.trim() !== activeProject.name || description !== (activeProject.description ?? '')
+  const dirty =
+    name.trim() !== activeProject.name || description !== (activeProject.description ?? '')
 
   function discard() {
     if (!activeProject) return
@@ -68,10 +69,17 @@ export function SettingsGeneral() {
         }
       >
         <FormError message={error} />
-        <SettingsRow label="Display name" hint="Up to 64 characters. Use the team's name for it, not the codename.">
+        <SettingsRow
+          label="Display name"
+          hint="Up to 64 characters. Use the team's name for it, not the codename."
+        >
           <TextField value={name} onChange={setName} maxLength={64} placeholder="Project name" />
         </SettingsRow>
-        <SettingsRow label="Description" hint="Optional context shown on the project switcher tooltip." full>
+        <SettingsRow
+          label="Description"
+          hint="Optional context shown on the project switcher tooltip."
+          full
+        >
           <textarea
             className="settings-textarea"
             rows={3}
@@ -98,7 +106,10 @@ export function SettingsGeneral() {
             <CopyButton value={activeProject.id} ariaLabel="Copy project ID" />
           </div>
         </SettingsRow>
-        <SettingsRow label="Configured environments" hint="Environments configured under this project.">
+        <SettingsRow
+          label="Configured environments"
+          hint="Environments configured under this project."
+        >
           <div className="settings-env-chips">
             {environments.map((env) => (
               <span key={env.id} className="env-chip-badge">
@@ -119,7 +130,8 @@ export function SettingsGeneral() {
           <div className="danger-zone-info">
             <div className="lbl">Delete project</div>
             <div className="hint">
-              Permanently remove this project, all flag evaluation rules, environments, and API keys. This action cannot be undone.
+              Permanently remove this project, all flag evaluation rules, environments, and API
+              keys. This action cannot be undone.
             </div>
           </div>
           <Button variant="danger" disabled>

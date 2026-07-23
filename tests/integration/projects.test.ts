@@ -344,12 +344,16 @@ describeIfDb('projects', () => {
         url: `/api/v1/admin/projects/${project.id}`,
         headers: { authorization: rootKey },
         payload: {
-          settings: { flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 } },
+          settings: {
+            flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 },
+          },
         },
       })
       expect(saved.statusCode).toBe(200)
       expect(saved.json()).toMatchObject({
-        settings: { flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 } },
+        settings: {
+          flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 },
+        },
       })
 
       // A name-only patch must not wipe the stored settings.
@@ -367,7 +371,9 @@ describeIfDb('projects', () => {
       })
       expect(fetched.json()).toMatchObject({
         name: 'Renamed',
-        settings: { flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 } },
+        settings: {
+          flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 },
+        },
       })
       await app.close()
     })

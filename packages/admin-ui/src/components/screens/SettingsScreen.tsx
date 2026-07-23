@@ -31,8 +31,8 @@ export function SettingsScreen() {
       <header className="settings-page-header">
         <h1 className="settings-page-title">Project settings</h1>
         <div className="settings-page-sub">
-          Configure how <span className="mono">{activeProject.slug}</span> behaves — defaults, access,
-          and the context schema. Settings apply across all environments unless noted.
+          Configure how <span className="mono">{activeProject.slug}</span> behaves — defaults,
+          access, and the context schema. Settings apply across all environments unless noted.
         </div>
       </header>
 

@@ -133,7 +133,11 @@ export async function createFlag(
 
     /** Project may require a description before a flag can be created. */
     if (flagDefaults.requireDescription && !input.description?.trim()) {
-      throw new AppError('A description is required for new flags in this project', 400, 'BadRequest')
+      throw new AppError(
+        'A description is required for new flags in this project',
+        400,
+        'BadRequest',
+      )
     }
 
     const [newFlag] = await tx

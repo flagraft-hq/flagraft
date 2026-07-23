@@ -70,8 +70,7 @@ export function SettingsMembers() {
   }
 
   /** Only the members with access to the active project (null while loading). */
-  const visible =
-    members && activeProject ? membersOfProject(members, activeProject.name) : members
+  const visible = members && activeProject ? membersOfProject(members, activeProject.name) : members
 
   return (
     <>
@@ -243,7 +242,10 @@ function MemberRow({
       </td>
       <td>
         <div className="ctx-row-actions">
-          <Tip tip={locked ? 'You can’t suspend an owner or yourself' : 'Suspend member'} position="left">
+          <Tip
+            tip={locked ? 'You can’t suspend an owner or yourself' : 'Suspend member'}
+            position="left"
+          >
             <button
               className="icon-btn"
               aria-label={`Suspend ${member.name}`}

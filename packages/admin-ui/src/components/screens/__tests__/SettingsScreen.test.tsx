@@ -38,7 +38,13 @@ describe('SettingsScreen', () => {
   it('renders the section rail', () => {
     render(<SettingsScreen />)
     expect(screen.getByText('Project settings')).toBeInTheDocument()
-    for (const label of ['General', 'Flag defaults', 'Context fields', 'Security', 'Members & roles']) {
+    for (const label of [
+      'General',
+      'Flag defaults',
+      'Context fields',
+      'Security',
+      'Members & roles',
+    ]) {
       expect(screen.getByText(label)).toBeInTheDocument()
     }
   })

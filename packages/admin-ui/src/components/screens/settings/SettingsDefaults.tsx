@@ -96,17 +96,26 @@ export function SettingsDefaults() {
       }
     >
       <FormError message={error} />
-      <SettingsRow label="Default state" hint="Whether a new flag starts off or on across all environments.">
+      <SettingsRow
+        label="Default state"
+        hint="Whether a new flag starts off or on across all environments."
+      >
         <Segmented
           options={STATE_OPTIONS}
           value={state}
           onChange={(v) => setState(v as DefaultFlagState)}
         />
       </SettingsRow>
-      <SettingsRow label="Stale flag warning" hint="A flag is marked stale after this long without a value change.">
+      <SettingsRow
+        label="Stale flag warning"
+        hint="A flag is marked stale after this long without a value change."
+      >
         <Select options={STALE_OPTIONS} value={stale} onChange={setStale} placeholder="" />
       </SettingsRow>
-      <SettingsRow label="Require description" hint="Authors must write a description before a flag can be created.">
+      <SettingsRow
+        label="Require description"
+        hint="Authors must write a description before a flag can be created."
+      >
         <Toggle checked={requireDescription} onChange={setRequireDescription} />
       </SettingsRow>
     </SettingsCard>

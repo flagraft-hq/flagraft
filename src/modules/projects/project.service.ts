@@ -86,7 +86,11 @@ export async function patchProject(db: Db, projectId: string, input: PatchProjec
 
     const [project] = await tx
       .update(projects)
-      .set({ ...rest, ...(mergedSettings ? { settings: mergedSettings } : {}), updatedAt: new Date() })
+      .set({
+        ...rest,
+        ...(mergedSettings ? { settings: mergedSettings } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(projects.id, projectId))
       .returning()
 

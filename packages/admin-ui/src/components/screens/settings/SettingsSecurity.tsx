@@ -29,7 +29,10 @@ export function SettingsSecurity() {
     >
       <NotWiredNote>
         <Icon name="info" size={14} />
-        <div>These controls are not saved yet — the backend for project security settings is still to come.</div>
+        <div>
+          These controls are not saved yet — the backend for project security settings is still to
+          come.
+        </div>
       </NotWiredNote>
 
       <SettingsRow
@@ -38,7 +41,10 @@ export function SettingsSecurity() {
       >
         <Toggle checked={requireApproval} onChange={setRequireApproval} />
       </SettingsRow>
-      <SettingsRow label="Key TTL" hint="Maximum lifetime for newly-issued admin keys. Client keys are unlimited.">
+      <SettingsRow
+        label="Key TTL"
+        hint="Maximum lifetime for newly-issued admin keys. Client keys are unlimited."
+      >
         <Select options={TTL_OPTIONS} value={keyTtl} onChange={setKeyTtl} placeholder="" />
       </SettingsRow>
     </SettingsCard>
