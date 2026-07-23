@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 
 import { usersApi, ApiError, type WorkspaceUser } from '../../../lib/api'
+import { membersOfProject } from '../../../lib/members'
 import { useAuth } from '../../../contexts/AuthContext'
+import { useProject } from '../../../contexts/ProjectContext'
 import { useToast } from '../../../hooks/useToast'
 import { useRelativeDate } from '../../../hooks/useRelativeDate'
 import { USER_ROLES, type UserRole } from '../../../lib/roles'
@@ -36,6 +38,7 @@ const CAPABILITIES: { label: string; roles: [boolean, boolean, boolean, boolean]
 export function SettingsMembers() {
   const toast = useToast()
   const { user } = useAuth()
+  const { activeProject } = useProject()
   const [members, setMembers] = useState<WorkspaceUser[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -66,15 +69,19 @@ export function SettingsMembers() {
     }
   }
 
+  /** Only the members with access to the active project (null while loading). */
+  const visible =
+    members && activeProject ? membersOfProject(members, activeProject.name) : members
+
   return (
     <>
       <SettingsCard
         title="Members"
-        sub="Who has access to this workspace. Roles here apply across every project."
+        sub="People with access to this project. Roles are workspace-wide."
         footer={
           <>
             <span className="muted" style={{ fontSize: 12 }}>
-              {members ? `${members.length} member${members.length === 1 ? '' : 's'}` : '—'}
+              {visible ? `${visible.length} member${visible.length === 1 ? '' : 's'}` : '—'}
             </span>
             <span className="spacer" />
             <Button variant="primary" leftIcon="plus" onClick={() => setInviteOpen(true)}>
@@ -85,7 +92,7 @@ export function SettingsMembers() {
       >
         {error ? (
           <ErrorState title="Failed to load members" message={error} onRetry={load} />
-        ) : !members ? (
+        ) : !visible ? (
           <div className="ctx-inline-state">Loading members…</div>
         ) : (
           <table className="settings-table">
@@ -98,7 +105,7 @@ export function SettingsMembers() {
               </tr>
             </thead>
             <tbody>
-              {members.map((m) => (
+              {visible.map((m) => (
                 <MemberRow
                   key={m.id}
                   member={m}
