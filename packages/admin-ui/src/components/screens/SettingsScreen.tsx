@@ -51,7 +51,9 @@ export function SettingsScreen() {
         ))}
       </nav>
 
-      <main className="settings-content">
+      {/* Key on the project id so switching projects resets each section's
+          local state and refetches, instead of showing the old project's data. */}
+      <main className="settings-content" key={activeProject.id}>
         {section === 'general' && <SettingsGeneral />}
         {section === 'defaults' && <SettingsDefaults />}
         {section === 'context' && <ContextFieldsSection projectId={activeProject.id} />}
