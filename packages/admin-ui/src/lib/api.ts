@@ -162,6 +162,9 @@ export const projectsApi = {
 
   create: (data: { name: string; slug: string; description?: string }) =>
     http.post<Project>('/api/v1/admin/projects', data),
+
+  update: (id: string, data: { name?: string; description?: string }) =>
+    http.patch<Project>(`/api/v1/admin/projects/${id}`, data),
 }
 
 export interface AuthUser {

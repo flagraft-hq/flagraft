@@ -1,61 +1,63 @@
-import { useProject } from '../../contexts/ProjectContext'
-import { Tip } from '../primitives/Tip'
-import { Button } from '../primitives/Button'
-import { ContextFieldsSection } from './ContextFieldsSection'
+import { useState } from 'react'
 
-const ENVIRONMENTS = ['development', 'production'] as const
+import { useProject } from '../../contexts/ProjectContext'
+import { Icon, type IconName } from '../primitives/Icon'
+import { ContextFieldsSection } from './ContextFieldsSection'
+import { SettingsGeneral } from './settings/SettingsGeneral'
+import { SettingsDefaults } from './settings/SettingsDefaults'
+import { SettingsSecurity } from './settings/SettingsSecurity'
+import { SettingsMembers } from './settings/SettingsMembers'
+
+type SectionId = 'general' | 'defaults' | 'context' | 'security' | 'members'
+
+const TABS: { id: SectionId; label: string; icon: IconName }[] = [
+  { id: 'general', label: 'General', icon: 'settings' },
+  { id: 'defaults', label: 'Flag defaults', icon: 'flag' },
+  { id: 'context', label: 'Context fields', icon: 'target' },
+  { id: 'security', label: 'Security', icon: 'shield' },
+  { id: 'members', label: 'Members & roles', icon: 'user' },
+]
 
 export function SettingsScreen() {
   const { activeProject } = useProject()
+  const [section, setSection] = useState<SectionId>('general')
 
   if (!activeProject) {
     return <div className="settings-no-project">No project selected</div>
   }
 
   return (
-    <div className="settings-screen">
-      <h1 className="settings-title">Project Settings</h1>
-
-      <section className="settings-section">
-        <h2 className="settings-section-title">Project</h2>
-        <div className="settings-field">
-          <span className="settings-field-label">Name</span>
-          <span className="settings-field-value">{activeProject.name}</span>
+    <div className="settings-page">
+      <header className="settings-page-header">
+        <h1 className="settings-page-title">Project settings</h1>
+        <div className="settings-page-sub">
+          Configure how <span className="mono">{activeProject.slug}</span> behaves — defaults, access,
+          and the context schema. Settings apply across all environments unless noted.
         </div>
-        <div className="settings-field">
-          <span className="settings-field-label">Slug</span>
-          <span className="settings-field-value mono">{activeProject.slug}</span>
-        </div>
-        <div className="settings-field">
-          <span className="settings-field-label">Project ID</span>
-          <span className="settings-field-value mono">{activeProject.id}</span>
-        </div>
-      </section>
+      </header>
 
-      <section className="settings-section">
-        <h2 className="settings-section-title">Environments</h2>
-        <div className="settings-envs">
-          {ENVIRONMENTS.map((env) => (
-            <div key={env} className="settings-env-chip">
-              {env}
-            </div>
-          ))}
-        </div>
-      </section>
+      <nav className="settings-tabs" role="tablist" aria-label="Project settings tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className="settings-tab"
+            role="tab"
+            aria-selected={section === t.id}
+            onClick={() => setSection(t.id)}
+          >
+            <Icon name={t.icon} size={15} />
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
 
-      <ContextFieldsSection projectId={activeProject.id} />
-
-      <section className="settings-section settings-danger-zone">
-        <h2 className="settings-section-title">Danger Zone</h2>
-        <p className="settings-danger-desc">
-          Deleting a project is permanent and cannot be undone. Use the CLI to delete a project.
-        </p>
-        <Tip tip="Project deletion requires CLI access">
-          <Button variant="danger" disabled>
-            Delete project
-          </Button>
-        </Tip>
-      </section>
+      <main className="settings-content">
+        {section === 'general' && <SettingsGeneral />}
+        {section === 'defaults' && <SettingsDefaults />}
+        {section === 'context' && <ContextFieldsSection projectId={activeProject.id} />}
+        {section === 'security' && <SettingsSecurity />}
+        {section === 'members' && <SettingsMembers />}
+      </main>
     </div>
   )
 }
