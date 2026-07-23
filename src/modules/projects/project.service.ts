@@ -63,17 +63,39 @@ export async function getProject(db: Db, projectId: string) {
  * Updates an existing project's details
  */
 export async function patchProject(db: Db, projectId: string, input: PatchProjectInput) {
-  const [project] = await db
-    .update(projects)
-    .set({ ...input, updatedAt: new Date() })
-    .where(eq(projects.id, projectId))
-    .returning()
+  const { settings, ...rest } = input
 
-  if (!project) {
-    throw new AppError('Project not found', 404, 'NotFound')
-  }
+  return db.transaction(async (tx) => {
+    /**
+     * Settings is a bag of groups. Merge one level deep so updating one group
+     * (e.g. flagDefaults) leaves the others untouched, rather than replacing
+     * the whole object.
+     */
+    let mergedSettings
+    if (settings) {
+      const [current] = await tx
+        .select({ settings: projects.settings })
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .limit(1)
+      if (!current) {
+        throw new AppError('Project not found', 404, 'NotFound')
+      }
+      mergedSettings = { ...current.settings, ...settings }
+    }
 
-  return project
+    const [project] = await tx
+      .update(projects)
+      .set({ ...rest, ...(mergedSettings ? { settings: mergedSettings } : {}), updatedAt: new Date() })
+      .where(eq(projects.id, projectId))
+      .returning()
+
+    if (!project) {
+      throw new AppError('Project not found', 404, 'NotFound')
+    }
+
+    return project
+  })
 }
 
 /**

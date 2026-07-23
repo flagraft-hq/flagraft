@@ -1,9 +1,26 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
-import { environments, featureFlags, flagEnvironments, users } from '../../db/schema.js'
+import {
+  environments,
+  featureFlags,
+  flagEnvironments,
+  projects,
+  users,
+  type DefaultFlagState,
+} from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateFlagInput, PatchFlagInput } from './flag.schema.js'
+
+/**
+ * Resolves the initial on/off state for a new flag in one environment, based on
+ * the project's default. 'dev' turns the flag on only in the development env.
+ */
+function initialEnabled(defaultState: DefaultFlagState | undefined, envSlug: string): boolean {
+  if (defaultState === 'on') return true
+  if (defaultState === 'dev') return envSlug === 'development'
+  return false
+}
 
 /**
  * Internal helper to find a flag by key within a project
@@ -107,6 +124,18 @@ export async function createFlag(
   authorId?: string | null,
 ) {
   const flag = await db.transaction(async (tx) => {
+    const [project] = await tx
+      .select({ settings: projects.settings })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1)
+    const flagDefaults = project?.settings.flagDefaults ?? {}
+
+    /** Project may require a description before a flag can be created. */
+    if (flagDefaults.requireDescription && !input.description?.trim()) {
+      throw new AppError('A description is required for new flags in this project', 400, 'BadRequest')
+    }
+
     const [newFlag] = await tx
       .insert(featureFlags)
       .values({ ...input, projectId, authorId })
@@ -117,7 +146,7 @@ export async function createFlag(
         envs.map((environment) => ({
           flagId: newFlag.id,
           environmentId: environment.id,
-          enabled: false,
+          enabled: initialEnabled(flagDefaults.defaultState, environment.slug),
         })),
       )
     }
@@ -252,13 +281,17 @@ export async function setFlagEnabled(
 ) {
   const flag = await findFlag(db, projectId, flagKey)
   const environment = await findEnvironment(db, projectId, environmentSlug)
-  const [row] = await db
-    .insert(flagEnvironments)
-    .values({ flagId: flag.id, environmentId: environment.id, enabled })
-    .onConflictDoUpdate({
-      target: [flagEnvironments.flagId, flagEnvironments.environmentId],
-      set: { enabled, updatedAt: sql`now()` },
-    })
-    .returning()
-  return row
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(flagEnvironments)
+      .values({ flagId: flag.id, environmentId: environment.id, enabled })
+      .onConflictDoUpdate({
+        target: [flagEnvironments.flagId, flagEnvironments.environmentId],
+        set: { enabled, updatedAt: sql`now()` },
+      })
+      .returning()
+    /** A value change bumps the flag's updatedAt so staleness reflects toggles, not just edits. */
+    await tx.update(featureFlags).set({ updatedAt: new Date() }).where(eq(featureFlags.id, flag.id))
+    return row
+  })
 }

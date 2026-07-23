@@ -6,6 +6,7 @@ import { TextField } from '../primitives/TextField'
 import { Kbd } from '../primitives/Kbd'
 import { flagsApi } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
+import { useProject } from '../../contexts/ProjectContext'
 
 export interface CreateFlagModalProps {
   open: boolean
@@ -30,6 +31,8 @@ function toFlagKey(value: string): string {
 export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalProps) {
   const toast = useToast()
   const navigate = useNavigate()
+  const { activeProject } = useProject()
+  const requireDescription = activeProject?.settings?.flagDefaults?.requireDescription ?? false
   const [name, setName] = useState('')
   const [key, setKey] = useState('')
   const [keyTouched, setKeyTouched] = useState(false)
@@ -61,6 +64,7 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
 
   async function handleSubmit() {
     if (!name.trim() || !key.trim() || saving) return
+    if (requireDescription && !description.trim()) return
     setSaving(true)
     try {
       const res = await flagsApi.create(projectId, {
@@ -79,7 +83,8 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
     }
   }
 
-  const disabled = !name.trim() || !key.trim() || saving
+  const disabled =
+    !name.trim() || !key.trim() || saving || (requireDescription && !description.trim())
 
   return (
     <Modal open={open} onClose={onClose} size="lg" titleId="create-flag-modal-title">
@@ -115,7 +120,7 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
 
           <div className="text-field">
             <label className="text-field-label" htmlFor="create-flag-desc">
-              Description
+              Description{requireDescription ? ' · required' : ''}
             </label>
             <textarea
               id="create-flag-desc"
@@ -124,6 +129,7 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this flag control? Who owns it? When can it be removed?"
               rows={3}
+              aria-required={requireDescription}
             />
           </div>
 

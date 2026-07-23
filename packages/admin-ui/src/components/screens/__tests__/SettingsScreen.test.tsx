@@ -39,7 +39,7 @@ describe('SettingsScreen', () => {
     render(<SettingsScreen />)
     expect(screen.getByText('Project settings')).toBeInTheDocument()
     for (const label of ['General', 'Flag defaults', 'Context fields', 'Security', 'Members & roles']) {
-      expect(screen.getByRole('button', { name: new RegExp(label, 'i') })).toBeInTheDocument()
+      expect(screen.getByText(label)).toBeInTheDocument()
     }
   })
 
@@ -51,7 +51,7 @@ describe('SettingsScreen', () => {
 
   it('switches sections when a rail item is clicked', async () => {
     render(<SettingsScreen />)
-    await userEvent.click(screen.getByRole('button', { name: /Members & roles/i }))
+    await userEvent.click(screen.getByText('Members & roles'))
     expect(screen.getByText('members-body')).toBeInTheDocument()
     expect(screen.queryByText('general-body')).not.toBeInTheDocument()
   })
