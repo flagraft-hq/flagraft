@@ -380,4 +380,15 @@ describe('UsersScreen', () => {
     expect(screen.getByRole('combobox', { name: 'Change role' })).toBeDisabled()
     expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
   })
+
+  it('counts owners and admins in the privileged access stat', async () => {
+    vi.mocked(usersApi.list).mockResolvedValue({
+      data: [...mockUsers, { ...mockUsers[1], id: 'u3', name: 'Carol', role: 'owner' }],
+    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    renderScreen()
+    await waitFor(() => expect(screen.getByText('Privileged access')).toBeInTheDocument())
+    const card = screen.getByText('Privileged access').closest('.users-stat') as HTMLElement
+    expect(within(card).getByText('2')).toBeInTheDocument()
+    expect(within(card).getByText('1 owner · 1 admin')).toBeInTheDocument()
+  })
 })

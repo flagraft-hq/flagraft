@@ -79,8 +79,19 @@ export function UsersScreen() {
   }, [])
 
   const counts = useMemo(() => {
-    const c = { all: users.length, active: 0, invited: 0, suspended: 0, system: 0 }
+    const c = {
+      all: users.length,
+      active: 0,
+      invited: 0,
+      suspended: 0,
+      system: 0,
+      owners: 0,
+      admins: 0,
+    }
     users.forEach((u) => {
+      if (u.role === USER_ROLES.OWNER) c.owners++
+      else if (u.role === USER_ROLES.ADMIN) c.admins++
+
       if (u.isSystem) c.system++
       else if (u.status === 'active') c.active++
       else if (u.status === 'invited') c.invited++
@@ -279,15 +290,10 @@ export function UsersScreen() {
           warn={counts.invited > 0}
         />
         <StatCard
-          label="Seats"
-          value={
-            <>
-              {users.length}
-              <span className="unit">/25</span>
-            </>
-          }
-          sub={`${Math.max(0, 25 - users.length)} remaining`}
-          icon="layers"
+          label="Privileged access"
+          value={counts.owners + counts.admins}
+          sub={`${counts.owners} owner · ${counts.admins} admin`}
+          icon="shield"
           tone="slate"
         />
       </div>

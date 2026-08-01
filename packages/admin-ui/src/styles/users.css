@@ -80,12 +80,6 @@
   line-height: 1.15;
   margin-top: 0.125rem;
 }
-.users-stat-val .unit {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-4);
-  margin-left: 0.0625rem;
-}
 .users-stat-sub {
   font-size: 0.7188rem;
   color: var(--text-3);
