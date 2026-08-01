@@ -23,6 +23,15 @@
   line-height: 1.5;
 }
 
+.settings-page-sub .mono {
+  color: var(--text-1);
+  font-weight: 500;
+  background: var(--bg-subtle);
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
 /* Horizontal Sub-Navigation Tabs */
 .settings-tabs {
   display: flex;

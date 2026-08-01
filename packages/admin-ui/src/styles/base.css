@@ -377,17 +377,19 @@ body {
   height: 1.25rem;
 }
 
-/** Default (36x20): travel = 36-20 = 16px */
+/**
+ * Travel must be in rem like the track, or the thumb stops short of the
+ * right edge once the global scale knob moves off 16px.
+ * travel = track width - track height, for each size.
+ */
 .toggle-on .toggle-thumb {
-  transform: translateX(16px);
+  transform: translateX(1rem);
 }
-/** sm (30x17): travel = 30-17 = 13px */
 .toggle-on .toggle-track.track-sm .toggle-thumb {
-  transform: translateX(13px);
+  transform: translateX(0.8125rem);
 }
-/** lg (44x24): travel = 44-24 = 20px */
 .toggle-on .toggle-track.track-lg .toggle-thumb {
-  transform: translateX(20px);
+  transform: translateX(1.25rem);
 }
 
 .toggle-label {
