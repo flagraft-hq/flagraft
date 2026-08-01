@@ -117,7 +117,7 @@ export function UsersScreen() {
       return true
     })
     const ord = sortBy.dir === 'asc' ? 1 : -1
-    xs.sort((a, b) => {
+    xs.sort((a: WorkspaceUser, b: WorkspaceUser) => {
       if (sortBy.key === 'name') return a.name.localeCompare(b.name) * ord
       if (sortBy.key === 'role') {
         const order: Record<string, number> = { owner: 0, admin: 1, editor: 2, viewer: 3 }
@@ -125,8 +125,8 @@ export function UsersScreen() {
       }
       if (sortBy.key === 'projects') return (a.projects.length - b.projects.length) * ord
       if (sortBy.key === 'last') {
-        const ax = a.lastActiveAt ?? ''
-        const bx = b.lastActiveAt ?? ''
+        const ax: string = a.lastLoginAt ?? ''
+        const bx: string = b.lastLoginAt ?? ''
         return ax.localeCompare(bx) * ord
       }
       return 0
@@ -373,7 +373,7 @@ export function UsersScreen() {
               <th>{sortHead('name', 'Person')}</th>
               <th>{sortHead('role', 'Role')}</th>
               <th>{sortHead('projects', 'Project access')}</th>
-              <th>{sortHead('last', 'Last active')}</th>
+              <th>{sortHead('last', 'Last login')}</th>
               <th></th>
             </tr>
           </thead>
@@ -519,7 +519,7 @@ function UserRow({
   onSuspendToggle,
   onCancelInvite,
 }: UserRowProps) {
-  const relativeDate = useRelativeDate(u.lastActiveAt ?? undefined)
+  const relativeDate = useRelativeDate(u.lastLoginAt ?? undefined)
 
   return (
     <tr
@@ -577,8 +577,8 @@ function UserRow({
         </div>
       </td>
       <td>
-        <span className={'users-last mono' + (u.lastActiveAt == null ? ' never' : '')}>
-          {u.lastActiveAt == null ? 'never' : relativeDate}
+        <span className={'users-last mono' + (u.lastLoginAt == null ? ' never' : '')}>
+          {u.lastLoginAt == null ? 'never' : relativeDate}
         </span>
       </td>
       <td onClick={(e) => e.stopPropagation()}>

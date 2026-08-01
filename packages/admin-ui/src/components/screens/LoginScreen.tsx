@@ -50,7 +50,12 @@ export function LoginScreen() {
           <div className="auth-brand-mark">
             <span
               className="brand-mark"
-              style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.6875rem', fontSize: '0.875rem' }}
+              style={{
+                width: '2.25rem',
+                height: '2.25rem',
+                borderRadius: '0.6875rem',
+                fontSize: '0.875rem',
+              }}
             >
               FR
             </span>

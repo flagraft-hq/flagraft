@@ -178,9 +178,9 @@ async function main() {
       .toUpperCase()
       .slice(0, 2)
 
-    let lastActiveAt: Date | null = null
+    let lastLoginAt: Date | null = null
     if (u.lastDaysAgo !== null) {
-      lastActiveAt = new Date(Date.now() - u.lastDaysAgo * 24 * 60 * 60 * 1000)
+      lastLoginAt = new Date(Date.now() - u.lastDaysAgo * 24 * 60 * 60 * 1000)
       // For very recent ones, offset by a few minutes/hours
       if (u.lastDaysAgo === 0) {
         const offsets: Record<string, number> = {
@@ -191,7 +191,7 @@ async function main() {
           'release@kocharsoft.com': 8 * 60 * 1000,
         }
         const offset = offsets[u.email] ?? 60 * 1000
-        lastActiveAt = new Date(Date.now() - offset)
+        lastLoginAt = new Date(Date.now() - offset)
       }
     }
 
@@ -207,7 +207,7 @@ async function main() {
         tone: u.tone as 'teal' | 'amber' | 'violet' | 'slate',
         initials,
         isSystem: u.isSystem ?? false,
-        lastActiveAt,
+        lastLoginAt,
       })
       .returning()
 

@@ -202,7 +202,7 @@ export interface WorkspaceUser {
   isSystem: boolean
   initials: string
   tone: 'teal' | 'amber' | 'violet' | 'slate'
-  lastActiveAt: string | null
+  lastLoginAt: string | null
   createdAt: string
   projects: string[]
 }

@@ -12,7 +12,7 @@ function user(over: Partial<WorkspaceUser>): WorkspaceUser {
     isSystem: false,
     initials: 'U',
     tone: 'teal',
-    lastActiveAt: null,
+    lastLoginAt: null,
     createdAt: '2026-01-01',
     projects: over.projects ?? [],
     ...over,

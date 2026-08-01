@@ -31,7 +31,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   const [showAddProject, setShowAddProject] = useState(false)
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [busy, setBusy] = useState(false)
-  const relativeLastActive = useRelativeDate(user.lastActiveAt ?? undefined)
+  const relativeLastLogin = useRelativeDate(user.lastLoginAt ?? undefined)
 
   /** While the reset modal is open, Escape closes it instead of the drawer. */
   useKeyboardShortcuts({
@@ -147,10 +147,10 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             <DRow label="User ID" value={<span className="mono">{user.id}</span>} />
             <DRow label="Joined" value={<span className="mono">{user.createdAt}</span>} />
             <DRow
-              label="Last active"
+              label="Last login"
               value={
                 <span className="mono">
-                  {user.lastActiveAt == null ? 'never' : relativeLastActive}
+                  {user.lastLoginAt == null ? 'never' : relativeLastLogin}
                 </span>
               }
             />
@@ -169,7 +169,12 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                 <div key={p} className="user-project">
                   <span
                     className="proj-avatar"
-                    style={{ width: '1.75rem', height: '1.75rem', fontSize: '0.6875rem', borderRadius: '0.5rem' }}
+                    style={{
+                      width: '1.75rem',
+                      height: '1.75rem',
+                      fontSize: '0.6875rem',
+                      borderRadius: '0.5rem',
+                    }}
                   >
                     {p
                       .split(' ')

@@ -73,7 +73,12 @@ export function AcceptInviteScreen() {
           <div className="auth-brand-mark">
             <span
               className="brand-mark"
-              style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.75rem', fontSize: '0.9375rem' }}
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                borderRadius: '0.75rem',
+                fontSize: '0.9375rem',
+              }}
             >
               FR
             </span>

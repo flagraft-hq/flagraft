@@ -99,7 +99,7 @@ export function SettingsMembers() {
               <tr>
                 <th>Person</th>
                 <th>Role</th>
-                <th>Last active</th>
+                <th>Last login</th>
                 <th aria-label="Actions" />
               </tr>
             </thead>
@@ -187,7 +187,7 @@ function MemberRow({
   onChangeRole: (role: UserRole) => void
   onSuspend: () => void
 }) {
-  const relative = useRelativeDate(member.lastActiveAt ?? undefined)
+  const relative = useRelativeDate(member.lastLoginAt ?? undefined)
   const locked = member.role === USER_ROLES.OWNER || isSelf
 
   return (
@@ -237,7 +237,7 @@ function MemberRow({
       </td>
       <td>
         <span className="mono muted" style={{ fontSize: '0.75rem' }}>
-          {member.lastActiveAt == null ? 'never' : relative}
+          {member.lastLoginAt == null ? 'never' : relative}
         </span>
       </td>
       <td>
