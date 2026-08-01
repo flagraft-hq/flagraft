@@ -23,16 +23,16 @@
   display: grid;
   place-items: center;
   z-index: 1000;
-  padding: 32px;
+  padding: 2rem;
 }
 
 .modal-content {
   background-color: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  max-width: 520px;
+  max-width: 32.5rem;
   width: 100%;
-  max-height: calc(100vh - 96px);
+  max-height: calc(100vh - 6rem);
   box-shadow: var(--shadow-3);
   display: flex;
   flex-direction: column;
@@ -40,11 +40,11 @@
 }
 
 .modal-content--lg {
-  max-width: 720px;
+  max-width: 45rem;
 }
 
 .modal-content--xl {
-  max-width: 880px;
+  max-width: 55rem;
 }
 
 @keyframes slideUp {
@@ -82,7 +82,7 @@
 
 .modal-header .sub,
 .modal-header__sub {
-  margin: 4px 0 0;
+  margin: 0.25rem 0 0;
   font-size: 0.8125rem;
   color: var(--text-3);
   font-weight: 400;
@@ -149,7 +149,7 @@
 }
 
 .text-field-input {
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   font-family: var(--font-sans);
@@ -207,7 +207,7 @@
 .select-input {
   appearance: none;
   -webkit-appearance: none;
-  padding: 8px 32px 8px 12px;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   font-family: var(--font-sans);
@@ -251,7 +251,7 @@
 /* Compact variant for toolbars and the bulk bar */
 .select.select-sm,
 .select-input.select-sm {
-  padding: 5px 28px 5px 10px;
+  padding: 0.3125rem 1.75rem 0.3125rem 0.625rem;
   font-size: 0.7812rem;
   background-position: right 8px center;
 }
@@ -300,10 +300,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
   border: 1.5px solid var(--border-strong);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background-color: var(--bg-elev);
   transition: all 0.2s ease;
 }
@@ -388,8 +388,8 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
   border-radius: var(--r-pill);
   font-size: 0.7188rem;
   font-weight: 600;
@@ -437,8 +437,8 @@
 
 /* dot — small leading circle whose color follows the tone */
 .badge .badge-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 999px;
   background: var(--text-4);
 }
@@ -465,8 +465,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
+  min-width: 1.25rem;
+  height: 1.25rem;
   padding: 0 var(--s-1);
   border: 1px solid var(--border-strong);
   border-radius: var(--r-sm);
@@ -504,8 +504,8 @@
   display: flex;
   /* Top-aligned so the icon sits on the first line when the message wraps */
   align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
   background: var(--danger-soft);
   border: 1px solid var(--danger-soft-border);
   border-radius: var(--r-md);
@@ -514,5 +514,5 @@
 }
 .form-error-banner svg {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }

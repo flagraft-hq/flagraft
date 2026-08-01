@@ -3,16 +3,16 @@
 /* Shared grid template applied to the header row and every flag row. */
 .flags-row {
   display: grid;
-  grid-template-columns: 36px minmax(220px, 1.6fr) 150px 168px 168px;
+  grid-template-columns: 2.25rem minmax(13.75rem, 1.6fr) 9.375rem 10.5rem 10.5rem;
   align-items: center;
   gap: var(--s-3);
   padding: 0 var(--s-4);
-  min-height: 60px;
+  min-height: 3.75rem;
   background: var(--bg-elev);
   border-bottom: 1px solid var(--border);
 }
 .flags-row.flags-head {
-  min-height: 38px;
+  min-height: 2.375rem;
   background: var(--bg-muted);
 }
 .flags-row.body {
@@ -31,7 +31,7 @@
   color: var(--text-3);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.3125rem;
 }
 .flags-head .head-label {
   font-size: 0.6875rem;
@@ -44,8 +44,8 @@
   justify-content: flex-end;
 }
 .live-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 999px;
   background: var(--red-500);
   animation: livePulse 2s infinite;
@@ -76,13 +76,13 @@
 .name-stack {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0.0625rem;
   min-width: 0;
 }
 .flag-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   min-width: 0;
   font-weight: 600;
   color: var(--text-1);
@@ -128,8 +128,8 @@
   color: var(--pri-fg);
 }
 .avatar-sm {
-  width: 26px;
-  height: 26px;
+  width: 1.625rem;
+  height: 1.625rem;
   font-size: 0.6562rem;
 }
 .avatar-teal {
@@ -173,14 +173,14 @@
 .state-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
 }
 .state-pill .toggle-label {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: 0.0625rem;
+  height: 0.0625rem;
   padding: 0;
-  margin: -1px;
+  margin: -0.0625rem;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
@@ -191,7 +191,7 @@
   font-size: 0.7188rem;
   font-weight: 600;
   color: var(--text-3);
-  width: 20px;
+  width: 1.25rem;
 }
 .state-pill-on .state-label {
   color: var(--pri-fg);
@@ -199,8 +199,8 @@
 .state-pill-overrides {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 6px 1px 5px;
+  gap: 0.125rem;
+  padding: 0.0625rem 0.375rem 0.0625rem 0.3125rem;
   border-radius: var(--r-pill);
   background: var(--acc-soft);
   color: var(--acc-fg);
@@ -223,11 +223,11 @@
 .tag-dots {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 0.1875rem;
 }
 .tag-dot {
-  width: 7px;
-  height: 7px;
+  width: 0.4375rem;
+  height: 0.4375rem;
   border-radius: 999px;
   background: var(--ink-400);
 }
@@ -252,14 +252,14 @@
 }
 .tag-popover {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 0.375rem);
   left: 0;
   z-index: 20;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  max-width: 240px;
-  padding: 8px;
+  gap: 0.25rem;
+  max-width: 15rem;
+  padding: 0.5rem;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
@@ -280,7 +280,7 @@
 .tag-chip {
   display: inline-flex;
   align-items: center;
-  padding: 1px 8px;
+  padding: 0.0625rem 0.5rem;
   border-radius: var(--r-pill);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
@@ -293,11 +293,11 @@
 .bulk-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
   background: var(--bg-elev);
-  border-radius: var(--r-lg, 12px);
-  margin-top: 8px;
+  border-radius: var(--r-lg, 0.75rem);
+  margin-top: 0.5rem;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-1);
 }
@@ -305,14 +305,14 @@
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-1);
-  padding-right: 2px;
+  padding-right: 0.125rem;
 }
 .bulk-sep {
-  width: 1px;
-  height: 18px;
+  width: 0.0625rem;
+  height: 1.125rem;
   background: var(--border);
   flex-shrink: 0;
-  margin: 0 2px;
+  margin: 0 0.125rem;
 }
 .bulk-section-label {
   font-size: 0.6875rem;
@@ -320,11 +320,11 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-4);
-  padding: 0 2px;
+  padding: 0 0.125rem;
 }
 .bulk-close {
-  width: 26px;
-  height: 26px;
+  width: 1.625rem;
+  height: 1.625rem;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -332,7 +332,7 @@
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
-  margin-left: 2px;
+  margin-left: 0.125rem;
 }
 .bulk-close:hover {
   background: var(--bg-hover);
@@ -359,7 +359,7 @@
   color: var(--text-1);
 }
 .page-header-sub {
-  margin: 4px 0 0;
+  margin: 0.25rem 0 0;
   font-size: 0.8125rem;
   color: var(--text-3);
 }
@@ -379,7 +379,7 @@
 .sort-head {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
   background: none;
   border: none;
   padding: 0;
@@ -455,7 +455,7 @@
 .flags-empty-message {
   font-size: 0.875rem;
   margin: 0;
-  max-width: 360px;
+  max-width: 22.5rem;
 }
 
 /* FilterBar — integrated filters bar (search + chips + count) */
@@ -463,8 +463,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
   margin-bottom: var(--s-4);
   background: var(--bg-elev);
   border: 1px solid var(--border);
@@ -475,18 +475,18 @@
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 240px;
+  min-width: 15rem;
 }
 .search-input .search-ico {
   position: absolute;
-  left: 10px;
+  left: 0.625rem;
   color: var(--text-4);
   pointer-events: none;
 }
 .search-input .filter-search {
   width: 100%;
-  height: 32px;
-  padding: 0 38px 0 32px;
+  height: 2rem;
+  padding: 0 2.375rem 0 2rem;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--bg-app);
@@ -500,22 +500,22 @@
 }
 .search-input .kbd-hint {
   position: absolute;
-  right: 8px;
+  right: 0.5rem;
   pointer-events: none;
 }
 
 .chip-group {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 0.375rem;
   align-items: center;
 }
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
+  gap: 0.3125rem;
+  height: 1.75rem;
+  padding: 0 0.625rem;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
   background: var(--bg-elev);
@@ -590,7 +590,7 @@
   gap: var(--s-4);
 }
 .create-flag-textarea {
-  min-height: 76px;
+  min-height: 4.75rem;
   resize: vertical;
   font-family: inherit;
   line-height: 1.5;
@@ -599,12 +599,12 @@
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 12px 14px;
+  padding: 0.75rem 0.875rem;
 }
 .snippet-label {
   font-size: 0.75rem;
   color: var(--text-3);
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 .snippet-code {
   margin: 0;
@@ -618,7 +618,7 @@
 .create-flag-kbd-hint {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
   font-size: 0.75rem;
   margin-right: var(--s-2);
 }

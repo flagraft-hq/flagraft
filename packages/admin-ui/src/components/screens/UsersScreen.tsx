@@ -203,7 +203,7 @@ export function UsersScreen() {
 
   if (loading) {
     return (
-      <div className="users-loading" style={{ padding: 24 }}>
+      <div className="users-loading" style={{ padding: '1.5rem' }}>
         <span className="muted">Loading users...</span>
       </div>
     )
@@ -375,7 +375,7 @@ export function UsersScreen() {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6}>
-                  <div className="empty-filtered" style={{ padding: 32, textAlign: 'center' }}>
+                  <div className="empty-filtered" style={{ padding: '2rem', textAlign: 'center' }}>
                     <div className="ill" style={{ marginBottom: 10 }}>
                       <Icon name="user" size={28} style={{ color: 'var(--text-3)' }} />
                     </div>
@@ -530,7 +530,7 @@ function UserRow({
         <Checkbox checked={selected} onChange={onSelect} ariaLabel={'Select ' + u.name} />
       </td>
       <td>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
           <span className={'avatar sm color-' + u.tone}>{u.initials}</span>
           <div style={{ minWidth: 0 }}>
             <div className="users-name">
@@ -576,7 +576,7 @@ function UserRow({
         </span>
       </td>
       <td onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', gap: 2 }}>
+        <div style={{ display: 'flex', gap: '0.125rem' }}>
           {u.status === 'invited' ? (
             <>
               <Tip tip="Resend invite">

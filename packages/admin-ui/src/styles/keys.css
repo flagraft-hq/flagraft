@@ -34,12 +34,12 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-4);
-  padding: 10px 16px;
+  padding: 0.625rem 1rem;
   background: var(--bg-subtle);
   border-bottom: 1px solid var(--border);
 }
 .keys-table td {
-  padding: 12px 16px;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -53,7 +53,7 @@
 .keys-label-sub {
   font-size: 0.75rem;
   color: var(--text-3);
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 .keys-prefix {
   font-size: 0.7812rem;
@@ -68,7 +68,7 @@
 }
 .keys-actions {
   display: flex;
-  gap: 4px;
+  gap: 0.25rem;
   justify-content: flex-end;
 }
 
@@ -86,13 +86,13 @@
 /* Security note */
 .keys-security-note {
   margin-top: var(--s-4);
-  padding: 14px;
+  padding: 0.875rem;
   background: var(--acc-soft);
   border: 1px solid var(--acc-soft-border);
   border-radius: var(--r-md);
   display: grid;
-  grid-template-columns: 24px 1fr;
-  gap: 12px;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.75rem;
   align-items: start;
   font-size: 0.7812rem;
   color: var(--acc-fg);
@@ -110,7 +110,7 @@
 .keys-form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
 }
 .keys-form-label {
   font-size: 0.8125rem;
@@ -122,7 +122,7 @@
 }
 .keys-scope-seg {
   display: flex;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 /* One-time reveal */
@@ -134,12 +134,12 @@
 .keys-reveal-code {
   background: #0b1220;
   color: #e4f7f3;
-  padding: 14px;
+  padding: 0.875rem;
   border-radius: var(--r-md);
   border: 1px solid #1f2a40;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
   word-break: break-all;
   font-size: 0.8125rem;
 }
@@ -162,21 +162,21 @@
 .keys-reveal-usage {
   background: var(--bg-subtle);
   border-radius: var(--r-md);
-  padding: 12px;
+  padding: 0.75rem;
 }
 .keys-reveal-usage-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   font-size: 0.7812rem;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 .keys-reveal-curl {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   font-size: 0.75rem;
   white-space: pre-wrap;
   word-break: break-all;

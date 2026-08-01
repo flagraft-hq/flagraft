@@ -124,7 +124,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             <div className="user-drawer-email mono">{user.email}</div>
             <div
               className="row"
-              style={{ gap: 6, marginTop: 10, flexWrap: 'wrap', display: 'flex' }}
+              style={{ gap: '0.375rem', marginTop: '0.625rem', flexWrap: 'wrap', display: 'flex' }}
             >
               <span className={'badge badge-tone-' + roleTone(user.role)}>
                 <span className="role-dot" /> {user.role}
@@ -169,7 +169,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                 <div key={p} className="user-project">
                   <span
                     className="proj-avatar"
-                    style={{ width: 28, height: 28, fontSize: '0.6875rem', borderRadius: 8 }}
+                    style={{ width: '1.75rem', height: '1.75rem', fontSize: '0.6875rem', borderRadius: '0.5rem' }}
                   >
                     {p
                       .split(' ')
