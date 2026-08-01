@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { usersApi } from '../../lib/api'
 import type { WorkspaceUser } from '../../lib/api'
 import { USER_ROLES } from '../../lib/roles'
@@ -237,9 +237,9 @@ export function UsersScreen() {
           <p className="page-header-sub">
             Everyone with access to this workspace across all projects. Project-specific access
             lives under{' '}
-            <a className="users-settings-link" href="/settings/projects">
+            <Link className="users-settings-link" to="/settings?section=members">
               Project settings → Members
-            </a>
+            </Link>
             .
           </p>
         </div>

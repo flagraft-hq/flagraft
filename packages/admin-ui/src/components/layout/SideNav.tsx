@@ -1,6 +1,5 @@
 import React from 'react'
 import { Icon, IconName } from '../primitives/Icon'
-import { Kbd } from '../primitives/Kbd'
 import { useAuth } from '../../contexts/AuthContext'
 
 export type NavItemId = 'flags' | 'audit' | 'environments' | 'keys' | 'users' | 'settings'
@@ -14,8 +13,6 @@ interface NavItem {
   id: NavItemId
   label: string
   icon: IconName
-  shortcut?: string[]
-  count?: number
 }
 
 interface NavGroup {
@@ -27,15 +24,15 @@ const NAV: NavGroup[] = [
   {
     group: 'WORKSPACE',
     items: [
-      { id: 'flags', label: 'Flags', icon: 'flag', shortcut: ['g', 'f'], count: 24 },
-      { id: 'audit', label: 'Audit log', icon: 'history', shortcut: ['g', 'a'] },
+      { id: 'flags', label: 'Flags', icon: 'flag' },
+      { id: 'audit', label: 'Audit log', icon: 'history' },
     ],
   },
   {
     group: 'CONFIGURE',
     items: [
-      { id: 'environments', label: 'Environments', icon: 'layers', shortcut: ['g', 'e'] },
-      { id: 'keys', label: 'API keys', icon: 'key', shortcut: ['g', 'k'] },
+      { id: 'environments', label: 'Environments', icon: 'layers' },
+      { id: 'keys', label: 'API keys', icon: 'key' },
       { id: 'users', label: 'Users', icon: 'user' as const },
       { id: 'settings', label: 'Project settings', icon: 'settings' },
     ],
@@ -58,12 +55,6 @@ export function SideNav({ current, onNav }: SideNavProps) {
             >
               <Icon name={it.icon} size={16} />
               <span>{it.label}</span>
-              {it.count !== undefined ? <span className="badge-count num">{it.count}</span> : null}
-              {it.shortcut ? (
-                <span className="kbd-hint">
-                  <Kbd keys={it.shortcut} />
-                </span>
-              ) : null}
             </button>
           ))}
         </React.Fragment>

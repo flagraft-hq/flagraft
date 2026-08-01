@@ -335,28 +335,6 @@
   box-shadow: var(--focus);
 }
 
-.nav-item .badge-count {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--text-4);
-  font-weight: 500;
-}
-
-.nav-item[aria-current='page'] .badge-count {
-  color: var(--pri-fg);
-}
-
-.nav-item .kbd-hint {
-  margin-left: auto;
-  opacity: 0;
-  transition: opacity 0.12s;
-}
-
-.nav-item:hover .kbd-hint {
-  opacity: 1;
-}
-
 .sidenav-footer {
   display: flex;
   align-items: center;

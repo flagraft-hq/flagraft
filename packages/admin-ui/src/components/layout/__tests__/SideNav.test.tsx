@@ -74,9 +74,9 @@ describe('SideNav', () => {
     expect(keysBtn).not.toHaveAttribute('aria-current')
   })
 
-  it('renders the badge count for Flags', () => {
-    render(<SideNav current="flags" onNav={mockOnNav} />)
-    expect(screen.getByText('24')).toBeInTheDocument()
+  it('renders no badge count on nav items', () => {
+    const { container } = render(<SideNav current="flags" onNav={mockOnNav} />)
+    expect(container.querySelector('.badge-count')).toBeNull()
   })
 
   it('renders the sidenav footer with user info', () => {

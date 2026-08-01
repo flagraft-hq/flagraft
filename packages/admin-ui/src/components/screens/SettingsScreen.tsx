@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { useProject } from '../../contexts/ProjectContext'
 import { Icon, type IconName } from '../primitives/Icon'
@@ -20,7 +21,16 @@ const TABS: { id: SectionId; label: string; icon: IconName }[] = [
 
 export function SettingsScreen() {
   const { activeProject } = useProject()
-  const [section, setSection] = useState<SectionId>('general')
+  const [searchParams] = useSearchParams()
+
+  /**
+   * Other screens can deep-link straight to a tab with ?section=members.
+   * Anything unrecognised falls back to General.
+   */
+  const requested = searchParams.get('section')
+  const [section, setSection] = useState<SectionId>(
+    TABS.some((t) => t.id === requested) ? (requested as SectionId) : 'general',
+  )
 
   if (!activeProject) {
     return <div className="settings-no-project">No project selected</div>
