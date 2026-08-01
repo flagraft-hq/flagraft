@@ -10,9 +10,23 @@ export const createProjectSchema = z.object({
   description: z.string().optional(),
 })
 
-export const patchProjectSchema = createProjectSchema.partial().refine((value) => {
-  return Object.keys(value).length > 0
-}, 'At least one field is required')
+/** Validated shape of the project settings bag (see ProjectSettings in schema). */
+export const projectSettingsSchema = z.object({
+  flagDefaults: z
+    .object({
+      defaultState: z.enum(['off', 'dev', 'on']).optional(),
+      staleFlagDays: z.number().int().positive().nullable().optional(),
+      requireDescription: z.boolean().optional(),
+    })
+    .optional(),
+})
+
+export const patchProjectSchema = createProjectSchema
+  .partial()
+  .extend({ settings: projectSettingsSchema.optional() })
+  .refine((value) => {
+    return Object.keys(value).length > 0
+  }, 'At least one field is required')
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>
 export type PatchProjectInput = z.infer<typeof patchProjectSchema>

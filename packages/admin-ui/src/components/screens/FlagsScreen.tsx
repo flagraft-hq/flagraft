@@ -12,6 +12,7 @@ import { FlagRow } from './FlagRow'
 import { FlagBulkActionBar } from './FlagBulkActionBar'
 import { CreateFlagModal } from './CreateFlagModal'
 import { flagsApi } from '../../lib/api'
+import { isFlagStale } from '../../lib/stale'
 import type { Flag, StateFilter } from '../../lib/types'
 
 const ENV_NAMES = ['development', 'production']
@@ -76,7 +77,8 @@ export function FlagsScreen() {
 }
 
 function FlagsScreenInner({ projectId }: { projectId: string }) {
-  const { activeEnv, environments } = useProject()
+  const { activeEnv, environments, activeProject } = useProject()
+  const staleFlagDays = activeProject?.settings?.flagDefaults?.staleFlagDays
   /**
    * The flags list shows the development and production columns by design.
    * Their labels come from the real environment names so renames show here too.
@@ -277,6 +279,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
               activeEnv={activeEnv}
               envNames={ENV_NAMES}
               selected={selectedKeys.includes(flag.key)}
+              stale={isFlagStale(flag.updated, staleFlagDays)}
               onSelect={handleSelect}
               onToggle={(key, env, enabled) => {
                 void handleToggle(key, env, enabled)

@@ -2,10 +2,26 @@ export type EnvColor = 'teal' | 'amber' | 'red' | 'slate'
 export type FieldType = 'string' | 'enum' | 'boolean' | 'number' | 'version' | 'date'
 export type KeyScope = 'root' | 'admin' | 'client'
 
+export type DefaultFlagState = 'off' | 'dev' | 'on'
+
+/** Defaults applied to newly-created flags in a project. */
+export interface FlagDefaults {
+  defaultState?: DefaultFlagState
+  staleFlagDays?: number | null
+  requireDescription?: boolean
+}
+
+/** Project-level settings bag. Groups are optional; readers fall back to defaults. */
+export interface ProjectSettings {
+  flagDefaults?: FlagDefaults
+}
+
 export interface Project {
   id: string
   name: string
   slug: string
+  description?: string | null
+  settings?: ProjectSettings
   flagCount: number
 }
 

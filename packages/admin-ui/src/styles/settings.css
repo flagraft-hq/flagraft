@@ -1,80 +1,374 @@
-/* SettingsScreen */
+/* SettingsScreen — modern tabbed layout */
 
-.settings-screen {
-  padding: var(--s-8);
-  max-width: 640px;
+.settings-page {
+  padding: 24px 32px 48px;
+  width: 100%;
 }
 
-.settings-title {
+.settings-page-header {
+  margin-bottom: var(--s-5);
+}
+
+.settings-page-title {
   font-size: 22px;
   font-weight: 700;
   color: var(--text-1);
-  margin: 0 0 var(--s-8);
+  margin: 0;
 }
 
+.settings-page-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+/* Horizontal Sub-Navigation Tabs */
+.settings-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--s-6);
+  padding-bottom: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+}
+
+.settings-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+.settings-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.settings-tab:hover {
+  color: var(--text-1);
+  background: var(--bg-hover);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+}
+
+.settings-tab[aria-selected='true'] {
+  color: var(--pri-fg);
+  font-weight: 600;
+  border-bottom-color: var(--pri);
+  background: transparent;
+}
+
+.settings-tab svg {
+  color: var(--text-3);
+  transition: color 0.15s;
+}
+
+.settings-tab[aria-selected='true'] svg {
+  color: var(--pri);
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  min-width: 0;
+  width: 100%;
+}
+
+.settings-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  width: 100%;
+}
+
+/* Card: internal head / body / foot */
+.settings-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+  width: 100%;
+}
+
+.settings-card-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-card-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.settings-card-head .settings-card-sub {
+  margin-top: 3px;
+  color: var(--text-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.settings-card-body {
+  padding: 8px 24px 12px;
+}
+
+.settings-card-foot {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Label + control rows */
+.settings-row {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row.full {
+  grid-template-columns: 1fr;
+}
+
+.settings-row-label .lbl {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.settings-row-label .hint {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+.settings-row-control {
+  min-width: 0;
+}
+
+/* Keep single-line controls from stretching too wide across wide cards. */
+.settings-row-control .text-field,
+.settings-row-control .select-wrapper,
+.settings-row-control .settings-textarea {
+  max-width: 560px;
+}
+
+.settings-row.full .settings-row-control .settings-textarea {
+  max-width: none;
+}
+
+.settings-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+  font: inherit;
+  color: var(--text-1);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.settings-textarea:focus {
+  outline: none;
+  border-color: var(--pri);
+  box-shadow: 0 0 0 3px var(--pri-soft);
+}
+
+/* Segmented control */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  border-radius: var(--r-md);
+  padding: 3px;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.seg-btn {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.seg-btn:hover {
+  color: var(--text-1);
+}
+
+.seg-btn[aria-pressed='true'] {
+  background: var(--bg-elev);
+  color: var(--text-1);
+  border-color: var(--border);
+  box-shadow: var(--shadow-1);
+}
+
+/* "Not yet wired" note for visual-only sections */
+.settings-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* Members table */
+.settings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.settings-table thead th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-4, var(--text-3));
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-table tbody td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.settings-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.member-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text-1);
+}
+
+.member-email {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--pri-soft);
+  color: var(--pri-fg);
+  font-weight: 700;
+  font-size: 11.5px;
+  border: 1px solid var(--pri-soft-border);
+  flex-shrink: 0;
+}
+
+.avatar[data-system='true'] {
+  background: var(--bg-subtle);
+  color: var(--text-3);
+  border-color: var(--border);
+}
+
+.role-select {
+  height: 30px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 28px;
+  font-size: 12.5px;
+}
+
+/* Role capability matrix */
+.role-matrix {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.role-matrix-row {
+  display: grid;
+  grid-template-columns: 280px repeat(4, 1fr);
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.role-matrix-row:last-child {
+  border-bottom: none;
+}
+
+.role-matrix-row.head {
+  background: var(--bg-muted);
+  font-weight: 600;
+}
+
+.role-matrix-row .lbl {
+  color: var(--text-2);
+}
+
+.role-matrix-row > div:not(.lbl) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Kept: block used by ContextFieldsSection and empty-state message */
 .settings-section {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   padding: var(--s-6);
-  margin-bottom: var(--s-6);
 }
 
 .settings-section-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-1);
-  margin: 0 0 var(--s-4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.settings-field {
-  display: flex;
-  align-items: center;
-  gap: var(--s-4);
-  padding: var(--s-3) 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-field:last-child {
-  border-bottom: none;
-}
-
-.settings-field-label {
-  width: 120px;
-  font-size: 13px;
-  color: var(--text-3);
-  flex-shrink: 0;
-}
-
-.settings-field-value {
-  font-size: 14px;
-  color: var(--text-1);
-}
-
-.settings-envs {
-  display: flex;
-  gap: var(--s-2);
-  flex-wrap: wrap;
-}
-
-.settings-env-chip {
-  padding: var(--s-1) var(--s-3);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: var(--r-pill);
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.settings-danger-zone {
-  border-color: var(--danger);
-}
-
-.settings-danger-desc {
-  font-size: 14px;
-  color: var(--text-3);
   margin: 0 0 var(--s-4);
 }
 
@@ -300,4 +594,82 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--s-4);
+}
+
+/* Copy value rows & env chips in General card */
+.settings-copy-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-copy-row .mono-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-1);
+  background: var(--bg-subtle);
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
+.settings-env-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.env-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+
+.env-chip-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--teal-500);
+}
+
+/* Danger Zone Card */
+.settings-card.danger-card {
+  border-color: var(--danger-soft-border);
+}
+
+.settings-card.danger-card .settings-card-head {
+  background: var(--danger-soft);
+  border-bottom-color: var(--danger-soft-border);
+}
+
+.settings-card.danger-card .settings-card-head h3 {
+  color: var(--danger-fg);
+}
+
+.danger-zone-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px 0;
+}
+
+.danger-zone-info .lbl {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text-1);
+}
+
+.danger-zone-info .hint {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin-top: 4px;
+  max-width: 540px;
 }

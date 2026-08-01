@@ -85,6 +85,13 @@
       "when": 1784546185027,
       "tag": "0011_cool_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784792689519,
+      "tag": "0012_chief_bill_hollister",
+      "breakpoints": true
     }
   ]
 }

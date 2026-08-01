@@ -333,6 +333,50 @@ describeIfDb('projects', () => {
       expect(response.statusCode).toBe(400)
       await app.close()
     })
+
+    it('persists flagDefaults settings and preserves them across an unrelated patch', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey, 'with-settings')
+
+      const saved = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/projects/${project.id}`,
+        headers: { authorization: rootKey },
+        payload: {
+          settings: {
+            flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 },
+          },
+        },
+      })
+      expect(saved.statusCode).toBe(200)
+      expect(saved.json()).toMatchObject({
+        settings: {
+          flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 },
+        },
+      })
+
+      // A name-only patch must not wipe the stored settings.
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/projects/${project.id}`,
+        headers: { authorization: rootKey },
+        payload: { name: 'Renamed' },
+      })
+
+      const fetched = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}`,
+        headers: { authorization: rootKey },
+      })
+      expect(fetched.json()).toMatchObject({
+        name: 'Renamed',
+        settings: {
+          flagDefaults: { defaultState: 'dev', requireDescription: true, staleFlagDays: 60 },
+        },
+      })
+      await app.close()
+    })
   })
 
   /**

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Checkbox } from '../primitives/Checkbox'
 import { Button } from '../primitives/Button'
+import { Badge } from '../primitives/Badge'
 import { Modal } from '../primitives/Modal'
+import { Tip } from '../primitives/Tip'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { StatePill } from './StatePill'
 import { TagCluster } from './TagCluster'
@@ -12,6 +14,8 @@ interface FlagRowProps {
   activeEnv: string
   envNames: string[]
   selected: boolean
+  /** True when the flag hasn't changed within the project's stale window. */
+  stale?: boolean
   onSelect: (key: string, selected: boolean) => void
   onToggle: (key: string, env: string, enabled: boolean) => void
   onClick: (key: string) => void
@@ -44,6 +48,7 @@ export function FlagRow({
   activeEnv,
   envNames,
   selected,
+  stale = false,
   onSelect,
   onToggle,
   onClick,
@@ -103,7 +108,16 @@ export function FlagRow({
         }}
       >
         <div className="name-stack">
-          <span className="flag-name">{flag.name}</span>
+          <span className="flag-name">
+            <span className="flag-name-text">{flag.name}</span>
+            {stale ? (
+              <Tip tip={`No value change since ${relativeDate} — review or remove`}>
+                <span className="flag-stale-badge">
+                  <Badge variant="warning">stale</Badge>
+                </span>
+              </Tip>
+            ) : null}
+          </span>
           <span className="flag-key mono">{flag.key}</span>
         </div>
         <TagCluster tags={flag.tags ?? []} />

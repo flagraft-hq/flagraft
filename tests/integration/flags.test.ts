@@ -634,4 +634,98 @@ describeIfDb('flags', () => {
       await app.close()
     })
   })
+
+  describe('project flag defaults', () => {
+    async function setup() {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+      return { app, project, adminKey }
+    }
+
+    async function setDefaults(
+      app: Awaited<ReturnType<typeof buildServer>>,
+      projectId: string,
+      adminKey: string,
+      flagDefaults: Record<string, unknown>,
+    ) {
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/projects/${projectId}`,
+        headers: { authorization: adminKey },
+        payload: { settings: { flagDefaults } },
+      })
+    }
+
+    it('rejects a flag with no description when requireDescription is enabled', async () => {
+      const { app, project, adminKey } = await setup()
+      await setDefaults(app, project.id, adminKey, { requireDescription: true })
+
+      const missing = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+        payload: { name: 'No Desc', key: 'no-desc' },
+      })
+      expect(missing.statusCode).toBe(400)
+
+      const withDesc = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+        payload: { name: 'Has Desc', key: 'has-desc', description: 'ships the thing' },
+      })
+      expect(withDesc.statusCode).toBe(201)
+      await app.close()
+    })
+
+    it('applies defaultState "on" to every environment of a new flag', async () => {
+      const { app, project, adminKey } = await setup()
+      await setDefaults(app, project.id, adminKey, { defaultState: 'on' })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+        payload: { name: 'On Flag', key: 'on-flag' },
+      })
+      expect(response.statusCode).toBe(201)
+      const state = response.json<{ state: Record<string, { on: boolean }> }>().state
+      expect(state.development.on).toBe(true)
+      expect(state.production.on).toBe(true)
+      await app.close()
+    })
+
+    it('applies defaultState "dev" only to the development environment', async () => {
+      const { app, project, adminKey } = await setup()
+      await setDefaults(app, project.id, adminKey, { defaultState: 'dev' })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+        payload: { name: 'Dev Flag', key: 'dev-flag' },
+      })
+      const state = response.json<{ state: Record<string, { on: boolean }> }>().state
+      expect(state.development.on).toBe(true)
+      expect(state.production.on).toBe(false)
+      await app.close()
+    })
+
+    it('defaults new flags to off everywhere when no default is set', async () => {
+      const { app, project, adminKey } = await setup()
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+        payload: { name: 'Plain Flag', key: 'plain-flag' },
+      })
+      const state = response.json<{ state: Record<string, { on: boolean }> }>().state
+      expect(state.development.on).toBe(false)
+      expect(state.production.on).toBe(false)
+      await app.close()
+    })
+  })
 })

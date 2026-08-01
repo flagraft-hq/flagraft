@@ -16,11 +16,31 @@ const id = () => uuid('id').primaryKey().defaultRandom()
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 
+/** Default state a new flag starts in across environments. */
+export type DefaultFlagState = 'off' | 'dev' | 'on'
+
+/**
+ * Project-level settings bag. Stored as jsonb so new setting groups (e.g.
+ * security) can be added without a migration each time. All fields optional;
+ * readers fall back to sensible defaults.
+ */
+export interface ProjectSettings {
+  flagDefaults?: {
+    /** Initial state applied to a new flag's environments. */
+    defaultState?: DefaultFlagState
+    /** Days without a value change before a flag is considered stale; null = never. */
+    staleFlagDays?: number | null
+    /** Require a description before a flag can be created. */
+    requireDescription?: boolean
+  }
+}
+
 export const projects = pgTable('projects', {
   id: id(),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   description: text('description'),
+  settings: jsonb('settings').$type<ProjectSettings>().notNull().default({}),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 })

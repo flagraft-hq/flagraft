@@ -80,12 +80,22 @@
   min-width: 0;
 }
 .flag-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   font-weight: 600;
   color: var(--text-1);
   font-size: 14px;
+}
+.flag-name-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.flag-stale-badge {
+  flex-shrink: 0;
+  display: inline-flex;
 }
 .flag-key {
   font-size: 12px;
