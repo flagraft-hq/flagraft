@@ -27,14 +27,14 @@
 
 .flags-head .env-label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-3);
   display: inline-flex;
   align-items: center;
   gap: 5px;
 }
 .flags-head .head-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -86,7 +86,7 @@
   min-width: 0;
   font-weight: 600;
   color: var(--text-1);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .flag-name-text {
   white-space: nowrap;
@@ -98,7 +98,7 @@
   display: inline-flex;
 }
 .flag-key {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
@@ -130,7 +130,7 @@
 .avatar-sm {
   width: 26px;
   height: 26px;
-  font-size: 10.5px;
+  font-size: 0.6562rem;
 }
 .avatar-teal {
   background: var(--teal-100);
@@ -158,14 +158,14 @@
   min-width: 0;
 }
 .edited-author {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .edited-when {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
 
@@ -188,7 +188,7 @@
 }
 .state-label {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 600;
   color: var(--text-3);
   width: 20px;
@@ -205,7 +205,7 @@
   background: var(--acc-soft);
   color: var(--acc-fg);
   border: 1px solid var(--acc-soft-border);
-  font-size: 10.5px;
+  font-size: 0.6562rem;
   font-weight: 700;
 }
 .cell-env-prod .state-pill.has-overrides .state-pill-overrides {
@@ -284,7 +284,7 @@
   border-radius: var(--r-pill);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-2);
   white-space: nowrap;
 }
@@ -302,7 +302,7 @@
   box-shadow: var(--shadow-1);
 }
 .bulk-count {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-1);
   padding-right: 2px;
@@ -315,7 +315,7 @@
   margin: 0 2px;
 }
 .bulk-section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -353,14 +353,14 @@
 }
 .page-header h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-1);
 }
 .page-header-sub {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-3);
 }
 .page-header-sub .mono {
@@ -384,7 +384,7 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -447,13 +447,13 @@
   margin-bottom: var(--s-2);
 }
 .flags-empty-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-1);
   margin: 0;
 }
 .flags-empty-message {
-  font-size: 14px;
+  font-size: 0.875rem;
   margin: 0;
   max-width: 360px;
 }
@@ -491,7 +491,7 @@
   border-radius: var(--r-md);
   background: var(--bg-app);
   color: var(--text-1);
-  font-size: 13px;
+  font-size: 0.8125rem;
   outline: none;
 }
 .search-input .filter-search:focus {
@@ -520,7 +520,7 @@
   border-radius: var(--r-pill);
   background: var(--bg-elev);
   color: var(--text-2);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -544,7 +544,7 @@
   color: var(--danger-fg);
 }
 .chip-n {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--text-4);
 }
@@ -559,7 +559,7 @@
   color: var(--text-2);
 }
 .filters-count {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
   white-space: nowrap;
 }
@@ -573,14 +573,14 @@
   border: 1px solid var(--red-300);
   border-radius: var(--r-md);
   color: var(--red-700);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .flags-toggle-error button {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--red-700);
-  font-size: 16px;
+  font-size: 1rem;
   padding: 0 var(--s-1);
 }
 /* Create flag modal */
@@ -602,14 +602,14 @@
   padding: 12px 14px;
 }
 .snippet-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
   margin-bottom: 8px;
 }
 .snippet-code {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.6;
   color: var(--text-2);
   white-space: pre-wrap;
@@ -619,6 +619,6 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 0.75rem;
   margin-right: var(--s-2);
 }

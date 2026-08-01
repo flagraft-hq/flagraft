@@ -169,7 +169,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                 <div key={p} className="user-project">
                   <span
                     className="proj-avatar"
-                    style={{ width: 28, height: 28, fontSize: 11, borderRadius: 8 }}
+                    style={{ width: 28, height: 28, fontSize: '0.6875rem', borderRadius: 8 }}
                   >
                     {p
                       .split(' ')
@@ -178,8 +178,8 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                       .join('')}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{p}</div>
-                    <div className="muted mono" style={{ fontSize: 11 }}>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{p}</div>
+                    <div className="muted mono" style={{ fontSize: '0.6875rem' }}>
                       {user.role}
                     </div>
                   </div>
@@ -225,7 +225,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
 
           <section className="user-section">
             <h3>Recent activity</h3>
-            <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
+            <p className="muted" style={{ fontSize: '0.7812rem', margin: 0 }}>
               Activity log coming soon.
             </p>
           </section>

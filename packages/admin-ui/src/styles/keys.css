@@ -11,7 +11,7 @@
 .keys-loading {
   padding: var(--s-6);
   color: var(--text-3);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 /* Table */
@@ -25,11 +25,11 @@
 .keys-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .keys-table th {
   text-align: left;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -51,16 +51,16 @@
   color: var(--text-1);
 }
 .keys-label-sub {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
   margin-top: 2px;
 }
 .keys-prefix {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
 }
 .keys-date {
   color: var(--text-2);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   white-space: nowrap;
 }
 .keys-date.muted {
@@ -76,7 +76,7 @@
   padding: var(--s-6);
   text-align: center;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: 0.875rem;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
@@ -94,7 +94,7 @@
   grid-template-columns: 24px 1fr;
   gap: 12px;
   align-items: start;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--acc-fg);
 }
 .keys-security-note strong {
@@ -113,12 +113,12 @@
   gap: 6px;
 }
 .keys-form-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-2);
 }
 .keys-form-hint {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .keys-scope-seg {
   display: flex;
@@ -141,7 +141,7 @@
   align-items: center;
   gap: 10px;
   word-break: break-all;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .keys-reveal-code .mono {
   flex: 1;
@@ -168,7 +168,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 600;
   margin-bottom: 6px;
 }
@@ -177,12 +177,12 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 10px 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   white-space: pre-wrap;
   word-break: break-all;
   margin: 0;
   color: var(--text-2);
 }
 .keys-reveal-foot {
-  font-size: 12px;
+  font-size: 0.75rem;
 }

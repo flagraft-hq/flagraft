@@ -33,11 +33,11 @@
 }
 .toast .title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin-bottom: 2px;
 }
 .toast .msg {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--text-3);
 }
 /* Structured outcome lines inside a toast msg (e.g. "2 resent" / "1 skipped") */

@@ -14,7 +14,7 @@
   background: none;
   border: none;
   padding: var(--s-2) var(--s-3);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-3);
   cursor: pointer;
@@ -45,7 +45,7 @@
   border-bottom: 1px solid var(--border);
 }
 .sdk-modal-lang-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-family: var(--font-mono);
   text-transform: uppercase;
   color: var(--text-3);
@@ -56,7 +56,7 @@
   margin: 0;
   padding: var(--s-4);
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.6;
   color: var(--text-2);
   overflow-x: auto;
@@ -64,7 +64,7 @@
 }
 
 .sdk-modal-coming-soon-badge {
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 600;
   text-transform: uppercase;
   background: var(--bg-hover);
@@ -99,13 +99,13 @@
   margin-bottom: var(--s-4);
 }
 .sdk-modal-coming-soon-state h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-1);
   margin: 0 0 var(--s-2) 0;
 }
 .sdk-modal-coming-soon-state p {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-3);
   max-width: 380px;
   line-height: 1.5;
@@ -115,7 +115,7 @@
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--text-3);
 }
 .coming-soon-alternative .link-btn {

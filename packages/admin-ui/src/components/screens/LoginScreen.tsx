@@ -50,11 +50,11 @@ export function LoginScreen() {
           <div className="auth-brand-mark">
             <span
               className="brand-mark"
-              style={{ width: 36, height: 36, borderRadius: 11, fontSize: 14 }}
+              style={{ width: 36, height: 36, borderRadius: 11, fontSize: '0.875rem' }}
             >
               FR
             </span>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>
+            <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
               Flagraft
             </span>
           </div>

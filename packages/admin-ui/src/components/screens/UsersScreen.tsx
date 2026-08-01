@@ -379,8 +379,8 @@ export function UsersScreen() {
                     <div className="ill" style={{ marginBottom: 10 }}>
                       <Icon name="user" size={28} style={{ color: 'var(--text-3)' }} />
                     </div>
-                    <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>No users match</h3>
-                    <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+                    <h3 style={{ margin: '0 0 6px', fontSize: '0.9375rem' }}>No users match</h3>
+                    <p className="muted" style={{ margin: '0 0 12px', fontSize: '0.8125rem' }}>
                       Try clearing the search or changing the status filter.
                     </p>
                     <Button
@@ -415,7 +415,7 @@ export function UsersScreen() {
         </table>
 
         <div className="users-table-foot">
-          <span className="muted" style={{ fontSize: 12 }}>
+          <span className="muted" style={{ fontSize: '0.75rem' }}>
             {filtered.length} of {users.length} users
           </span>
           <span style={{ flex: 1 }} />

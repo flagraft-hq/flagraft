@@ -10,7 +10,7 @@
 }
 
 .settings-page-title {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 700;
   color: var(--text-1);
   margin: 0;
@@ -18,7 +18,7 @@
 
 .settings-page-sub {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-3);
   line-height: 1.5;
 }
@@ -45,7 +45,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 500;
   color: var(--text-3);
   background: none;
@@ -111,7 +111,7 @@
 
 .settings-card-head h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-1);
 }
@@ -119,7 +119,7 @@
 .settings-card-head .settings-card-sub {
   margin-top: 3px;
   color: var(--text-3);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.5;
 }
 
@@ -155,14 +155,14 @@
 }
 
 .settings-row-label .lbl {
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 600;
   color: var(--text-1);
 }
 
 .settings-row-label .hint {
   margin-top: 6px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--text-3);
   line-height: 1.5;
 }
@@ -217,7 +217,7 @@
   border: 1px solid transparent;
   background: transparent;
   border-radius: 6px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 500;
   color: var(--text-3);
   cursor: pointer;
@@ -244,7 +244,7 @@
   background: var(--bg-subtle);
   border: 1px dashed var(--border-strong);
   border-radius: var(--r-md);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-3);
 }
@@ -258,7 +258,7 @@
 .settings-table thead th {
   text-align: left;
   font-weight: 500;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-4, var(--text-3));
@@ -270,7 +270,7 @@
   padding: 10px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .settings-table tbody tr:last-child td {
@@ -285,12 +285,12 @@
 
 .member-name {
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--text-1);
 }
 
 .member-email {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
 }
 
@@ -303,7 +303,7 @@
   background: var(--pri-soft);
   color: var(--pri-fg);
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   border: 1px solid var(--pri-soft-border);
   flex-shrink: 0;
 }
@@ -319,7 +319,7 @@
   padding-top: 0;
   padding-bottom: 0;
   line-height: 28px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
 }
 
 /* Role capability matrix */
@@ -335,7 +335,7 @@
   align-items: center;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
 }
 
 .role-matrix-row:last-child {
@@ -366,7 +366,7 @@
 }
 
 .settings-section-title {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-1);
   margin: 0 0 var(--s-4);
@@ -375,7 +375,7 @@
 .settings-no-project {
   padding: var(--s-8);
   color: var(--text-3);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .project-list {
@@ -415,7 +415,7 @@
 
 .project-list-slug {
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .project-list-icon {
@@ -425,7 +425,7 @@
 
 .project-list-count {
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .project-list-check {
@@ -435,7 +435,7 @@
 
 .project-list-empty {
   color: var(--text-3);
-  font-size: 14px;
+  font-size: 0.875rem;
   text-align: center;
   padding: var(--s-6) 0;
 }
@@ -459,14 +459,14 @@
 }
 
 .setup-title {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-1);
   margin: 0 0 var(--s-2);
 }
 
 .setup-sub {
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--text-3);
   margin: 0 0 var(--s-6);
   line-height: 1.5;
@@ -480,7 +480,7 @@
 }
 
 .setup-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-2);
 }
@@ -492,14 +492,14 @@
 /* Context fields section */
 
 .ctx-section-sub {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-3);
   line-height: 1.55;
   margin: 0 0 var(--s-5);
 }
 
 .ctx-inline-state {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-3);
   padding: var(--s-4) 0;
 }
@@ -514,14 +514,14 @@
 .ctx-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .ctx-table th {
   text-align: left;
   font-weight: 500;
   color: var(--text-3);
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0 var(--s-3) var(--s-2);
@@ -544,7 +544,7 @@
 }
 
 .ctx-key-desc {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
   margin-top: 3px;
   max-width: 320px;
@@ -558,7 +558,7 @@
 }
 
 .ctx-enum {
-  font-size: 11px;
+  font-size: 0.6875rem;
   padding: 1px 6px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
@@ -567,7 +567,7 @@
 }
 
 .ctx-enum-more {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 
 .ctx-row-actions {
@@ -605,7 +605,7 @@
 
 .settings-copy-row .mono-val {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-1);
   background: var(--bg-subtle);
   padding: 4px 10px;
@@ -625,7 +625,7 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: var(--r-pill);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-family: var(--font-mono);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
@@ -663,12 +663,12 @@
 
 .danger-zone-info .lbl {
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--text-1);
 }
 
 .danger-zone-info .hint {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--text-3);
   margin-top: 4px;
   max-width: 540px;

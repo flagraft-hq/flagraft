@@ -79,7 +79,7 @@ export function SettingsMembers() {
         sub="People with access to this project. Roles are workspace-wide."
         footer={
           <>
-            <span className="muted" style={{ fontSize: 12 }}>
+            <span className="muted" style={{ fontSize: '0.75rem' }}>
               {visible ? `${visible.length} member${visible.length === 1 ? '' : 's'}` : '—'}
             </span>
             <span className="spacer" />
@@ -236,7 +236,7 @@ function MemberRow({
         </select>
       </td>
       <td>
-        <span className="mono muted" style={{ fontSize: 12 }}>
+        <span className="mono muted" style={{ fontSize: '0.75rem' }}>
           {member.lastActiveAt == null ? 'never' : relative}
         </span>
       </td>

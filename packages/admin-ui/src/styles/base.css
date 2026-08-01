@@ -147,16 +147,25 @@
   --focus: 0 0 0 3px rgba(45, 212, 191, 0.45);
 }
 
+/**
+ * Global type scale knob. Every font-size in the app is in rem, so
+ * changing this one value scales all text together. 16px is the browser
+ * default; 17.6px is 10% larger.
+ */
+html {
+  font-size: 17.6px;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-app);
   color: var(--text-1);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
 .compact {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .btn {
@@ -171,7 +180,7 @@ body {
   background: var(--bg-elev);
   color: var(--text-1);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
@@ -249,14 +258,14 @@ body {
 
 .btn.sm {
   height: 28px;
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 0 10px;
 }
 
 .btn.lg {
   height: 40px;
   padding: 0 16px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .btn.icon-only {
@@ -379,7 +388,7 @@ body {
 }
 
 .toggle-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-1);
 }
 
@@ -390,7 +399,7 @@ body {
   padding: var(--s-3);
   background-color: var(--bg-subtle);
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .confirm-yes,
@@ -398,7 +407,7 @@ body {
   padding: 4px 12px;
   border: none;
   border-radius: var(--r-sm);
-  font-size: 12px;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -481,7 +490,7 @@ body {
 }
 
 .checkbox-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-1);
   user-select: none;
 }

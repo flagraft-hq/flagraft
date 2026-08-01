@@ -58,7 +58,7 @@
 }
 .auth-pitch h1 {
   margin: 0 0 12px;
-  font-size: 34px;
+  font-size: 2.125rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.12;
@@ -67,7 +67,7 @@
 }
 .auth-pitch p {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 0.9062rem;
   line-height: 1.55;
   color: var(--pri-fg);
   max-width: 380px;
@@ -76,7 +76,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-2);
   padding: 10px 14px;
   background: var(--bg-elev);
@@ -105,7 +105,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-1);
 }
@@ -122,7 +122,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
   color: var(--pri-fg);
   background: var(--pri-soft);
@@ -141,12 +141,12 @@
 }
 .auth-preview-row .key {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 600;
   color: var(--text-1);
 }
 .auth-preview-row .desc {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-4);
   margin-top: 2px;
 }
@@ -215,13 +215,13 @@
 }
 .auth-form-head h2 {
   margin: 0 0 6px;
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 600;
   letter-spacing: -0.012em;
 }
 .auth-form-head p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   line-height: 1.5;
 }
 
@@ -235,7 +235,7 @@
   gap: 6px;
 }
 .auth-form .field label {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 600;
   color: var(--text-2);
 }
@@ -245,7 +245,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--bg-elev);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--text-1);
   transition:
     border-color 0.1s,
@@ -269,7 +269,7 @@
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #b91c1c;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
 }
 .auth-form .err svg {
   flex-shrink: 0;
@@ -283,7 +283,7 @@
   align-items: center;
   gap: 4px;
   margin-top: 6px;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   color: var(--text-3);
 }
 
@@ -327,7 +327,7 @@
 .auth-submit {
   width: 100%;
   height: 44px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .auth-submit .auth-spinner {
   width: 14px;
@@ -350,7 +350,7 @@
   border: none;
   background: none;
   padding: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--pri-fg);
   cursor: pointer;
@@ -363,7 +363,7 @@
 .auth-form-note {
   margin: 2px 0 0;
   text-align: center;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .auth-magic-sent {
@@ -383,12 +383,12 @@
 }
 .auth-magic-sent h3 {
   margin: 0 0 6px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 .auth-magic-sent p {
   margin: 0 auto;
-  font-size: 13px;
+  font-size: 0.8125rem;
   max-width: 320px;
 }
 .auth-magic-sent .ill[data-tone='danger'] {
@@ -417,7 +417,7 @@
 .pw-meter em {
   flex: 0 0 auto;
   margin-left: 6px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-style: normal;
   font-weight: 600;
   color: var(--text-4);
