@@ -74,13 +74,13 @@ export function GlobalSearch() {
           projectId
             ? flagsApi.list(projectId, { limit: SEARCH_FETCH_LIMIT, offset: 0 })
             : Promise.reject(new Error('no project')),
-          usersApi.list(),
+          usersApi.list({ limit: SEARCH_FETCH_LIMIT, offset: 0 }),
         ])
         cacheRef.current = {
           projectId,
           fetchedAt: Date.now(),
           flags: flagsRes.status === 'fulfilled' ? flagsRes.value.data.data : [],
-          users: usersRes.status === 'fulfilled' ? usersRes.value.data : [],
+          users: usersRes.status === 'fulfilled' ? usersRes.value.data.data : [],
         }
       }
       if (cancelled) return

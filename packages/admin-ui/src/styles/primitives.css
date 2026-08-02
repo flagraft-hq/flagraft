@@ -525,6 +525,11 @@
   padding: 0.625rem 0.25rem;
   font-size: 0.75rem;
   color: var(--text-3);
+  /* Fill the footer it sits in, so the internal spacer can push the page
+     controls to the right-hand edge. Basis stays auto: with basis 0 this
+     would collapse to zero height inside a column flex parent. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .pagination-range {
   font-variant-numeric: tabular-nums;

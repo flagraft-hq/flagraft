@@ -72,9 +72,10 @@ export function useFlags({
         setTotal(res.data.total)
         setLoading(false)
       })
-      .catch((err: Error) => {
+      .catch((err: unknown) => {
         if (id !== requestId.current) return
-        setError(err.message)
+        /** Non-Error rejections must not surface as an undefined message. */
+        setError(err instanceof Error ? err.message : 'Failed to load flags')
         setFlags([])
         setTotal(0)
         setLoading(false)

@@ -259,6 +259,17 @@
 }
 
 /* Members table */
+/* Search + role filter above the members table */
+.members-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.members-toolbar .search-input {
+  flex: 1;
+}
+
 .settings-table {
   width: 100%;
   border-collapse: collapse;

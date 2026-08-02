@@ -223,13 +223,42 @@ export const workspaceApi = {
     http.get<{ projectName: string | null; flagCount: number }>('/api/v1/public/workspace'),
 }
 
-export const usersApi = {
-  list: () => http.get<WorkspaceUser[]>('/api/v1/admin/users'),
+/** Workspace-wide bucket counts for the Users screen chips and stat cards. */
+export interface UserCounts {
+  all: number
+  active: number
+  invited: number
+  suspended: number
+  system: number
+  owners: number
+  admins: number
+}
 
-  get: (id: string) =>
-    http.get<WorkspaceUser & { projects: { id: string; name: string }[] }>(
-      `/api/v1/admin/users/${id}`,
-    ),
+export interface ListUsersParams {
+  limit: number
+  offset: number
+  search?: string
+  status?: 'active' | 'invited' | 'suspended' | 'system'
+  role?: string
+  /** Restricts the list to members of one project. */
+  projectId?: string
+  sort?: 'name' | 'role' | 'projects' | 'last'
+  dir?: 'asc' | 'desc'
+}
+
+export type UserWithProjects = Omit<WorkspaceUser, 'projects'> & {
+  projects: { id: string; name: string }[]
+}
+
+export const usersApi = {
+  list: (params: ListUsersParams) =>
+    http.get<Page<WorkspaceUser> & { counts: UserCounts }>('/api/v1/admin/users', { params }),
+
+  /**
+   * The detail endpoint returns full project objects where list rows carry
+   * just the names, so `projects` is replaced rather than intersected.
+   */
+  get: (id: string) => http.get<UserWithProjects>(`/api/v1/admin/users/${id}`),
 
   invite: (emails: string[], role: string, projectIds: string[]) =>
     http.post<

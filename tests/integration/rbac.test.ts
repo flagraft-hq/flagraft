@@ -133,7 +133,7 @@ describeIfDb('session RBAC', () => {
       cookies: admin.cookies,
     })
     expect(list.statusCode).toBe(200)
-    const rows = list.json<Record<string, unknown>[]>()
+    const rows = list.json<{ data: Record<string, unknown>[] }>().data
     expect(rows.length).toBeGreaterThan(0)
     for (const row of rows) {
       expect(row).not.toHaveProperty('passwordHash')

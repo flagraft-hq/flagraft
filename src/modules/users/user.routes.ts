@@ -1,6 +1,12 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 
-import { inviteUserSchema, patchUserSchema, resetPasswordSchema } from './user.schema.js'
+import {
+  MAX_PAGE_SIZE,
+  inviteUserSchema,
+  listUsersQuerySchema,
+  patchUserSchema,
+  resetPasswordSchema,
+} from './user.schema.js'
 import * as service from './user.service.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import { isMailerConfigured, sendInviteEmail } from '../../mailer.js'
@@ -19,9 +25,30 @@ function inviteBaseUrl(fastify: FastifyInstance, req: FastifyRequest): string {
 }
 
 export async function userRoutes(fastify: FastifyInstance) {
-  fastify.get('/admin/users', { preHandler: fastify.requireRootKey }, async () => {
-    return service.listUsers(fastify.db)
-  })
+  fastify.get(
+    '/admin/users',
+    {
+      preHandler: fastify.requireRootKey,
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE, default: 25 },
+            offset: { type: 'integer', minimum: 0, default: 0 },
+            search: { type: 'string' },
+            status: { type: 'string', enum: ['active', 'invited', 'suspended', 'system'] },
+            role: { type: 'string', enum: ['owner', 'admin', 'editor', 'viewer'] },
+            projectId: { type: 'string' },
+            sort: { type: 'string', enum: ['name', 'role', 'projects', 'last'], default: 'name' },
+            dir: { type: 'string', enum: ['asc', 'desc'], default: 'asc' },
+          },
+        },
+      },
+    },
+    async (req) => {
+      return service.listUsers(fastify.db, listUsersQuerySchema.parse(req.query))
+    },
+  )
 
   fastify.get('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req) => {
     const { id } = req.params as { id: string }
