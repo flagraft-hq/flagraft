@@ -11,6 +11,13 @@ import { Kbd } from '../primitives/Kbd'
 /** Input is debounced this long before results update. */
 const DEBOUNCE_MS = 250
 /** Source lists are refetched at most once per this window (throttle). */
+/**
+ * ponytail: the palette matches against a cached first page rather than
+ * querying the server per keystroke. Flags beyond this many rows will not
+ * appear in quick search; move the match server-side if that starts to bite.
+ */
+const SEARCH_FETCH_LIMIT = 100
+
 const FETCH_THROTTLE_MS = 15_000
 
 interface SearchHit {
@@ -64,13 +71,15 @@ export function GlobalSearch() {
         setLoading(true)
         /** Users may 403 for non-admin sessions; show whatever is allowed. */
         const [flagsRes, usersRes] = await Promise.allSettled([
-          projectId ? flagsApi.list(projectId) : Promise.reject(new Error('no project')),
+          projectId
+            ? flagsApi.list(projectId, { limit: SEARCH_FETCH_LIMIT, offset: 0 })
+            : Promise.reject(new Error('no project')),
           usersApi.list(),
         ])
         cacheRef.current = {
           projectId,
           fetchedAt: Date.now(),
-          flags: flagsRes.status === 'fulfilled' ? flagsRes.value.data : [],
+          flags: flagsRes.status === 'fulfilled' ? flagsRes.value.data.data : [],
           users: usersRes.status === 'fulfilled' ? usersRes.value.data : [],
         }
       }
@@ -79,12 +88,7 @@ export function GlobalSearch() {
       const q = debouncedQuery.toLowerCase()
       const { flags, users } = cacheRef.current!
       const flagHits: SearchHit[] = flags
-        .filter(
-          (f) =>
-            f.name.toLowerCase().includes(q) ||
-            f.key.toLowerCase().includes(q) ||
-            f.tags.some((t) => t.toLowerCase().includes(q)),
-        )
+        .filter((f) => f.name.toLowerCase().includes(q) || f.key.toLowerCase().includes(q))
         .slice(0, 8)
         .map((f) => ({
           kind: 'flag',

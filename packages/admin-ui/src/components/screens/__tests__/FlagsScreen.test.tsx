@@ -72,7 +72,6 @@ const defaultFlags = [
     key: 'flag-a',
     name: 'Flag A',
     description: '',
-    tags: [],
     created: '2024-01-01',
     updated: '2024-01-02',
     state: {},
@@ -85,7 +84,13 @@ const mockToggle = flagsApi.toggle as ReturnType<typeof vi.fn>
 beforeEach(() => {
   vi.clearAllMocks()
   mockNavigate.mockReset()
-  mockUseFlags.mockReturnValue({ flags: [], loading: false, error: null, refetch: vi.fn() })
+  mockUseFlags.mockReturnValue({
+    flags: [],
+    total: 0,
+    loading: false,
+    error: null,
+    refetch: vi.fn(),
+  })
   mockUseProject.mockReturnValue({
     activeProject: defaultProject,
     activeEnv: 'development',
@@ -118,7 +123,13 @@ describe('FlagsScreen', () => {
   })
 
   it('shows loading indicator when loading is true', () => {
-    mockUseFlags.mockReturnValue({ flags: [], loading: true, error: null, refetch: vi.fn() })
+    mockUseFlags.mockReturnValue({
+      flags: [],
+      total: 0,
+      loading: true,
+      error: null,
+      refetch: vi.fn(),
+    })
 
     render(<FlagsScreen />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
@@ -127,6 +138,7 @@ describe('FlagsScreen', () => {
   it('shows error message when error is not null', () => {
     mockUseFlags.mockReturnValue({
       flags: [],
+      total: 0,
       loading: false,
       error: 'Failed to fetch flags',
       refetch: vi.fn(),
@@ -139,6 +151,7 @@ describe('FlagsScreen', () => {
   it('renders the flags list area when flags load', () => {
     mockUseFlags.mockReturnValue({
       flags: defaultFlags,
+      total: defaultFlags.length,
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -161,6 +174,7 @@ describe('FlagsScreen', () => {
   it('opens CreateFlagModal when New Flag is clicked', async () => {
     mockUseFlags.mockReturnValue({
       flags: defaultFlags,
+      total: defaultFlags.length,
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -176,6 +190,7 @@ describe('FlagsScreen', () => {
   it('shows the flag count', () => {
     mockUseFlags.mockReturnValue({
       flags: defaultFlags,
+      total: defaultFlags.length,
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -188,7 +203,13 @@ describe('FlagsScreen', () => {
 
 describe('FlagsScreen empty states', () => {
   it('shows no-data empty state when flags list is empty and no filters active', () => {
-    mockUseFlags.mockReturnValue({ flags: [], loading: false, error: null, refetch: vi.fn() })
+    mockUseFlags.mockReturnValue({
+      flags: [],
+      total: 0,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
 
     render(<FlagsScreen />)
     expect(screen.getByText('No flags yet')).toBeInTheDocument()
@@ -196,65 +217,47 @@ describe('FlagsScreen empty states', () => {
     expect(document.querySelector('.flags-list')).not.toBeInTheDocument()
   })
 
-  it('shows no-results empty state when filters produce empty list', () => {
-    /** All flags are "on" so clicking the "Off" filter yields zero results */
-    const allOnFlags = [
-      {
-        key: 'flag-x',
-        name: 'Flag X',
-        description: '',
-        tags: [],
-        created: '2024-01-01',
-        updated: '2024-01-02',
-        state: { development: { on: true } },
-        author: 'user',
-      },
-    ]
+  it('shows the no-results empty state when a filter is active and nothing matches', async () => {
     mockUseFlags.mockReturnValue({
-      flags: allOnFlags,
+      flags: [],
+      total: 0,
       loading: false,
       error: null,
       refetch: vi.fn(),
     })
 
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByRole('button', { name: /off everywhere/i }))
+    /** With no filters yet, an empty project shows the no-data state. */
+    expect(screen.getByText('No flags yet')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText(/search by name/i), {
+      target: { value: 'nothing-matches-this' },
+    })
 
     expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
     expect(screen.getByText('Try adjusting your search or filters.')).toBeInTheDocument()
     expect(document.querySelector('.flags-list')).not.toBeInTheDocument()
   })
 
-  it('clear filters button resets search, tags, and state filter and shows the list again', () => {
-    /** Same all-on setup as above */
-    const allOnFlags = [
-      {
-        key: 'flag-x',
-        name: 'Flag X',
-        description: '',
-        tags: [],
-        created: '2024-01-01',
-        updated: '2024-01-02',
-        state: { development: { on: true } },
-        author: 'user',
-      },
-    ]
+  it('clear filters button resets the search box and drops the filtered empty state', () => {
     mockUseFlags.mockReturnValue({
-      flags: allOnFlags,
+      flags: [],
+      total: 0,
       loading: false,
       error: null,
       refetch: vi.fn(),
     })
 
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByRole('button', { name: /off everywhere/i }))
-
+    const searchBox = screen.getByPlaceholderText(/search by name/i)
+    fireEvent.change(searchBox, { target: { value: 'zzz' } })
     expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /clear filters/i }))
 
+    expect(searchBox).toHaveValue('')
     expect(screen.queryByText('No flags match your filters')).not.toBeInTheDocument()
-    expect(document.querySelector('.flags-list')).toBeInTheDocument()
+    expect(screen.getByText('No flags yet')).toBeInTheDocument()
   })
 })
 
@@ -264,7 +267,6 @@ describe('FlagsScreen integration', () => {
       key: 'flag-alpha',
       name: 'Alpha Flag',
       description: 'First flag',
-      tags: ['core'],
       created: '2024-01-01',
       updated: '2024-03-01',
       state: { development: { on: true } },
@@ -274,7 +276,6 @@ describe('FlagsScreen integration', () => {
       key: 'flag-beta',
       name: 'Beta Flag',
       description: 'Second flag',
-      tags: ['experimental'],
       created: '2024-02-01',
       updated: '2024-04-01',
       state: { development: { on: false } },
@@ -284,7 +285,6 @@ describe('FlagsScreen integration', () => {
       key: 'flag-gamma',
       name: 'Gamma Flag',
       description: 'Third flag',
-      tags: ['core', 'experimental'],
       created: '2024-03-01',
       updated: '2024-02-01',
       state: { development: { on: true } },
@@ -295,10 +295,32 @@ describe('FlagsScreen integration', () => {
   beforeEach(() => {
     mockUseFlags.mockReturnValue({
       flags: multipleFlags,
+      total: multipleFlags.length,
       loading: false,
       error: null,
       refetch: vi.fn(),
     })
+  })
+
+  it('renders the pager with row-size control even when everything fits on one page', () => {
+    render(<FlagsScreen />)
+    expect(screen.getByRole('navigation', { name: 'Pagination' })).toBeInTheDocument()
+    expect(screen.getByText('1–3 of 3 flags')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'flags per page' })).toHaveValue('25')
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
+  })
+
+  it('changing the page size refetches from the first page', async () => {
+    render(<FlagsScreen />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'flags per page' }), {
+      target: { value: '50' },
+    })
+    await waitFor(() =>
+      expect(mockUseFlags).toHaveBeenLastCalledWith(
+        expect.objectContaining({ limit: 50, offset: 0 }),
+      ),
+    )
   })
 
   it('renders FlagRow for each flag', () => {
@@ -358,6 +380,7 @@ describe('FlagsScreen integration', () => {
     const mockRefetch = vi.fn()
     mockUseFlags.mockReturnValue({
       flags: multipleFlags,
+      total: multipleFlags.length,
       loading: false,
       error: null,
       refetch: mockRefetch,
@@ -384,6 +407,7 @@ describe('FlagsScreen retry', () => {
     const mockRefetch = vi.fn()
     mockUseFlags.mockReturnValueOnce({
       flags: [],
+      total: 0,
       loading: false,
       error: 'Network error',
       refetch: mockRefetch,

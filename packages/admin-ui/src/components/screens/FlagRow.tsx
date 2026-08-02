@@ -6,7 +6,6 @@ import { Modal } from '../primitives/Modal'
 import { Tip } from '../primitives/Tip'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { StatePill } from './StatePill'
-import { TagCluster } from './TagCluster'
 import type { Flag } from '../../lib/types'
 
 interface FlagRowProps {
@@ -120,7 +119,6 @@ export function FlagRow({
           </span>
           <span className="flag-key mono">{flag.key}</span>
         </div>
-        <TagCluster tags={flag.tags ?? []} />
       </div>
 
       {envNames.map((env) => (

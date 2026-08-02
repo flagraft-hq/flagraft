@@ -16,6 +16,17 @@ function isPgUniqueError(error: unknown): error is { code: string } {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
 }
 
+/**
+ * Fastify raises these when a request fails a route's own JSON schema, before
+ * any handler runs. They are the caller's fault, so they must not fall through
+ * to the catch-all 500 below.
+ */
+function isSchemaValidationError(error: unknown): error is FastifyError {
+  return (
+    typeof error === 'object' && error !== null && Array.isArray((error as FastifyError).validation)
+  )
+}
+
 async function errorHandlerPlugin(fastify: FastifyInstance) {
   fastify.setErrorHandler(
     (error: FastifyError | Error, _request: FastifyRequest, reply: FastifyReply) => {
@@ -33,6 +44,14 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
           error: 'Conflict',
           message: 'Resource already exists',
           statusCode: 409,
+        })
+      }
+
+      if (isSchemaValidationError(error)) {
+        return reply.status(400).send({
+          error: 'ValidationError',
+          message: error.message,
+          statusCode: 400,
         })
       }
 

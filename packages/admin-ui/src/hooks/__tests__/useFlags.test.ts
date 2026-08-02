@@ -15,7 +15,6 @@ const mockFlags = [
     key: 'flag-alpha',
     name: 'Alpha Flag',
     description: 'First flag',
-    tags: ['core', 'beta'],
     created: '2026-04-01',
     updated: '2026-05-10',
     state: {},
@@ -25,23 +24,19 @@ const mockFlags = [
     key: 'flag-bravo',
     name: 'Bravo Feature',
     description: 'Second flag',
-    tags: ['beta'],
     created: '2026-03-15',
     updated: '2026-05-12',
     state: {},
     author: 'bob',
   },
-  {
-    key: 'flag-charlie',
-    name: 'Charlie Toggle',
-    description: 'Third flag',
-    tags: ['core', 'experiment'],
-    created: '2026-02-20',
-    updated: '2026-04-28',
-    state: {},
-    author: 'charlie',
-  },
 ]
+
+/** The hook returns whatever page the server sends; it no longer filters. */
+function page(data: unknown[], total = data.length, offset = 0) {
+  return { data: { data, total, limit: 25, offset } }
+}
+
+const listMock = () => flagsApi.list as ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -49,76 +44,112 @@ beforeEach(() => {
 
 describe('useFlags', () => {
   it('returns loading=true initially', () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}))
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1' }))
+    listMock().mockReturnValue(new Promise(() => {}))
+    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', limit: 25, offset: 0 }))
     expect(result.current.loading).toBe(true)
   })
 
-  it('returns flags after successful fetch', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1' }))
+  it('returns the page and the unpaged total after a successful fetch', async () => {
+    listMock().mockResolvedValue(page(mockFlags, 42))
+    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', limit: 25, offset: 0 }))
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.flags).toHaveLength(3)
+    expect(result.current.flags).toHaveLength(2)
+    expect(result.current.total).toBe(42)
     expect(result.current.error).toBeNull()
   })
 
   it('returns error on fetch failure', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'))
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1' }))
+    listMock().mockRejectedValue(new Error('Network error'))
+    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', limit: 25, offset: 0 }))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.error).toBe('Network error')
     expect(result.current.flags).toHaveLength(0)
+    expect(result.current.total).toBe(0)
   })
 
-  it('filters by search term matching flag name', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', search: 'bravo' }))
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.flags).toHaveLength(1)
-    expect(result.current.flags[0].key).toBe('flag-bravo')
-  })
-
-  it('filters by search term matching flag key', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', search: 'charlie' }))
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.flags).toHaveLength(1)
-    expect(result.current.flags[0].key).toBe('flag-charlie')
-  })
-
-  it('filters by tags matching any selected tag (OR semantics)', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
+  it('forwards paging, search and sort to the API', async () => {
+    listMock().mockResolvedValue(page(mockFlags))
     const { result } = renderHook(() =>
-      useFlags({ projectId: 'proj-1', tags: ['beta', 'experiment'] }),
+      useFlags({
+        projectId: 'proj-1',
+        search: '  bravo  ',
+        sortField: 'name',
+        sortDir: 'asc',
+        limit: 10,
+        offset: 20,
+      }),
     )
     await waitFor(() => expect(result.current.loading).toBe(false))
-    // OR semantics (matches the design): alpha + bravo carry 'beta', charlie carries
-    // 'experiment'. No single flag has both tags, so AND semantics would return zero.
-    const keys = result.current.flags.map((f) => f.key).sort()
-    expect(keys).toEqual(['flag-alpha', 'flag-bravo', 'flag-charlie'])
+    expect(flagsApi.list).toHaveBeenCalledWith('proj-1', {
+      limit: 10,
+      offset: 20,
+      search: 'bravo',
+      state: undefined,
+      env: undefined,
+      sort: 'name',
+      dir: 'asc',
+    })
   })
 
-  it('filters by search term matching flag description', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', search: 'second' }))
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.flags).toHaveLength(1)
-    expect(result.current.flags[0].key).toBe('flag-bravo')
-  })
-
-  it('sorts by name ascending', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
+  it('omits an all-whitespace search rather than sending it', async () => {
+    listMock().mockResolvedValue(page([]))
     const { result } = renderHook(() =>
-      useFlags({ projectId: 'proj-1', sortField: 'name', sortDir: 'asc' }),
+      useFlags({ projectId: 'proj-1', search: '   ', limit: 25, offset: 0 }),
     )
     await waitFor(() => expect(result.current.loading).toBe(false))
-    const names = result.current.flags.map((f) => f.name)
-    expect(names).toEqual(['Alpha Flag', 'Bravo Feature', 'Charlie Toggle'])
+    expect(flagsApi.list).toHaveBeenCalledWith(
+      'proj-1',
+      expect.objectContaining({ search: undefined }),
+    )
+  })
+
+  it('sends the environment only when a state filter is active', async () => {
+    listMock().mockResolvedValue(page([]))
+    const { rerender, result } = renderHook(
+      (props: { stateFilter: 'on' | null }) =>
+        useFlags({ projectId: 'proj-1', env: 'production', limit: 25, offset: 0, ...props }),
+      { initialProps: { stateFilter: null as 'on' | null } },
+    )
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(flagsApi.list).toHaveBeenLastCalledWith(
+      'proj-1',
+      expect.objectContaining({ state: undefined, env: undefined }),
+    )
+
+    rerender({ stateFilter: 'on' })
+    await waitFor(() =>
+      expect(flagsApi.list).toHaveBeenLastCalledWith(
+        'proj-1',
+        expect.objectContaining({ state: 'on', env: 'production' }),
+      ),
+    )
+  })
+
+  it('ignores a stale response that resolves after a newer one', async () => {
+    let resolveFirst: (v: unknown) => void = () => {}
+    listMock()
+      .mockReturnValueOnce(new Promise((r) => (resolveFirst = r)))
+      .mockResolvedValue(page(mockFlags, 2))
+
+    const { rerender, result } = renderHook(
+      (props: { search: string }) =>
+        useFlags({ projectId: 'proj-1', limit: 25, offset: 0, ...props }),
+      { initialProps: { search: 'a' } },
+    )
+
+    rerender({ search: 'ab' })
+    await waitFor(() => expect(result.current.total).toBe(2))
+
+    /** The first request now lands with different data; it must be dropped. */
+    resolveFirst(page([{ key: 'stale' }], 999))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(result.current.total).toBe(2)
+    expect(result.current.flags.map((f) => f.key)).toEqual(['flag-alpha', 'flag-bravo'])
   })
 
   it('refetch triggers a new API call', async () => {
-    ;(flagsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({ data: mockFlags })
-    const { result } = renderHook(() => useFlags({ projectId: 'proj-1' }))
+    listMock().mockResolvedValue(page(mockFlags))
+    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', limit: 25, offset: 0 }))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(flagsApi.list).toHaveBeenCalledTimes(1)
     result.current.refetch()

@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 
 import {
+  MAX_PAGE_SIZE,
   createFlagSchema,
   flagEnvironmentParamsSchema,
   flagParamsSchema,
+  listFlagsQuerySchema,
   patchFlagSchema,
 } from './flag.schema.js'
 import { cacheKeys } from '../../cache/keys.js'
@@ -43,17 +45,32 @@ export async function flagRoutes(fastify: FastifyInstance) {
       preHandler: fastify.requireAdminKey,
       schema: {
         tags: ['admin'],
-        description: 'List all feature flags within a project.',
+        description:
+          'List one page of feature flags within a project. Filtering, sorting and paging ' +
+          'happen in the database; the response carries the total match count.',
         params: {
           type: 'object',
           properties: { projectId: { type: 'string' } },
           required: ['projectId'],
         },
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE, default: 25 },
+            offset: { type: 'integer', minimum: 0, default: 0 },
+            search: { type: 'string' },
+            state: { type: 'string', enum: ['on', 'off'] },
+            env: { type: 'string' },
+            sort: { type: 'string', enum: ['name', 'key', 'updated'], default: 'updated' },
+            dir: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
+          },
+        },
       },
     },
     async (request) => {
       const params = flagParamsSchema.pick({ projectId: true }).parse(request.params)
-      return service.listFlags(fastify.db, params.projectId)
+      const query = listFlagsQuerySchema.parse(request.query)
+      return service.listFlags(fastify.db, params.projectId, query)
     },
   )
 

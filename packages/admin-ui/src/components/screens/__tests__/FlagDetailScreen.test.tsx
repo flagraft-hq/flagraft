@@ -47,7 +47,6 @@ const mockFlag: Flag = {
   key: 'my-flag',
   name: 'My Feature Flag',
   description: 'A test flag',
-  tags: ['beta', 'web'],
   created: '2026-01-01T00:00:00Z',
   updated: '2026-05-01T00:00:00Z',
   state: {

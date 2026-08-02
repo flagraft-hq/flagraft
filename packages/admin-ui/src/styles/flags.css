@@ -215,11 +215,7 @@
 }
 
 /* ===== Tag cluster (dots + hover popover) ===== */
-.tag-cluster {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
+
 .tag-dots {
   display: inline-flex;
   align-items: center;
@@ -249,44 +245,6 @@
 }
 .tag-infra {
   background: var(--ink-400);
-}
-.tag-popover {
-  position: absolute;
-  top: calc(100% + 0.375rem);
-  left: 0;
-  z-index: 20;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  max-width: 15rem;
-  padding: 0.5rem;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-2);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-2px);
-  transition:
-    opacity 0.12s ease,
-    transform 0.12s ease,
-    visibility 0.12s;
-}
-.tag-cluster:hover .tag-popover {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.0625rem 0.5rem;
-  border-radius: var(--r-pill);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  font-size: 0.6875rem;
-  color: var(--text-2);
-  white-space: nowrap;
 }
 
 /* FlagBulkActionBar */

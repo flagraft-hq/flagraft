@@ -11,7 +11,6 @@ const baseFlag: Flag = {
   key: 'my-feature',
   name: 'My Feature',
   description: 'A test feature flag',
-  tags: ['tag-a', 'tag-b'],
   created: '2025-01-01',
   updated: '2025-01-10',
   state: {
@@ -107,12 +106,6 @@ describe('FlagRow', () => {
     // development is on, staging and production are off
     expect(onPills.length).toBe(1)
     expect(offPills.length).toBe(2)
-  })
-
-  it('renders TagCluster with flag tags', () => {
-    render(<FlagRow {...defaultProps} />)
-    expect(screen.getByText('tag-a')).toBeTruthy()
-    expect(screen.getByText('tag-b')).toBeTruthy()
   })
 
   it('renders checkbox in unchecked state when selected=false', () => {

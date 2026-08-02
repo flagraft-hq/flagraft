@@ -13,6 +13,7 @@ import type {
   ApiKey,
   ApiKeyType,
   CreatedApiKey,
+  Page,
 } from './types'
 
 /** Carries the HTTP status alongside the server-provided message. */
@@ -66,8 +67,20 @@ http.interceptors.response.use(
 
 export { http }
 
+export interface ListFlagsParams {
+  limit: number
+  offset: number
+  search?: string
+  /** Only meaningful together with `env`. */
+  state?: 'on' | 'off'
+  env?: string
+  sort?: 'name' | 'key' | 'updated'
+  dir?: 'asc' | 'desc'
+}
+
 export const flagsApi = {
-  list: (projectId: string) => http.get<Flag[]>(`/api/v1/admin/projects/${projectId}/flags`),
+  list: (projectId: string, params: ListFlagsParams) =>
+    http.get<Page<Flag>>(`/api/v1/admin/projects/${projectId}/flags`, { params }),
 
   get: (projectId: string, key: string) =>
     http.get<Flag>(`/api/v1/admin/projects/${projectId}/flags/${key}`),
@@ -83,11 +96,8 @@ export const flagsApi = {
   create: (projectId: string, data: { key: string; name: string; description?: string }) =>
     http.post<Flag>(`/api/v1/admin/projects/${projectId}/flags`, data),
 
-  update: (
-    projectId: string,
-    key: string,
-    data: Partial<Pick<Flag, 'name' | 'description' | 'tags'>>,
-  ) => http.patch<Flag>(`/api/v1/admin/projects/${projectId}/flags/${key}`, data),
+  update: (projectId: string, key: string, data: Partial<Pick<Flag, 'name' | 'description'>>) =>
+    http.patch<Flag>(`/api/v1/admin/projects/${projectId}/flags/${key}`, data),
 
   delete: (projectId: string, key: string) =>
     http.delete(`/api/v1/admin/projects/${projectId}/flags/${key}`),
