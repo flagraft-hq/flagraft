@@ -1,46 +1,83 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { keysApi } from '../lib/api'
+import type { ListKeysParams } from '../lib/api'
 import type { ApiKey } from '../lib/types'
+
+export type KeySortField = 'created' | 'lastUsed' | 'label'
+export type KeySortDir = 'asc' | 'desc'
+
+interface UseApiKeysOptions extends Omit<ListKeysParams, 'search'> {
+  projectId: string
+  search?: string
+}
 
 interface UseApiKeysResult {
   keys: ApiKey[]
+  /** Rows matching the filters across every page, for the pager. */
+  total: number
   loading: boolean
   error: string | null
   refetch: () => void
 }
 
-/** Loads the API keys for a project. Hashes are never returned by the API. */
-export function useApiKeys(projectId: string): UseApiKeysResult {
+/**
+ * Fetches one page of a project's API keys. Filtering, sorting and paging all
+ * happen on the server. Hashes are never returned by the API.
+ */
+export function useApiKeys({
+  projectId,
+  search = '',
+  type,
+  environmentId,
+  sort = 'created',
+  dir = 'desc',
+  limit,
+  offset,
+}: UseApiKeysOptions): UseApiKeysResult {
   const [keys, setKeys] = useState<ApiKey[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
 
   const refetch = useCallback(() => setTick((t) => t + 1), [])
 
+  /**
+   * Responses can arrive out of order when the user types quickly, so only the
+   * newest request is allowed to write to state.
+   */
+  const requestId = useRef(0)
+
   useEffect(() => {
-    let cancelled = false
+    const id = ++requestId.current
     setLoading(true)
     setError(null)
 
     keysApi
-      .list(projectId)
+      .list(projectId, {
+        limit,
+        offset,
+        search: search.trim() || undefined,
+        type,
+        environmentId,
+        sort,
+        dir,
+      })
       .then((res) => {
-        if (cancelled) return
-        setKeys(res.data)
+        if (id !== requestId.current) return
+        setKeys(res.data.data)
+        setTotal(res.data.total)
         setLoading(false)
       })
-      .catch((err: Error) => {
-        if (cancelled) return
-        setError(err.message)
+      .catch((err: unknown) => {
+        if (id !== requestId.current) return
+        /** Non-Error rejections must not surface as an undefined message. */
+        setError(err instanceof Error ? err.message : 'Failed to load API keys')
         setKeys([])
+        setTotal(0)
         setLoading(false)
       })
+  }, [projectId, search, type, environmentId, sort, dir, limit, offset, tick])
 
-    return () => {
-      cancelled = true
-    }
-  }, [projectId, tick])
-
-  return { keys, loading, error, refetch }
+  return { keys, total, loading, error, refetch }
 }

@@ -1,6 +1,12 @@
 import type { FastifyInstance } from 'fastify'
 
-import { createKeySchema, keyParamsSchema, keyProjectParamsSchema } from './key.schema.js'
+import {
+  MAX_PAGE_SIZE,
+  createKeySchema,
+  keyParamsSchema,
+  keyProjectParamsSchema,
+  listKeysQuerySchema,
+} from './key.schema.js'
 import * as service from './key.service.js'
 
 export async function keyRoutes(fastify: FastifyInstance) {
@@ -41,11 +47,24 @@ export async function keyRoutes(fastify: FastifyInstance) {
           properties: { projectId: { type: 'string' } },
           required: ['projectId'],
         },
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE, default: 25 },
+            offset: { type: 'integer', minimum: 0, default: 0 },
+            search: { type: 'string' },
+            type: { type: 'string', enum: ['admin', 'client'] },
+            environmentId: { type: 'string' },
+            sort: { type: 'string', enum: ['created', 'lastUsed', 'label'], default: 'created' },
+            dir: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
+          },
+        },
       },
     },
     async (request) => {
       const params = keyProjectParamsSchema.parse(request.params)
-      return service.listKeys(fastify.db, params.projectId)
+      const query = listKeysQuerySchema.parse(request.query)
+      return service.listKeys(fastify.db, params.projectId, query)
     },
   )
 

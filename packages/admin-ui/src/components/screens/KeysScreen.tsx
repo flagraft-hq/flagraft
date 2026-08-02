@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useApiKeys } from '../../hooks/useApiKeys'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { keysApi } from '../../lib/api'
 import type { ApiKey, ApiKeyType, Env } from '../../lib/types'
@@ -15,6 +16,10 @@ import { Tip } from '../primitives/Tip'
 import { CopyButton } from '../primitives/CopyButton'
 import { FormError } from '../primitives/FormError'
 import { ErrorState } from '../primitives/ErrorState'
+import { Pagination } from '../primitives/Pagination'
+
+/** Rows per page before the user picks a different size. */
+const DEFAULT_PAGE_SIZE = 25
 
 export function KeysScreen() {
   const { activeProject } = useProject()
@@ -28,12 +33,35 @@ export function KeysScreen() {
 
 function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projectSlug: string }) {
   const { environments } = useProject()
-  const { keys, loading, error, refetch } = useApiKeys(projectId)
   const toast = useToast()
   const [showNew, setShowNew] = useState(false)
   const [revealKey, setRevealKey] = useState<string | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null)
   const [revoking, setRevoking] = useState(false)
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [envFilter, setEnvFilter] = useState('all')
+  const [offset, setOffset] = useState(0)
+  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE)
+
+  /** Typing must not fire a request per keystroke. */
+  const debouncedSearch = useDebouncedValue(search, 300)
+
+  const { keys, total, loading, error, refetch } = useApiKeys({
+    projectId,
+    search: debouncedSearch,
+    type: typeFilter === 'all' ? undefined : (typeFilter as ApiKeyType),
+    environmentId: envFilter === 'all' ? undefined : envFilter,
+    limit,
+    offset,
+  })
+
+  const anyFilters = search.trim() !== '' || typeFilter !== 'all' || envFilter !== 'all'
+
+  /** Filter changes re-number the pages, so return to the first one. */
+  useEffect(() => {
+    setOffset((current) => (current === 0 ? current : 0))
+  }, [debouncedSearch, typeFilter, envFilter, projectId])
 
   const envName = (id: string | null) =>
     id ? (environments.find((e) => e.id === id)?.name ?? id) : null
@@ -81,8 +109,45 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
         </div>
       </div>
 
-      {keys.length === 0 ? (
+      <div className="keys-toolbar">
+        <div className="search-input">
+          <Icon name="search" size={14} className="search-ico" />
+          <input
+            className="filter-search"
+            placeholder="Search by label or prefix…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Select
+          className="select-sm"
+          aria-label="Scope filter"
+          placeholder=""
+          value={typeFilter}
+          onChange={setTypeFilter}
+          options={[
+            { value: 'all', label: 'All scopes' },
+            { value: 'admin', label: 'admin' },
+            { value: 'client', label: 'client' },
+          ]}
+        />
+        <Select
+          className="select-sm"
+          aria-label="Environment filter"
+          placeholder=""
+          value={envFilter}
+          onChange={setEnvFilter}
+          options={[
+            { value: 'all', label: 'All environments' },
+            ...environments.map((e) => ({ value: e.id, label: e.name })),
+          ]}
+        />
+      </div>
+
+      {total === 0 && !anyFilters ? (
         <div className="keys-empty">No API keys yet. Issue one to start calling the API.</div>
+      ) : total === 0 ? (
+        <div className="keys-empty">No keys match your filters.</div>
       ) : (
         <div className="keys-card">
           <table className="keys-table">
@@ -107,6 +172,20 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
               ))}
             </tbody>
           </table>
+          <div className="keys-table-foot">
+            <Pagination
+              total={total}
+              limit={limit}
+              offset={offset}
+              onOffsetChange={setOffset}
+              onLimitChange={(next) => {
+                /** Page numbers change meaning with the size, so start over. */
+                setLimit(next)
+                setOffset(0)
+              }}
+              noun="key"
+            />
+          </div>
         </div>
       )}
 

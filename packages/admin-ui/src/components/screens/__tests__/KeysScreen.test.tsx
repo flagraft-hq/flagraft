@@ -59,21 +59,80 @@ beforeEach(() => {
     loading: false,
     error: null,
   })
-  mockUseApiKeys.mockReturnValue({ keys: [adminKey], loading: false, error: null, refetch })
+  mockUseApiKeys.mockReturnValue({
+    keys: [adminKey],
+    total: 1,
+    loading: false,
+    error: null,
+    refetch,
+  })
 })
 
 describe('KeysScreen', () => {
   it('renders a row per key with scope and prefix', () => {
     render(<KeysScreen />)
     expect(screen.getByText('CI key')).toBeInTheDocument()
-    expect(screen.getByText('admin')).toBeInTheDocument()
+    /** "admin" also appears as a scope-filter option, so scope to the table. */
+    const table = document.querySelector('.keys-table') as HTMLElement
+    expect(within(table).getByText('admin')).toBeInTheDocument()
     expect(screen.getByText(/ff_ad_a91c/)).toBeInTheDocument()
     // A key that has never been used shows "Never".
     expect(screen.getByText('Never')).toBeInTheDocument()
   })
 
+  it('renders the pager and filter controls', () => {
+    mockUseApiKeys.mockReturnValue({
+      keys: [adminKey],
+      total: 60,
+      loading: false,
+      error: null,
+      refetch,
+    })
+    render(<KeysScreen />)
+    expect(screen.getByText('1–25 of 60 keys')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Scope filter' })).toHaveValue('all')
+    expect(screen.getByRole('combobox', { name: 'Environment filter' })).toHaveValue('all')
+  })
+
+  it('passes the search, scope and environment filters to the hook', async () => {
+    render(<KeysScreen />)
+
+    fireEvent.change(screen.getByPlaceholderText(/search by label/i), {
+      target: { value: 'ci' },
+    })
+    await waitFor(() =>
+      expect(mockUseApiKeys).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'ci' })),
+    )
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Scope filter' }), {
+      target: { value: 'client' },
+    })
+    await waitFor(() =>
+      expect(mockUseApiKeys).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: 'client', offset: 0 }),
+      ),
+    )
+  })
+
+  it('distinguishes an empty project from an empty filter result', () => {
+    mockUseApiKeys.mockReturnValue({
+      keys: [],
+      total: 0,
+      loading: false,
+      error: null,
+      refetch,
+    })
+    render(<KeysScreen />)
+    expect(screen.getByText(/No API keys yet/i)).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText(/search by label/i), {
+      target: { value: 'nope' },
+    })
+    expect(screen.getByText('No keys match your filters.')).toBeInTheDocument()
+  })
+
   it('shows the empty state when there are no keys', () => {
-    mockUseApiKeys.mockReturnValue({ keys: [], loading: false, error: null, refetch })
+    mockUseApiKeys.mockReturnValue({ keys: [], total: 0, loading: false, error: null, refetch })
     render(<KeysScreen />)
     expect(screen.getByText(/No API keys yet/i)).toBeInTheDocument()
   })

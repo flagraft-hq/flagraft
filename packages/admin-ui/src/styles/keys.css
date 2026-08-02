@@ -15,6 +15,25 @@
 }
 
 /* Table */
+/* Search + scope/environment filters above the keys table */
+.keys-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.keys-toolbar .search-input {
+  flex: 1;
+}
+
+.keys-table-foot {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-muted);
+  border-top: 1px solid var(--border);
+}
+
 .keys-card {
   background: var(--bg-elev);
   border: 1px solid var(--border);

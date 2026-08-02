@@ -1,11 +1,11 @@
-import { and, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
 
 import { API_KEY_TYPES } from '../../auth/constants.js'
 import type { Db } from '../../db/index.js'
 import { apiKeys, environments } from '../../db/schema.js'
 import { generateKey } from '../../plugins/auth.js'
 import { AppError } from '../../plugins/errorHandler.js'
-import type { CreateKeyInput } from './key.schema.js'
+import type { CreateKeyInput, ListKeysQuery } from './key.schema.js'
 
 /**
  * Formats a raw database API key record for public consumption (hiding sensitive data)
@@ -65,15 +65,56 @@ export async function createKey(db: Db, projectId: string, input: CreateKeyInput
 }
 
 /**
- * Lists all API keys associated with a project
+ * Escapes the LIKE wildcards in user input so a search for "50%" looks for a
+ * literal percent sign instead of matching everything.
  */
-export async function listKeys(db: Db, projectId: string) {
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`)
+}
+
+const SORT_COLUMNS = {
+  created: apiKeys.createdAt,
+  lastUsed: apiKeys.lastUsedAt,
+  label: apiKeys.description,
+} as const
+
+/**
+ * Lists one page of a project's API keys, filtered and sorted in the database.
+ * Returns the page plus the total number of matching rows.
+ */
+export async function listKeys(db: Db, projectId: string, query: ListKeysQuery) {
+  const filters = [eq(apiKeys.projectId, projectId)]
+
+  if (query.search) {
+    const pattern = `%${escapeLike(query.search)}%`
+    filters.push(or(ilike(apiKeys.description, pattern), ilike(apiKeys.keyPrefix, pattern))!)
+  }
+  if (query.type) filters.push(eq(apiKeys.type, query.type))
+  if (query.environmentId) filters.push(eq(apiKeys.environmentId, query.environmentId))
+
+  const where = and(...filters)
+
+  const [totals] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(apiKeys)
+    .where(where)
+
+  const direction = query.dir === 'asc' ? asc : desc
   const rows = await db
     .select()
     .from(apiKeys)
-    .where(eq(apiKeys.projectId, projectId))
-    .orderBy(apiKeys.createdAt)
-  return rows.map(publicKey)
+    .where(where)
+    /** Prefix breaks ties so paging never repeats or skips a row. */
+    .orderBy(direction(SORT_COLUMNS[query.sort]), asc(apiKeys.keyPrefix))
+    .limit(query.limit)
+    .offset(query.offset)
+
+  return {
+    data: rows.map(publicKey),
+    total: totals?.total ?? 0,
+    limit: query.limit,
+    offset: query.offset,
+  }
 }
 
 /**

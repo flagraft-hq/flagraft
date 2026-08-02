@@ -153,8 +153,20 @@ export const environmentsApi = {
     http.delete(`/api/v1/admin/projects/${projectId}/environments/${environmentId}`),
 }
 
+export interface ListKeysParams {
+  limit: number
+  offset: number
+  /** Matched against the label and the key prefix. */
+  search?: string
+  type?: ApiKeyType
+  environmentId?: string
+  sort?: 'created' | 'lastUsed' | 'label'
+  dir?: 'asc' | 'desc'
+}
+
 export const keysApi = {
-  list: (projectId: string) => http.get<ApiKey[]>(`/api/v1/admin/projects/${projectId}/keys`),
+  list: (projectId: string, params: ListKeysParams) =>
+    http.get<Page<ApiKey>>(`/api/v1/admin/projects/${projectId}/keys`, { params }),
 
   /** Returns the plaintext key once; the backend only ever stores its hash. */
   create: (
