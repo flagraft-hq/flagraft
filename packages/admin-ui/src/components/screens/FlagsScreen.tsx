@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProject } from '../../contexts/ProjectContext'
 import { useFlags } from '../../hooks/useFlags'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import type { SortField, SortDir } from '../../hooks/useFlags'
 import { Button } from '../primitives/Button'
 import { Checkbox } from '../primitives/Checkbox'
 import { ErrorState } from '../primitives/ErrorState'
+import { Pagination } from '../primitives/Pagination'
 import { Icon } from '../primitives/Icon'
 import { FilterBar } from './FilterBar'
 import { FlagRow } from './FlagRow'
@@ -13,25 +15,12 @@ import { FlagBulkActionBar } from './FlagBulkActionBar'
 import { CreateFlagModal } from './CreateFlagModal'
 import { flagsApi } from '../../lib/api'
 import { isFlagStale } from '../../lib/stale'
-import type { Flag, StateFilter } from '../../lib/types'
+import type { StateFilter } from '../../lib/types'
 
 const ENV_NAMES = ['development', 'production']
 
-/** Returns whether a flag passes the currently selected state-filter chip. */
-function matchesStateFilter(flag: Flag, filter: StateFilter): boolean {
-  if (!filter) return true
-  const states = Object.values(flag.state ?? {})
-  switch (filter) {
-    case 'on':
-      return states.some((s) => s.on)
-    case 'off':
-      return states.every((s) => !s.on)
-    case 'kill-switch':
-      return (flag.tags ?? []).includes('kill-switch')
-    default:
-      return true
-  }
-}
+/** Rows per page before the user picks a different size. */
+const DEFAULT_PAGE_SIZE = 25
 
 /** A sortable column header used in the flags list head row. */
 function SortHead({
@@ -87,35 +76,41 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   const nameFor = (slug: string) => environments.find((e) => e.slug === slug)?.name ?? slug
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [stateFilter, setStateFilter] = useState<StateFilter>(null)
   const [sortField, setSortField] = useState<SortField>('updated')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [offset, setOffset] = useState(0)
+  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE)
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [toggleError, setToggleError] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
 
-  const {
-    flags: rawFlags,
-    loading,
-    error,
-    refetch,
-  } = useFlags({
+  /** Typing must not fire a request per keystroke. */
+  const debouncedSearch = useDebouncedValue(search, 300)
+
+  const { flags, total, loading, error, refetch } = useFlags({
     projectId,
-    search,
-    tags: selectedTags,
+    search: debouncedSearch,
+    stateFilter,
+    env: activeEnv,
     sortField,
     sortDir,
+    limit,
+    offset,
   })
 
-  /** Top 5 tags by frequency, surfaced as quick filter chips. */
-  const topTags = useMemo<[string, number][]>(() => {
-    const counts: Record<string, number> = {}
-    rawFlags.forEach((f) => (f.tags ?? []).forEach((t) => (counts[t] = (counts[t] ?? 0) + 1)))
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-  }, [rawFlags])
+  /**
+   * Any change to the filters or sort re-numbers the pages, so page 4 of the
+   * old result set is meaningless. Go back to the first page.
+   */
+  useEffect(() => {
+    setOffset((current) => (current === 0 ? current : 0))
+  }, [debouncedSearch, stateFilter, activeEnv, sortField, sortDir, projectId])
+
+  /** Selections are per-page; carrying them across pages would hide them. */
+  useEffect(() => {
+    setSelectedKeys((current) => (current.length === 0 ? current : []))
+  }, [offset])
 
   if (loading) {
     return (
@@ -129,15 +124,12 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
     return <ErrorState title="Failed to load flags" message={error} onRetry={refetch} />
   }
 
-  const filteredFlags = rawFlags.filter((f) => matchesStateFilter(f, stateFilter))
-  const anyFilters = search !== '' || selectedTags.length > 0 || stateFilter !== null
-  const allSelected =
-    filteredFlags.length > 0 && filteredFlags.every((f) => selectedKeys.includes(f.key))
+  const anyFilters = search !== '' || stateFilter !== null
+  const allSelected = flags.length > 0 && flags.every((f) => selectedKeys.includes(f.key))
   const someSelected = selectedKeys.length > 0 && !allSelected
 
   function clearFilters() {
     setSearch('')
-    setSelectedTags([])
     setStateFilter(null)
   }
 
@@ -148,7 +140,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   }
 
   function handleSelectAll(checked: boolean) {
-    setSelectedKeys(checked ? filteredFlags.map((f) => f.key) : [])
+    setSelectedKeys(checked ? flags.map((f) => f.key) : [])
   }
 
   function handleSortCol(col: SortField) {
@@ -191,13 +183,9 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        topTags={topTags}
-        selectedTags={selectedTags}
-        onTagsChange={setSelectedTags}
         stateFilter={stateFilter}
         onStateFilterChange={setStateFilter}
-        resultCount={filteredFlags.length}
-        totalCount={rawFlags.length}
+        envName={nameFor(activeEnv)}
         onClearAll={clearFilters}
       />
 
@@ -221,13 +209,13 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      {rawFlags.length === 0 && !anyFilters ? (
+      {total === 0 && !anyFilters ? (
         <div className="flags-empty">
           <Icon name="flag" size={48} className="flags-empty-icon" />
           <h2 className="flags-empty-title">No flags yet</h2>
           <p className="flags-empty-message">Create your first feature flag to get started.</p>
         </div>
-      ) : filteredFlags.length === 0 ? (
+      ) : total === 0 ? (
         <div className="flags-empty">
           <Icon name="search" size={48} className="flags-empty-icon" />
           <h2 className="flags-empty-title">No flags match your filters</h2>
@@ -272,7 +260,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
               align="right"
             />
           </div>
-          {filteredFlags.map((flag) => (
+          {flags.map((flag) => (
             <FlagRow
               key={flag.key}
               flag={flag}
@@ -287,6 +275,20 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
               onClick={(key) => navigate(`/flags/${key}`)}
             />
           ))}
+          <div className="flags-list-foot">
+            <Pagination
+              total={total}
+              limit={limit}
+              offset={offset}
+              onOffsetChange={setOffset}
+              onLimitChange={(next) => {
+                /** Page numbers change meaning with the size, so start over. */
+                setLimit(next)
+                setOffset(0)
+              }}
+              noun="flag"
+            />
+          </div>
         </div>
       )}
       <CreateFlagModal

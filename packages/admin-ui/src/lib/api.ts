@@ -13,6 +13,7 @@ import type {
   ApiKey,
   ApiKeyType,
   CreatedApiKey,
+  Page,
 } from './types'
 
 /** Carries the HTTP status alongside the server-provided message. */
@@ -66,8 +67,20 @@ http.interceptors.response.use(
 
 export { http }
 
+export interface ListFlagsParams {
+  limit: number
+  offset: number
+  search?: string
+  /** Only meaningful together with `env`. */
+  state?: 'on' | 'off'
+  env?: string
+  sort?: 'name' | 'key' | 'updated'
+  dir?: 'asc' | 'desc'
+}
+
 export const flagsApi = {
-  list: (projectId: string) => http.get<Flag[]>(`/api/v1/admin/projects/${projectId}/flags`),
+  list: (projectId: string, params: ListFlagsParams) =>
+    http.get<Page<Flag>>(`/api/v1/admin/projects/${projectId}/flags`, { params }),
 
   get: (projectId: string, key: string) =>
     http.get<Flag>(`/api/v1/admin/projects/${projectId}/flags/${key}`),
@@ -83,11 +96,8 @@ export const flagsApi = {
   create: (projectId: string, data: { key: string; name: string; description?: string }) =>
     http.post<Flag>(`/api/v1/admin/projects/${projectId}/flags`, data),
 
-  update: (
-    projectId: string,
-    key: string,
-    data: Partial<Pick<Flag, 'name' | 'description' | 'tags'>>,
-  ) => http.patch<Flag>(`/api/v1/admin/projects/${projectId}/flags/${key}`, data),
+  update: (projectId: string, key: string, data: Partial<Pick<Flag, 'name' | 'description'>>) =>
+    http.patch<Flag>(`/api/v1/admin/projects/${projectId}/flags/${key}`, data),
 
   delete: (projectId: string, key: string) =>
     http.delete(`/api/v1/admin/projects/${projectId}/flags/${key}`),
@@ -143,8 +153,20 @@ export const environmentsApi = {
     http.delete(`/api/v1/admin/projects/${projectId}/environments/${environmentId}`),
 }
 
+export interface ListKeysParams {
+  limit: number
+  offset: number
+  /** Matched against the label and the key prefix. */
+  search?: string
+  type?: ApiKeyType
+  environmentId?: string
+  sort?: 'created' | 'lastUsed' | 'label'
+  dir?: 'asc' | 'desc'
+}
+
 export const keysApi = {
-  list: (projectId: string) => http.get<ApiKey[]>(`/api/v1/admin/projects/${projectId}/keys`),
+  list: (projectId: string, params: ListKeysParams) =>
+    http.get<Page<ApiKey>>(`/api/v1/admin/projects/${projectId}/keys`, { params }),
 
   /** Returns the plaintext key once; the backend only ever stores its hash. */
   create: (
@@ -202,7 +224,7 @@ export interface WorkspaceUser {
   isSystem: boolean
   initials: string
   tone: 'teal' | 'amber' | 'violet' | 'slate'
-  lastActiveAt: string | null
+  lastLoginAt: string | null
   createdAt: string
   projects: string[]
 }
@@ -213,13 +235,42 @@ export const workspaceApi = {
     http.get<{ projectName: string | null; flagCount: number }>('/api/v1/public/workspace'),
 }
 
-export const usersApi = {
-  list: () => http.get<WorkspaceUser[]>('/api/v1/admin/users'),
+/** Workspace-wide bucket counts for the Users screen chips and stat cards. */
+export interface UserCounts {
+  all: number
+  active: number
+  invited: number
+  suspended: number
+  system: number
+  owners: number
+  admins: number
+}
 
-  get: (id: string) =>
-    http.get<WorkspaceUser & { projects: { id: string; name: string }[] }>(
-      `/api/v1/admin/users/${id}`,
-    ),
+export interface ListUsersParams {
+  limit: number
+  offset: number
+  search?: string
+  status?: 'active' | 'invited' | 'suspended' | 'system'
+  role?: string
+  /** Restricts the list to members of one project. */
+  projectId?: string
+  sort?: 'name' | 'role' | 'projects' | 'last'
+  dir?: 'asc' | 'desc'
+}
+
+export type UserWithProjects = Omit<WorkspaceUser, 'projects'> & {
+  projects: { id: string; name: string }[]
+}
+
+export const usersApi = {
+  list: (params: ListUsersParams) =>
+    http.get<Page<WorkspaceUser> & { counts: UserCounts }>('/api/v1/admin/users', { params }),
+
+  /**
+   * The detail endpoint returns full project objects where list rows carry
+   * just the names, so `projects` is replaced rather than intersected.
+   */
+  get: (id: string) => http.get<UserWithProjects>(`/api/v1/admin/users/${id}`),
 
   invite: (emails: string[], role: string, projectIds: string[]) =>
     http.post<

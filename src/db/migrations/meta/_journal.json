@@ -92,6 +92,13 @@
       "when": 1784792689519,
       "tag": "0012_chief_bill_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785588066247,
+      "tag": "0013_perpetual_genesis",
+      "breakpoints": true
     }
   ]
 }

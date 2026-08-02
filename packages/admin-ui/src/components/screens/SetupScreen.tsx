@@ -24,7 +24,7 @@ export function SetupScreen() {
       <div className="setup-card">
         <div className="brand" style={{ marginBottom: 24 }}>
           <span className="brand-mark">FR</span>
-          <span style={{ fontSize: 17, fontWeight: 700 }}>Flagraft</span>
+          <span style={{ fontSize: '1.0625rem', fontWeight: 700 }}>Flagraft</span>
         </div>
         <h1 className="setup-title">Connect to backend</h1>
         <p className="setup-sub">

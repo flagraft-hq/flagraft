@@ -18,7 +18,7 @@ import './styles/index.css'
 function Placeholder({ title }: { title: string }) {
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 600 }}>{title}</h1>
+      <h1 style={{ fontSize: '1.375rem', fontWeight: 600 }}>{title}</h1>
       <p style={{ color: 'var(--text-3)', marginTop: 8 }}>Coming soon.</p>
     </div>
   )

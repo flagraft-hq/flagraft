@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 
 import { usersApi, ApiError, type WorkspaceUser } from '../../../lib/api'
-import { membersOfProject } from '../../../lib/members'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useProject } from '../../../contexts/ProjectContext'
 import { useToast } from '../../../hooks/useToast'
+import { useUsers } from '../../../hooks/useUsers'
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
 import { useRelativeDate } from '../../../hooks/useRelativeDate'
 import { USER_ROLES, type UserRole } from '../../../lib/roles'
 import { Badge } from '../../primitives/Badge'
@@ -13,9 +14,14 @@ import { ErrorState } from '../../primitives/ErrorState'
 import { FormError } from '../../primitives/FormError'
 import { Icon } from '../../primitives/Icon'
 import { Modal } from '../../primitives/Modal'
+import { Pagination } from '../../primitives/Pagination'
+import { Select } from '../../primitives/Select'
 import { Tip } from '../../primitives/Tip'
 import { InviteModal } from '../InviteModal'
 import { SettingsCard } from './SettingsCard'
+
+/** Rows per page before the user picks a different size. */
+const DEFAULT_PAGE_SIZE = 25
 
 const ROLE_OPTIONS: UserRole[] = [
   USER_ROLES.OWNER,
@@ -39,38 +45,48 @@ export function SettingsMembers() {
   const toast = useToast()
   const { user } = useAuth()
   const { activeProject } = useProject()
-  const [members, setMembers] = useState<WorkspaceUser[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [suspendTarget, setSuspendTarget] = useState<WorkspaceUser | null>(null)
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [offset, setOffset] = useState(0)
+  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE)
 
-  function load() {
-    setError(null)
-    usersApi
-      .list()
-      .then((res) => setMembers(res.data))
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load members'))
-  }
+  /** Typing must not fire a request per keystroke. */
+  const debouncedSearch = useDebouncedValue(search, 300)
 
-  useEffect(load, [])
+  /** The server scopes the list to this project; no client-side filtering. */
+  const {
+    users: visible,
+    total,
+    loading,
+    error,
+    refetch,
+  } = useUsers({
+    projectId: activeProject?.id,
+    search: debouncedSearch,
+    role: roleFilter === 'all' ? undefined : roleFilter,
+    limit,
+    offset,
+  })
+
+  /** Filter changes re-number the pages, so return to the first one. */
+  useEffect(() => {
+    setOffset((current) => (current === 0 ? current : 0))
+  }, [debouncedSearch, roleFilter, activeProject?.id])
 
   async function changeRole(member: WorkspaceUser, role: UserRole) {
-    const previous = members
-    setMembers((ms) => ms?.map((m) => (m.id === member.id ? { ...m, role } : m)) ?? ms)
     try {
       await usersApi.patch(member.id, { role })
       toast.push({ title: `${member.name} is now ${role}`, variant: 'success' })
+      refetch()
     } catch (err) {
-      setMembers(previous ?? null)
       toast.push({
         title: err instanceof ApiError ? err.message : 'Failed to change role',
         variant: 'error',
       })
     }
   }
-
-  /** Only the members with access to the active project (null while loading). */
-  const visible = members && activeProject ? membersOfProject(members, activeProject.name) : members
 
   return (
     <>
@@ -79,27 +95,59 @@ export function SettingsMembers() {
         sub="People with access to this project. Roles are workspace-wide."
         footer={
           <>
-            <span className="muted" style={{ fontSize: 12 }}>
-              {visible ? `${visible.length} member${visible.length === 1 ? '' : 's'}` : '—'}
-            </span>
-            <span className="spacer" />
+            <Pagination
+              total={total}
+              limit={limit}
+              offset={offset}
+              onOffsetChange={setOffset}
+              onLimitChange={(next) => {
+                setLimit(next)
+                setOffset(0)
+              }}
+              noun="member"
+            />
             <Button variant="primary" leftIcon="plus" onClick={() => setInviteOpen(true)}>
               Invite member
             </Button>
           </>
         }
       >
+        <div className="members-toolbar">
+          <div className="search-input">
+            <Icon name="search" size={14} className="search-ico" />
+            <input
+              className="filter-search"
+              placeholder="Search by name, email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Select
+            className="select-sm"
+            aria-label="Role filter"
+            placeholder=""
+            value={roleFilter}
+            onChange={setRoleFilter}
+            options={[
+              { value: 'all', label: 'All roles' },
+              ...ROLE_OPTIONS.map((r) => ({ value: r, label: r })),
+            ]}
+          />
+        </div>
+
         {error ? (
-          <ErrorState title="Failed to load members" message={error} onRetry={load} />
-        ) : !visible ? (
+          <ErrorState title="Failed to load members" message={error} onRetry={refetch} />
+        ) : loading ? (
           <div className="ctx-inline-state">Loading members…</div>
+        ) : visible.length === 0 ? (
+          <div className="ctx-inline-state">No members match.</div>
         ) : (
           <table className="settings-table">
             <thead>
               <tr>
                 <th>Person</th>
                 <th>Role</th>
-                <th>Last active</th>
+                <th>Last login</th>
                 <th aria-label="Actions" />
               </tr>
             </thead>
@@ -160,16 +208,14 @@ export function SettingsMembers() {
         </div>
       </SettingsCard>
 
-      <InviteModal open={inviteOpen} onClose={() => setInviteOpen(false)} onInvited={load} />
+      <InviteModal open={inviteOpen} onClose={() => setInviteOpen(false)} onInvited={refetch} />
 
       <SuspendDialog
         member={suspendTarget}
         onClose={() => setSuspendTarget(null)}
-        onSuspended={(id) => {
-          setMembers(
-            (ms) => ms?.map((m) => (m.id === id ? { ...m, status: 'suspended' } : m)) ?? ms,
-          )
+        onSuspended={() => {
           setSuspendTarget(null)
+          refetch()
         }}
       />
     </>
@@ -187,7 +233,7 @@ function MemberRow({
   onChangeRole: (role: UserRole) => void
   onSuspend: () => void
 }) {
-  const relative = useRelativeDate(member.lastActiveAt ?? undefined)
+  const relative = useRelativeDate(member.lastLoginAt ?? undefined)
   const locked = member.role === USER_ROLES.OWNER || isSelf
 
   return (
@@ -236,8 +282,8 @@ function MemberRow({
         </select>
       </td>
       <td>
-        <span className="mono muted" style={{ fontSize: 12 }}>
-          {member.lastActiveAt == null ? 'never' : relative}
+        <span className="mono muted" style={{ fontSize: '0.75rem' }}>
+          {member.lastLoginAt == null ? 'never' : relative}
         </span>
       </td>
       <td>

@@ -42,28 +42,28 @@
   --ink-950: #020617;
 
   /* Spacing */
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 20px;
-  --s-6: 24px;
-  --s-7: 28px;
-  --s-8: 32px;
-  --s-9: 36px;
-  --s-10: 40px;
-  --s-11: 44px;
-  --s-12: 48px;
-  --s-13: 52px;
-  --s-14: 56px;
-  --s-15: 60px;
-  --s-16: 64px;
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.25rem;
+  --s-6: 1.5rem;
+  --s-7: 1.75rem;
+  --s-8: 2rem;
+  --s-9: 2.25rem;
+  --s-10: 2.5rem;
+  --s-11: 2.75rem;
+  --s-12: 3rem;
+  --s-13: 3.25rem;
+  --s-14: 3.5rem;
+  --s-15: 3.75rem;
+  --s-16: 4rem;
 
   /* Radius */
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 10px;
-  --r-xl: 12px;
+  --r-sm: 0.375rem;
+  --r-md: 0.5rem;
+  --r-lg: 0.625rem;
+  --r-xl: 0.75rem;
   --r-pill: 999px;
 
   /* Shadow */
@@ -147,31 +147,43 @@
   --focus: 0 0 0 3px rgba(45, 212, 191, 0.45);
 }
 
+/**
+ * Global scale knob. Text, spacing, sizes and radii are all in rem, so
+ * changing this one value scales the whole UI together. 16px is the
+ * browser default; 19.2px is 20% larger.
+ *
+ * ponytail: border widths, shadows and pill radii stay in px on purpose —
+ * a 1px hairline should stay 1px at any scale.
+ */
+html {
+  font-size: 19.2px;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-app);
   color: var(--text-1);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
 .compact {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 12px;
-  height: 34px;
+  gap: 0.375rem;
+  padding: 0 0.75rem;
+  height: 2.125rem;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--bg-elev);
   color: var(--text-1);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
@@ -248,19 +260,19 @@ body {
 }
 
 .btn.sm {
-  height: 28px;
-  font-size: 12px;
-  padding: 0 10px;
+  height: 1.75rem;
+  font-size: 0.75rem;
+  padding: 0 0.625rem;
 }
 
 .btn.lg {
-  height: 40px;
-  padding: 0 16px;
-  font-size: 14px;
+  height: 2.5rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
 }
 
 .btn.icon-only {
-  width: 34px;
+  width: 2.125rem;
   padding: 0;
 }
 
@@ -294,7 +306,7 @@ body {
 .toggle[data-variant='production'][aria-checked='true'] .toggle-track::before {
   content: '';
   position: absolute;
-  inset: -3px;
+  inset: -0.1875rem;
   border-radius: 999px;
   border: 1.5px solid var(--red-500);
   opacity: 0.4;
@@ -308,8 +320,8 @@ body {
 
 .toggle-track {
   display: inline-block;
-  width: 36px;
-  height: 20px;
+  width: 2.25rem;
+  height: 1.25rem;
   background-color: var(--ink-300);
   border-radius: var(--r-pill);
   position: relative;
@@ -321,14 +333,14 @@ body {
 
 /** Small size: 30x17 px, matches design .sm */
 .toggle-track.track-sm {
-  width: 30px;
-  height: 17px;
+  width: 1.875rem;
+  height: 1.0625rem;
 }
 
 /** Large size: 44x24 px, matches design .lg */
 .toggle-track.track-lg {
-  width: 44px;
-  height: 24px;
+  width: 2.75rem;
+  height: 1.5rem;
 }
 
 .toggle-on .toggle-track {
@@ -344,42 +356,44 @@ body {
  */
 .toggle-thumb {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
   background-color: white;
   border-radius: var(--r-pill);
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 0.125rem;
+  left: 0.125rem;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.15),
     0 1px 1px rgba(0, 0, 0, 0.06);
   transition: transform 0.14s ease;
 }
 .toggle-track.track-sm .toggle-thumb {
-  width: 13px;
-  height: 13px;
+  width: 0.8125rem;
+  height: 0.8125rem;
 }
 .toggle-track.track-lg .toggle-thumb {
-  width: 20px;
-  height: 20px;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
-/** Default (36x20): travel = 36-20 = 16px */
+/**
+ * Travel must be in rem like the track, or the thumb stops short of the
+ * right edge once the global scale knob moves off 16px.
+ * travel = track width - track height, for each size.
+ */
 .toggle-on .toggle-thumb {
-  transform: translateX(16px);
+  transform: translateX(1rem);
 }
-/** sm (30x17): travel = 30-17 = 13px */
 .toggle-on .toggle-track.track-sm .toggle-thumb {
-  transform: translateX(13px);
+  transform: translateX(0.8125rem);
 }
-/** lg (44x24): travel = 44-24 = 20px */
 .toggle-on .toggle-track.track-lg .toggle-thumb {
-  transform: translateX(20px);
+  transform: translateX(1.25rem);
 }
 
 .toggle-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-1);
 }
 
@@ -390,15 +404,15 @@ body {
   padding: var(--s-3);
   background-color: var(--bg-subtle);
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .confirm-yes,
 .confirm-no {
-  padding: 4px 12px;
+  padding: 0.25rem 0.75rem;
   border: none;
   border-radius: var(--r-sm);
-  font-size: 12px;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -453,10 +467,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
   border: 1.5px solid var(--border-strong);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background-color: var(--bg-elev);
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -481,7 +495,17 @@ body {
 }
 
 .checkbox-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-1);
   user-select: none;
+}
+
+/* Shared "N of M used" note beside a create action that has a hard cap */
+.limit-note {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.limit-spacer {
+  flex: 1;
 }

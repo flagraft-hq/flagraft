@@ -11,6 +11,24 @@ import { flagsApi, environmentsApi } from '../../lib/api'
 
 const asMock = (fn: unknown) => fn as ReturnType<typeof vi.fn>
 
+/**
+ * The hook reads counts off the page metadata: one unfiltered call for the
+ * project total, then one `state=on` call per environment. This mock answers
+ * both from a single fixture.
+ */
+function mockFlagPages(flags: { state?: Record<string, { on: boolean }> }[]) {
+  asMock(flagsApi.list).mockImplementation(
+    (_projectId: string, params: { state?: 'on' | 'off'; env?: string }) => {
+      const matching = params.state
+        ? flags.filter((f) => Boolean(f.state?.[params.env!]?.on) === (params.state === 'on'))
+        : flags
+      return Promise.resolve({
+        data: { data: flags.slice(0, 1), total: matching.length, limit: 1, offset: 0 },
+      })
+    },
+  )
+}
+
 /** Two flags with per-env on/off state used to derive the env list and counts. */
 const mockFlags = [
   { key: 'a', name: 'A', state: { development: { on: true }, production: { on: false } } },
@@ -31,7 +49,7 @@ describe('useEnvironments', () => {
   })
 
   it('derives environments from flag state with per-env stats', async () => {
-    asMock(flagsApi.list).mockResolvedValue({ data: mockFlags })
+    mockFlagPages(mockFlags)
     const { result } = renderHook(() => useEnvironments('proj-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -46,21 +64,17 @@ describe('useEnvironments', () => {
   })
 
   it('orders dev → staging → production, then unknown envs alphabetically', async () => {
-    asMock(flagsApi.list).mockResolvedValue({
-      data: [
-        {
-          key: 'a',
-          name: 'A',
-          state: {
-            production: { on: false },
-            staging: { on: false },
-            development: { on: false },
-            zeta: { on: false },
-            alpha: { on: false },
-          },
+    mockFlagPages([
+      {
+        state: {
+          production: { on: false },
+          staging: { on: false },
+          development: { on: false },
+          zeta: { on: false },
+          alpha: { on: false },
         },
-      ],
-    })
+      },
+    ])
     const { result } = renderHook(() => useEnvironments('proj-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.environments.map((e) => e.slug)).toEqual([
@@ -73,7 +87,7 @@ describe('useEnvironments', () => {
   })
 
   it('marks production as protected by default when no metadata is present', async () => {
-    asMock(flagsApi.list).mockResolvedValue({ data: mockFlags })
+    mockFlagPages(mockFlags)
     const { result } = renderHook(() => useEnvironments('proj-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     const prod = result.current.environments.find((e) => e.slug === 'production')!
@@ -83,7 +97,7 @@ describe('useEnvironments', () => {
   })
 
   it('prefers environment metadata (name/color/protected) over derived values', async () => {
-    asMock(flagsApi.list).mockResolvedValue({ data: mockFlags })
+    mockFlagPages(mockFlags)
     asMock(environmentsApi.list).mockResolvedValue({
       data: [
         { id: 'e1', slug: 'production', name: 'Prod Custom', color: 'amber', protected: false },
@@ -98,14 +112,14 @@ describe('useEnvironments', () => {
   })
 
   it('falls back to development + production when no flags or metadata exist', async () => {
-    asMock(flagsApi.list).mockResolvedValue({ data: [] })
+    mockFlagPages([])
     const { result } = renderHook(() => useEnvironments('proj-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.environments.map((e) => e.slug)).toEqual(['development', 'production'])
   })
 
   it('still derives envs from flags when the metadata endpoint fails', async () => {
-    asMock(flagsApi.list).mockResolvedValue({ data: mockFlags })
+    mockFlagPages(mockFlags)
     asMock(environmentsApi.list).mockRejectedValue(new Error('no env endpoint'))
     const { result } = renderHook(() => useEnvironments('proj-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
@@ -125,11 +139,13 @@ describe('useEnvironments', () => {
   })
 
   it('refetch triggers a new fetch', async () => {
-    asMock(flagsApi.list).mockResolvedValue({ data: mockFlags })
+    mockFlagPages(mockFlags)
     const { result } = renderHook(() => useEnvironments('proj-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(flagsApi.list).toHaveBeenCalledTimes(1)
+    const callsBefore = asMock(flagsApi.list).mock.calls.length
     result.current.refetch()
-    await waitFor(() => expect(flagsApi.list).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(asMock(flagsApi.list).mock.calls.length).toBeGreaterThan(callsBefore),
+    )
   })
 })

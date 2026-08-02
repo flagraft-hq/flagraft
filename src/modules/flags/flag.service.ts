@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, ilike, inArray, or, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
 import {
@@ -10,7 +10,15 @@ import {
   type DefaultFlagState,
 } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
-import type { CreateFlagInput, PatchFlagInput } from './flag.schema.js'
+import type { CreateFlagInput, ListFlagsQuery, PatchFlagInput } from './flag.schema.js'
+
+/**
+ * Escapes the LIKE wildcards in user input so a search for "50%" looks for a
+ * literal percent sign instead of matching everything.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`)
+}
 
 /**
  * Resolves the initial on/off state for a new flag in one environment, based on
@@ -160,10 +168,62 @@ export async function createFlag(
   return fetchFlagWithState(db, projectId, flag.key)
 }
 
+const SORT_COLUMNS = {
+  name: featureFlags.name,
+  key: featureFlags.key,
+  updated: featureFlags.updatedAt,
+} as const
+
 /**
- * Lists all feature flags for a project
+ * Lists one page of feature flags for a project, filtered and sorted in the
+ * database. Returns the page plus the total number of matching rows so the
+ * caller can render page numbers.
  */
-export async function listFlags(db: Db, projectId: string) {
+export async function listFlags(db: Db, projectId: string, query: ListFlagsQuery) {
+  const filters = [eq(featureFlags.projectId, projectId)]
+
+  if (query.search) {
+    const pattern = `%${escapeLike(query.search)}%`
+    filters.push(
+      or(
+        ilike(featureFlags.name, pattern),
+        ilike(featureFlags.key, pattern),
+        ilike(featureFlags.description, pattern),
+      )!,
+    )
+  }
+
+  /**
+   * The state filter only means something relative to an environment, so it
+   * is ignored unless the caller says which one.
+   */
+  if (query.state && query.env) {
+    filters.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(flagEnvironments)
+          .innerJoin(environments, eq(flagEnvironments.environmentId, environments.id))
+          .where(
+            and(
+              eq(flagEnvironments.flagId, featureFlags.id),
+              eq(environments.slug, query.env),
+              eq(flagEnvironments.enabled, query.state === 'on'),
+            ),
+          ),
+      ),
+    )
+  }
+
+  const where = and(...filters)
+
+  const [totals] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(featureFlags)
+    .where(where)
+  const total = totals?.total ?? 0
+
+  const direction = query.dir === 'asc' ? asc : desc
   const flags = await db
     .select({
       id: featureFlags.id,
@@ -178,11 +238,14 @@ export async function listFlags(db: Db, projectId: string) {
     })
     .from(featureFlags)
     .leftJoin(users, eq(featureFlags.authorId, users.id))
-    .where(eq(featureFlags.projectId, projectId))
-    .orderBy(featureFlags.createdAt)
+    .where(where)
+    /** Key breaks ties so paging never repeats or skips a row. */
+    .orderBy(direction(SORT_COLUMNS[query.sort]), asc(featureFlags.key))
+    .limit(query.limit)
+    .offset(query.offset)
 
   if (flags.length === 0) {
-    return []
+    return { data: [], total, limit: query.limit, offset: query.offset }
   }
 
   const flagIds = flags.map((f) => f.id)
@@ -209,13 +272,12 @@ export async function listFlags(db: Db, projectId: string) {
     }
   }
 
-  return flags.map((f) => ({
+  const data = flags.map((f) => ({
     id: f.id,
     projectId: f.projectId,
     key: f.key,
     name: f.name,
     description: f.description || '',
-    tags: [],
     created: f.createdAt.toISOString(),
     updated: f.updatedAt.toISOString(),
     createdAt: f.createdAt.toISOString(),
@@ -223,6 +285,8 @@ export async function listFlags(db: Db, projectId: string) {
     author: f.authorName || 'System',
     state: statesMap[f.id] || {},
   }))
+
+  return { data, total, limit: query.limit, offset: query.offset }
 }
 
 /**

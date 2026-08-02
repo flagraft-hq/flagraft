@@ -230,7 +230,12 @@ export function InviteModal({ open, onClose, onInvited }: InviteModalProps) {
                   >
                     <span
                       className="proj-avatar"
-                      style={{ width: 22, height: 22, fontSize: 9.5, borderRadius: 6 }}
+                      style={{
+                        width: '1.375rem',
+                        height: '1.375rem',
+                        fontSize: '0.5938rem',
+                        borderRadius: '0.375rem',
+                      }}
                     >
                       {p.name
                         .split(' ')

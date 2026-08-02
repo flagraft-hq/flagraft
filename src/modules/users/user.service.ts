@@ -1,10 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, ilike, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
 import { users, userProjects, projects } from '../../db/schema.js'
 import type { User } from '../../db/schema.js'
 import { createUser, hashPassword } from '../auth/auth.service.js'
+import type { ListUsersQuery } from './user.schema.js'
 
 /** Invite links live for 24 hours. */
 const INVITE_TTL_MS = 24 * 60 * 60 * 1000
@@ -35,25 +36,143 @@ export function toPublicUser(user: User) {
 
 export type PublicUser = ReturnType<typeof toPublicUser>
 
-export async function listUsers(db: Db) {
-  const rows = await db
+/**
+ * Escapes the LIKE wildcards in user input so a search for "50%" looks for a
+ * literal percent sign instead of matching everything.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`)
+}
+
+/** Number of projects a user belongs to, for the "Projects" sort column. */
+const projectCount = sql<number>`(
+  select count(*) from ${userProjects} where ${userProjects.userId} = ${users.id}
+)`
+
+/** Roles are ranked by privilege, not alphabetically. */
+const roleRank = sql<number>`case ${users.role}
+  when 'owner' then 0 when 'admin' then 1 when 'editor' then 2 else 3 end`
+
+/**
+ * Counts every bucket the Users screen displays, across the whole workspace
+ * and independent of the caller's filters. Service accounts are counted as
+ * such rather than by lifecycle status, matching what the chips show.
+ */
+export async function countUsers(db: Db) {
+  const [row] = await db
     .select({
-      user: users,
-      projectId: userProjects.projectId,
-      projectName: projects.name,
+      all: sql<number>`count(*)::int`,
+      system: sql<number>`count(*) filter (where ${users.isSystem})::int`,
+      active: sql<number>`count(*) filter (where not ${users.isSystem} and ${users.status} = 'active')::int`,
+      invited: sql<number>`count(*) filter (where not ${users.isSystem} and ${users.status} = 'invited')::int`,
+      suspended: sql<number>`count(*) filter (where not ${users.isSystem} and ${users.status} = 'suspended')::int`,
+      owners: sql<number>`count(*) filter (where ${users.role} = 'owner')::int`,
+      admins: sql<number>`count(*) filter (where ${users.role} = 'admin')::int`,
     })
     .from(users)
-    .leftJoin(userProjects, eq(userProjects.userId, users.id))
-    .leftJoin(projects, eq(projects.id, userProjects.projectId))
 
-  const map = new Map<string, PublicUser & { projects: string[] }>()
-  for (const row of rows) {
-    if (!map.has(row.user.id)) {
-      map.set(row.user.id, { ...toPublicUser(row.user), projects: [] })
-    }
-    if (row.projectName) map.get(row.user.id)!.projects.push(row.projectName)
+  return row ?? { all: 0, system: 0, active: 0, invited: 0, suspended: 0, owners: 0, admins: 0 }
+}
+
+/**
+ * Lists one page of workspace users with their project names, filtered and
+ * sorted in the database. Returns the page, the total number of matching
+ * rows, and workspace-wide counts for the status chips.
+ */
+export async function listUsers(db: Db, query: ListUsersQuery) {
+  const filters = []
+
+  if (query.search) {
+    const pattern = `%${escapeLike(query.search)}%`
+    filters.push(
+      or(
+        ilike(users.name, pattern),
+        ilike(users.email, pattern),
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(userProjects)
+            .innerJoin(projects, eq(projects.id, userProjects.projectId))
+            .where(and(eq(userProjects.userId, users.id), ilike(projects.name, pattern))),
+        ),
+      )!,
+    )
   }
-  return Array.from(map.values())
+
+  if (query.status === 'system') {
+    filters.push(eq(users.isSystem, true))
+  } else if (query.status) {
+    /** Service accounts are their own bucket, so exclude them from the others. */
+    filters.push(and(eq(users.isSystem, false), eq(users.status, query.status))!)
+  }
+
+  if (query.role) filters.push(eq(users.role, query.role))
+
+  if (query.projectId) {
+    filters.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(userProjects)
+          .where(
+            and(eq(userProjects.userId, users.id), eq(userProjects.projectId, query.projectId)),
+          ),
+      ),
+    )
+  }
+
+  const where = filters.length ? and(...filters) : undefined
+
+  const [totals] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(users)
+    .where(where)
+  const total = totals?.total ?? 0
+
+  const direction = query.dir === 'asc' ? asc : desc
+  const sortExpression = {
+    name: users.name,
+    role: roleRank,
+    projects: projectCount,
+    last: users.lastLoginAt,
+  }[query.sort]
+
+  const page = await db
+    .select()
+    .from(users)
+    .where(where)
+    /** Email breaks ties so paging never repeats or skips a row. */
+    .orderBy(direction(sortExpression), asc(users.email))
+    .limit(query.limit)
+    .offset(query.offset)
+
+  const data: (PublicUser & { projects: string[] })[] = page.map((user) => ({
+    ...toPublicUser(user),
+    projects: [],
+  }))
+
+  /** One follow-up query attaches project names to just this page. */
+  if (data.length > 0) {
+    const byId = new Map(data.map((u) => [u.id, u]))
+    const memberships = await db
+      .select({ userId: userProjects.userId, projectName: projects.name })
+      .from(userProjects)
+      .innerJoin(projects, eq(projects.id, userProjects.projectId))
+      .where(inArray(userProjects.userId, [...byId.keys()]))
+      .orderBy(asc(projects.name))
+
+    for (const row of memberships) {
+      byId.get(row.userId)?.projects.push(row.projectName)
+    }
+  }
+
+  return {
+    data,
+    total,
+    limit: query.limit,
+    offset: query.offset,
+    counts: await countUsers(db),
+  }
 }
 
 export async function getUserWithProjects(db: Db, id: string) {

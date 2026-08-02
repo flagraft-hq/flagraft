@@ -29,12 +29,13 @@ vi.mock('../../../contexts/ProjectContext', () => ({
 
 import type { AxiosResponse } from 'axios'
 import type { WorkspaceUser } from '../../../lib/api'
-import type { Flag } from '../../../lib/types'
+import type { Flag, Page } from '../../../lib/types'
 import { flagsApi, usersApi } from '../../../lib/api'
+import type { UserCounts } from '../../../lib/api'
 
 const flags = [
-  { key: 'dark-mode', name: 'Dark Mode', tags: ['ui'] },
-  { key: 'new-billing', name: 'New Billing', tags: [] },
+  { key: 'dark-mode', name: 'Dark Mode' },
+  { key: 'new-billing', name: 'New Billing' },
 ]
 const users = [{ id: 'u1', name: 'Alice Smith', email: 'alice@a.com' }]
 
@@ -46,10 +47,12 @@ function search(text: string) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(flagsApi.list).mockResolvedValue({ data: flags } as unknown as AxiosResponse<Flag[]>)
-  vi.mocked(usersApi.list).mockResolvedValue({ data: users } as unknown as AxiosResponse<
-    WorkspaceUser[]
-  >)
+  vi.mocked(flagsApi.list).mockResolvedValue({
+    data: { data: flags, total: flags.length, limit: 100, offset: 0 },
+  } as unknown as AxiosResponse<Page<Flag>>)
+  vi.mocked(usersApi.list).mockResolvedValue({
+    data: { data: users, total: users.length, limit: 100, offset: 0 },
+  } as unknown as AxiosResponse<Page<WorkspaceUser> & { counts: UserCounts }>)
 })
 
 describe('GlobalSearch', () => {

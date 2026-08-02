@@ -1,8 +1,8 @@
 /* App shell grid */
 .app-shell {
   display: grid;
-  grid-template-columns: 232px 1fr;
-  grid-template-rows: 56px 1fr;
+  grid-template-columns: 14.5rem 1fr;
+  grid-template-rows: 3.5rem 1fr;
   height: 100vh;
   background: var(--bg-app);
 }
@@ -32,22 +32,22 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
   padding-right: var(--s-3);
   font-weight: 700;
   letter-spacing: -0.01em;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .brand-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, var(--teal-400), var(--teal-600));
   color: #06322c;
   font-weight: 800;
-  font-size: 12px;
+  font-size: 0.75rem;
   letter-spacing: -0.02em;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.5) inset,
@@ -61,20 +61,20 @@
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  padding: 6px 10px;
+  padding: 0.375rem 0.625rem;
   border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--bg-elev);
   cursor: pointer;
-  min-width: 220px;
-  max-width: 280px;
+  min-width: 13.75rem;
+  max-width: 17.5rem;
 }
 .project-switcher:hover {
   background: var(--bg-hover);
 }
 .project-switcher .proj-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
   flex: 1;
   text-align: left;
   overflow: hidden;
@@ -83,7 +83,7 @@
 }
 .project-switcher .proj-slug {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
 
@@ -93,18 +93,18 @@
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
-  padding: 3px;
-  gap: 2px;
+  padding: 0.1875rem;
+  gap: 0.125rem;
 }
 .env-chip {
-  padding: 4px 10px;
+  padding: 0.25rem 0.625rem;
   border-radius: var(--r-pill);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-family: var(--font-mono);
   color: var(--text-2);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   cursor: pointer;
   border: 1px solid transparent;
   background: none;
@@ -122,8 +122,8 @@
   color: var(--danger);
 }
 .env-chip .dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 999px;
   background: var(--ink-400);
 }
@@ -142,18 +142,18 @@
 
 .topbar-search {
   flex: 1;
-  max-width: 520px;
+  max-width: 32.5rem;
   position: relative;
   margin-left: var(--s-2);
 }
 .topbar-search input {
   width: 100%;
-  height: 34px;
-  padding: 0 var(--s-3) 0 36px;
+  height: 2.125rem;
+  padding: 0 var(--s-3) 0 2.25rem;
   border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--bg-subtle);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-family: var(--font-sans);
   color: var(--text-1);
   outline: none;
@@ -167,14 +167,14 @@
 }
 .topbar-search .search-icon {
   position: absolute;
-  left: 11px;
+  left: 0.6875rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-3);
 }
 .topbar-search .kbd-hint {
   position: absolute;
-  right: 8px;
+  right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -182,7 +182,7 @@
 /* Global search results dropdown */
 .topbar-search .search-results {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 0.375rem);
   left: 0;
   right: 0;
   z-index: 200;
@@ -190,26 +190,26 @@
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-3);
-  padding: 6px;
-  max-height: 360px;
+  padding: 0.375rem;
+  max-height: 22.5rem;
   overflow-y: auto;
 }
 .topbar-search .search-empty {
-  padding: 14px 12px;
-  font-size: 12.5px;
+  padding: 0.875rem 0.75rem;
+  font-size: 0.7812rem;
   color: var(--text-3);
 }
 .topbar-search .search-hit {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
   width: 100%;
-  padding: 8px 10px;
+  padding: 0.5rem 0.625rem;
   border: 0;
   border-radius: var(--r-md);
   background: none;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-1);
   text-align: left;
   cursor: pointer;
@@ -229,7 +229,7 @@
 }
 .topbar-search .search-hit-secondary {
   margin-left: auto;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   color: var(--text-4);
   white-space: nowrap;
   overflow: hidden;
@@ -246,24 +246,24 @@
 .key-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
+  gap: 0.5rem;
+  padding: 0.3125rem 0.625rem;
   border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--bg-subtle);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .key-indicator .dot {
-  width: 7px;
-  height: 7px;
+  width: 0.4375rem;
+  height: 0.4375rem;
   border-radius: 999px;
   background: var(--pri);
   box-shadow: 0 0 0 3px var(--pri-soft);
 }
 .icon-btn {
-  width: 34px;
-  height: 34px;
+  width: 2.125rem;
+  height: 2.125rem;
   border-radius: var(--r-md);
   display: inline-grid;
   place-items: center;
@@ -282,26 +282,26 @@
   display: flex;
   flex-direction: column;
   padding: var(--s-3) var(--s-2);
-  gap: 2px;
+  gap: 0.125rem;
   overflow-y: auto;
 }
 
 .nav-section {
-  font-size: 11px;
+  font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-4);
-  padding: 14px var(--s-3) 6px;
+  padding: 0.875rem var(--s-3) 0.375rem;
   font-weight: 600;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px var(--s-3);
+  gap: 0.625rem;
+  padding: 0.4375rem var(--s-3);
   border-radius: var(--r-md);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 500;
   color: var(--text-2);
   cursor: pointer;
@@ -335,28 +335,6 @@
   box-shadow: var(--focus);
 }
 
-.nav-item .badge-count {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-4);
-  font-weight: 500;
-}
-
-.nav-item[aria-current='page'] .badge-count {
-  color: var(--pri-fg);
-}
-
-.nav-item .kbd-hint {
-  margin-left: auto;
-  opacity: 0;
-  transition: opacity 0.12s;
-}
-
-.nav-item:hover .kbd-hint {
-  opacity: 1;
-}
-
 .sidenav-footer {
   display: flex;
   align-items: center;
@@ -367,14 +345,14 @@
 }
 
 .sidenav-user-avatar {
-  width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 999px;
   background: var(--teal-100);
   color: var(--teal-700);
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -385,7 +363,7 @@
 }
 
 .sidenav-user-name {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 600;
   color: var(--text-1);
   white-space: nowrap;
@@ -394,6 +372,6 @@
 }
 
 .sidenav-user-role {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }

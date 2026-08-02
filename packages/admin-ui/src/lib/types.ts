@@ -56,11 +56,18 @@ export interface FlagEnvState {
   on: boolean
 }
 
+/** One page of a list endpoint. Every paginated admin list uses this shape. */
+export interface Page<T> {
+  data: T[]
+  total: number
+  limit: number
+  offset: number
+}
+
 export interface Flag {
   key: string
   name: string
   description: string
-  tags: string[]
   created: string
   updated: string
   state: Record<string, FlagEnvState>
@@ -118,4 +125,4 @@ export interface AuditEntry {
   env: string
 }
 
-export type StateFilter = null | 'on' | 'off' | 'kill-switch'
+export type StateFilter = null | 'on' | 'off'

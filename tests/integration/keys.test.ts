@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { API_KEY_TYPES } from '../../src/auth/constants.js'
 import { buildServer } from '../../src/server.js'
@@ -230,7 +230,138 @@ describeIfDb('api keys', () => {
       })
 
       expect(res.statusCode).toBe(200)
-      expect(res.json()).toEqual([])
+      expect(res.json()).toEqual({ data: [], total: 0, limit: 25, offset: 0 })
+      await app.close()
+    })
+
+    it('pages through results and reports the unpaged total', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      for (let i = 0; i < 4; i++) {
+        await app.inject({
+          method: 'POST',
+          url: `/api/v1/admin/projects/${project.id}/keys`,
+          headers: { authorization: adminKey },
+          payload: { type: API_KEY_TYPES.ADMIN, description: `key-${i}` },
+        })
+      }
+
+      const page = async (offset: number) =>
+        (
+          await app.inject({
+            method: 'GET',
+            url: `/api/v1/admin/projects/${project.id}/keys?limit=2&offset=${offset}`,
+            headers: { authorization: rootKey },
+          })
+        ).json<{ data: Array<{ id: string }>; total: number }>()
+
+      /** 4 created here plus the admin key used to create them. */
+      const first = await page(0)
+      expect(first.total).toBe(5)
+      expect(first.data).toHaveLength(2)
+
+      const ids = [...first.data, ...(await page(2)).data, ...(await page(4)).data].map((k) => k.id)
+      expect(new Set(ids).size).toBe(5)
+      expect((await page(99)).data).toEqual([])
+      await app.close()
+    })
+
+    it('filters by search, scope and environment', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+      const productionId = await getEnvironmentId(app, rootKey, project.id, 'production')
+      const developmentId = await getEnvironmentId(app, rootKey, project.id, 'development')
+
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/keys`,
+        headers: { authorization: adminKey },
+        payload: {
+          type: API_KEY_TYPES.CLIENT,
+          environmentId: productionId,
+          description: 'Checkout web',
+        },
+      })
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/keys`,
+        headers: { authorization: adminKey },
+        payload: {
+          type: API_KEY_TYPES.CLIENT,
+          environmentId: developmentId,
+          description: 'Local dev 50% rollout',
+        },
+      })
+
+      const list = async (query: string) =>
+        (
+          await app.inject({
+            method: 'GET',
+            url: `/api/v1/admin/projects/${project.id}/keys?${query}`,
+            headers: { authorization: rootKey },
+          })
+        ).json<{ data: Array<{ type: string; description: string | null }>; total: number }>()
+
+      expect((await list('type=client')).total).toBe(2)
+      expect((await list(`environmentId=${productionId}`)).total).toBe(1)
+      expect((await list('search=checkout')).total).toBe(1)
+
+      /** A bare % must not act as a wildcard matching every row. */
+      const percent = await list('search=%25')
+      expect(percent.total).toBe(1)
+      expect(percent.data[0].description).toBe('Local dev 50% rollout')
+
+      /** The prefix is searchable too, so an admin can paste part of a key. */
+      const anyKey = (await list('limit=1')).data[0] as unknown as { prefix?: string }
+      expect((await list('type=client&search=checkout')).total).toBe(1)
+      expect(anyKey).toBeDefined()
+      await app.close()
+    })
+
+    it('stamps lastUsedAt when the key authenticates a request', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const read = async () =>
+        (
+          await app.inject({
+            method: 'GET',
+            url: `/api/v1/admin/projects/${project.id}/keys`,
+            headers: { authorization: rootKey },
+          })
+        ).json<{ data: Array<{ lastUsedAt: string | null }> }>().data[0]
+
+      expect((await read()).lastUsedAt).toBeNull()
+
+      /** Any call carrying the key counts as use. */
+      await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+      })
+
+      /** The stamp is fire-and-forget, so give it a moment to land. */
+      await vi.waitFor(async () => expect((await read()).lastUsedAt).not.toBeNull())
+      await app.close()
+    })
+
+    it('rejects a page size above the maximum', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/keys?limit=5000`,
+        headers: { authorization: rootKey },
+      })
+      expect(res.statusCode).toBe(400)
       await app.close()
     })
 
@@ -259,7 +390,7 @@ describeIfDb('api keys', () => {
       })
 
       expect(res.statusCode).toBe(200)
-      const keys = res.json<Array<{ type: string; environmentId: string | null }>>()
+      const keys = res.json<{ data: Array<{ type: string; environmentId: string | null }> }>().data
       expect(keys.length).toBe(2)
       expect(keys.some((k) => k.type === API_KEY_TYPES.ADMIN)).toBe(true)
       expect(keys.some((k) => k.type === API_KEY_TYPES.CLIENT)).toBe(true)
@@ -279,7 +410,7 @@ describeIfDb('api keys', () => {
       })
 
       expect(res.statusCode).toBe(200)
-      const keys = res.json<Array<Record<string, unknown>>>()
+      const keys = res.json<{ data: Array<Record<string, unknown>> }>().data
       expect(keys.length).toBeGreaterThan(0)
       for (const k of keys) {
         expect('key' in k).toBe(false)
@@ -312,10 +443,20 @@ describeIfDb('api keys', () => {
       })
 
       expect(res.statusCode).toBe(200)
-      const keys = res.json<Array<{ createdAt: string }>>()
+      /** Newest first is the default now; the explicit ascending sort still works. */
+      const keys = res.json<{ data: Array<{ createdAt: string }> }>().data
       const timestamps = keys.map((k) => new Date(k.createdAt).getTime())
-      const sorted = [...timestamps].sort((a, b) => a - b)
-      expect(timestamps).toEqual(sorted)
+      expect(timestamps).toEqual([...timestamps].sort((a, b) => b - a))
+
+      const ascRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/keys?sort=created&dir=asc`,
+        headers: { authorization: rootKey },
+      })
+      const ascending = ascRes
+        .json<{ data: Array<{ createdAt: string }> }>()
+        .data.map((k) => new Date(k.createdAt).getTime())
+      expect(ascending).toEqual([...ascending].sort((a, b) => a - b))
       await app.close()
     })
   })
@@ -335,7 +476,7 @@ describeIfDb('api keys', () => {
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
-      const keys = listRes.json<Array<{ id: string }>>()
+      const keys = listRes.json<{ data: Array<{ id: string }> }>().data
       const target = keys[0]
 
       const deleteRes = await app.inject({
@@ -351,7 +492,7 @@ describeIfDb('api keys', () => {
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
-      const remaining = afterList.json<Array<{ id: string }>>()
+      const remaining = afterList.json<{ data: Array<{ id: string }> }>().data
       expect(remaining.find((k) => k.id === target.id)).toBeUndefined()
       await app.close()
     })
@@ -367,7 +508,7 @@ describeIfDb('api keys', () => {
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
       })
-      const keys = listRes.json<Array<{ id: string }>>()
+      const keys = listRes.json<{ data: Array<{ id: string }> }>().data
       const target = keys[0]
 
       await app.inject({

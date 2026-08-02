@@ -1,7 +1,8 @@
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { buildServer } from '../../src/server.js'
+import { users } from '../../src/db/schema.js'
 import { createProject, createRootKey } from '../helpers/fixtures.js'
 import { getTestDb, truncateAll } from '../helpers/db.js'
 
@@ -132,7 +133,7 @@ describeIfDb('session RBAC', () => {
       cookies: admin.cookies,
     })
     expect(list.statusCode).toBe(200)
-    const rows = list.json<Record<string, unknown>[]>()
+    const rows = list.json<{ data: Record<string, unknown>[] }>().data
     expect(rows.length).toBeGreaterThan(0)
     for (const row of rows) {
       expect(row).not.toHaveProperty('passwordHash')
@@ -236,6 +237,33 @@ describeIfDb('session RBAC', () => {
     })
     expect(wrong.statusCode).toBe(401)
     expect(wrong.json<{ message: string }>().message).toBe('Invalid email or password')
+    await app.close()
+  })
+
+  it('stamps lastLoginAt on a successful login', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const editor = await sessionUser(app, rootKey, 'editor', [])
+
+    /** Accepting an invite hands out a session directly, so nothing is stamped yet. */
+    const before = await db!
+      .select({ at: users.lastLoginAt })
+      .from(users)
+      .where(eq(users.id, editor.id))
+    expect(before[0].at).toBeNull()
+
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/auth/login',
+      payload: { email: editor.email, password: 'rbac-password-1' },
+    })
+    expect(login.statusCode).toBe(200)
+
+    const after = await db!
+      .select({ at: users.lastLoginAt })
+      .from(users)
+      .where(eq(users.id, editor.id))
+    expect(after[0].at).toBeInstanceOf(Date)
     await app.close()
   })
 

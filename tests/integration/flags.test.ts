@@ -153,7 +153,7 @@ describeIfDb('flags', () => {
       })
 
       expect(response.statusCode).toBe(200)
-      expect(response.json()).toEqual([])
+      expect(response.json()).toEqual({ data: [], total: 0, limit: 25, offset: 0 })
       await app.close()
     })
 
@@ -183,9 +183,10 @@ describeIfDb('flags', () => {
       })
 
       expect(response.statusCode).toBe(200)
-      const flags = response.json<Array<{ key: string }>>()
-      expect(flags).toHaveLength(2)
-      expect(flags).toEqual(
+      const body = response.json<{ data: Array<{ key: string }>; total: number }>()
+      expect(body.total).toBe(2)
+      expect(body.data).toHaveLength(2)
+      expect(body.data).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ key: 'alpha' }),
           expect.objectContaining({ key: 'beta' }),
@@ -194,7 +195,7 @@ describeIfDb('flags', () => {
       await app.close()
     })
 
-    it('returns flags ordered by createdAt ascending', async () => {
+    it('sorts by the requested column and direction', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)
       const project = await createProject(app, rootKey)
@@ -221,15 +222,170 @@ describeIfDb('flags', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: `/api/v1/admin/projects/${project.id}/flags`,
+        url: `/api/v1/admin/projects/${project.id}/flags?sort=key&dir=asc`,
         headers: { authorization: adminKey },
       })
 
       expect(response.statusCode).toBe(200)
-      const flags = response.json<Array<{ key: string }>>()
-      expect(flags).toHaveLength(3)
-      const keys = flags.map((f) => f.key)
-      expect(keys).toEqual(['first', 'second', 'third'])
+      const body = response.json<{ data: Array<{ key: string }>; total: number }>()
+      expect(body.total).toBe(3)
+      expect(body.data.map((f) => f.key)).toEqual(['first', 'second', 'third'])
+
+      const descending = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags?sort=key&dir=desc`,
+        headers: { authorization: adminKey },
+      })
+      expect(descending.json<{ data: Array<{ key: string }> }>().data.map((f) => f.key)).toEqual([
+        'third',
+        'second',
+        'first',
+      ])
+      await app.close()
+    })
+
+    it('pages through results and reports the unpaged total', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      for (const key of ['a', 'b', 'c', 'd', 'e']) {
+        await app.inject({
+          method: 'POST',
+          url: `/api/v1/admin/projects/${project.id}/flags`,
+          headers: { authorization: adminKey },
+          payload: { name: key.toUpperCase(), key },
+        })
+      }
+
+      const page = async (offset: number) =>
+        (
+          await app.inject({
+            method: 'GET',
+            url: `/api/v1/admin/projects/${project.id}/flags?sort=key&dir=asc&limit=2&offset=${offset}`,
+            headers: { authorization: adminKey },
+          })
+        ).json<{ data: Array<{ key: string }>; total: number; limit: number; offset: number }>()
+
+      const first = await page(0)
+      expect(first).toMatchObject({ total: 5, limit: 2, offset: 0 })
+      expect(first.data.map((f) => f.key)).toEqual(['a', 'b'])
+      expect((await page(2)).data.map((f) => f.key)).toEqual(['c', 'd'])
+
+      const last = await page(4)
+      expect(last.data.map((f) => f.key)).toEqual(['e'])
+      /** Past the end is an empty page, not an error. */
+      expect((await page(10)).data).toEqual([])
+      await app.close()
+    })
+
+    it('searches name, key and description, treating % as a literal', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const flags = [
+        { name: 'Checkout redesign', key: 'checkout-v2', description: 'new cart' },
+        { name: 'Search boost', key: 'search-boost', description: 'ranking for checkout' },
+        { name: 'Rollout 50% test', key: 'rollout', description: 'partial' },
+      ]
+      for (const payload of flags) {
+        await app.inject({
+          method: 'POST',
+          url: `/api/v1/admin/projects/${project.id}/flags`,
+          headers: { authorization: adminKey },
+          payload,
+        })
+      }
+
+      const search = async (term: string) =>
+        (
+          await app.inject({
+            method: 'GET',
+            url: `/api/v1/admin/projects/${project.id}/flags?search=${encodeURIComponent(term)}`,
+            headers: { authorization: adminKey },
+          })
+        ).json<{ data: Array<{ key: string }>; total: number }>()
+
+      /** Matches the name of one flag and the description of another. */
+      const checkout = await search('checkout')
+      expect(checkout.total).toBe(2)
+      expect(checkout.data.map((f) => f.key).sort()).toEqual(['checkout-v2', 'search-boost'])
+
+      expect((await search('CHECKOUT-V2')).total).toBe(1)
+
+      /** A bare % must not behave as a wildcard matching every row. */
+      const percent = await search('50%')
+      expect(percent.total).toBe(1)
+      expect(percent.data[0].key).toBe('rollout')
+      expect((await search('%')).total).toBe(1)
+      await app.close()
+    })
+
+    it('filters by on/off state within a single environment', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      for (const key of ['lit', 'dark']) {
+        await app.inject({
+          method: 'POST',
+          url: `/api/v1/admin/projects/${project.id}/flags`,
+          headers: { authorization: adminKey },
+          payload: { name: key, key },
+        })
+      }
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${project.id}/flags/lit/environments/production/enable`,
+        headers: { authorization: adminKey },
+      })
+
+      const byState = async (state: string, env: string) =>
+        (
+          await app.inject({
+            method: 'GET',
+            url: `/api/v1/admin/projects/${project.id}/flags?state=${state}&env=${env}`,
+            headers: { authorization: adminKey },
+          })
+        ).json<{ data: Array<{ key: string }>; total: number }>()
+
+      const onInProd = await byState('on', 'production')
+      expect(onInProd.total).toBe(1)
+      expect(onInProd.data[0].key).toBe('lit')
+
+      const offInProd = await byState('off', 'production')
+      expect(offInProd.total).toBe(1)
+      expect(offInProd.data[0].key).toBe('dark')
+
+      /** The same flag is still off in development. */
+      expect((await byState('on', 'development')).total).toBe(0)
+
+      /** state without env is ignored rather than rejected. */
+      const noEnv = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags?state=on`,
+        headers: { authorization: adminKey },
+      })
+      expect(noEnv.json<{ total: number }>().total).toBe(2)
+      await app.close()
+    })
+
+    it('rejects a page size above the maximum', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags?limit=5000`,
+        headers: { authorization: adminKey },
+      })
+      expect(response.statusCode).toBe(400)
       await app.close()
     })
   })

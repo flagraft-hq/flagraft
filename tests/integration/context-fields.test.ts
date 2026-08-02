@@ -45,6 +45,36 @@ describeIfDb('context-fields', () => {
     })
   }
 
+  it('refuses to create more context fields than the per-project cap', async () => {
+    const { app, adminKey, projectId } = await setup()
+
+    for (let i = 0; i < 25; i++) {
+      const res = await create(app, adminKey, projectId, { key: `field_${i}`, type: 'string' })
+      expect(res.statusCode).toBe(201)
+    }
+
+    const overflow = await create(app, adminKey, projectId, { key: 'one_too_many', type: 'string' })
+    expect(overflow.statusCode).toBe(409)
+    expect(overflow.json<{ message: string }>().message).toMatch(/at most 25 context fields/i)
+
+    /** Deleting one frees a slot again. */
+    const list = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/projects/${projectId}/context-fields`,
+      headers: { authorization: adminKey },
+    })
+    const first = list.json<ContextFieldResponse[]>()[0]
+    await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${projectId}/context-fields/${first.id}`,
+      headers: { authorization: adminKey },
+    })
+    expect(
+      (await create(app, adminKey, projectId, { key: 'one_too_many', type: 'string' })).statusCode,
+    ).toBe(201)
+    await app.close()
+  })
+
   it('creates, lists, updates, and deletes a context field', async () => {
     const { app, adminKey, projectId } = await setup()
 

@@ -14,6 +14,7 @@ import { Toggle } from '../primitives/Toggle'
 import { TextField } from '../primitives/TextField'
 import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
+import { MAX_ENVIRONMENTS_PER_PROJECT } from '../../lib/limits'
 
 /** Public SDK base URL shown per environment (display value, not the admin API). */
 function baseUrlFor(slug: string): string {
@@ -71,6 +72,9 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
     }
   }
 
+  /** The backend refuses past this, so stop the user before the round trip. */
+  const atLimit = environments.length >= MAX_ENVIRONMENTS_PER_PROJECT
+
   if (loading) {
     return <div className="env-loading">Loading...</div>
   }
@@ -86,13 +90,26 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
           <h1>Environments</h1>
           <p className="page-header-sub">
             Flag state is scoped per environment. Each environment can have its own keys and flag
-            values.
+            values. A project can have up to {MAX_ENVIRONMENTS_PER_PROJECT}.
           </p>
         </div>
         <div className="page-header-actions">
-          <Button variant="primary" leftIcon="plus" onClick={() => setShowNew(true)}>
-            New environment
-          </Button>
+          <span className="limit-note">
+            {environments.length} of {MAX_ENVIRONMENTS_PER_PROJECT} used
+          </span>
+          {atLimit ? (
+            <Tip tip="Limit reached — delete an environment to add another.">
+              <span>
+                <Button variant="primary" leftIcon="plus" disabled>
+                  New environment
+                </Button>
+              </span>
+            </Tip>
+          ) : (
+            <Button variant="primary" leftIcon="plus" onClick={() => setShowNew(true)}>
+              New environment
+            </Button>
+          )}
         </div>
       </div>
 

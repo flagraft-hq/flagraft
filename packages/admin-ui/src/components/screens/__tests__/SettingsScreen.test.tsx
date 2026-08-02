@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsScreen } from '../SettingsScreen'
@@ -30,13 +31,22 @@ const mockUseProject = useProject as ReturnType<typeof vi.fn>
 
 const activeProject = { id: 'p1', name: 'My Project', slug: 'my-proj', flagCount: 5 }
 
+/** SettingsScreen reads ?section= from the URL, so it needs a router. */
+function renderAt(url = '/settings') {
+  return render(
+    <MemoryRouter initialEntries={[url]}>
+      <SettingsScreen />
+    </MemoryRouter>,
+  )
+}
+
 beforeEach(() => {
   mockUseProject.mockReturnValue({ activeProject })
 })
 
 describe('SettingsScreen', () => {
   it('renders the section rail', () => {
-    render(<SettingsScreen />)
+    renderAt()
     expect(screen.getByText('Project settings')).toBeInTheDocument()
     for (const label of [
       'General',
@@ -50,21 +60,32 @@ describe('SettingsScreen', () => {
   })
 
   it('shows the General section by default', () => {
-    render(<SettingsScreen />)
+    renderAt()
     expect(screen.getByText('general-body')).toBeInTheDocument()
     expect(screen.queryByText('members-body')).not.toBeInTheDocument()
   })
 
   it('switches sections when a rail item is clicked', async () => {
-    render(<SettingsScreen />)
+    renderAt()
     await userEvent.click(screen.getByText('Members & roles'))
     expect(screen.getByText('members-body')).toBeInTheDocument()
     expect(screen.queryByText('general-body')).not.toBeInTheDocument()
   })
 
+  it('opens the section named in the ?section= query param', () => {
+    renderAt('/settings?section=members')
+    expect(screen.getByText('members-body')).toBeInTheDocument()
+    expect(screen.queryByText('general-body')).not.toBeInTheDocument()
+  })
+
+  it('falls back to General when ?section= is unknown', () => {
+    renderAt('/settings?section=nope')
+    expect(screen.getByText('general-body')).toBeInTheDocument()
+  })
+
   it('shows no-project fallback when activeProject is null', () => {
     mockUseProject.mockReturnValue({ activeProject: null })
-    render(<SettingsScreen />)
+    renderAt()
     expect(screen.getByText('No project selected')).toBeInTheDocument()
   })
 })

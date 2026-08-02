@@ -78,5 +78,12 @@ export async function validateCredentials(
   const valid = await argon2.verify(hash, password)
   if (!user || !valid) return null
   if (user.status === 'suspended') return 'suspended'
-  return user.status === 'active' ? user : null
+  if (user.status !== 'active') return null
+
+  const [updated] = await db
+    .update(users)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(users.id, user.id))
+    .returning()
+  return updated
 }

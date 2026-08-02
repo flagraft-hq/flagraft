@@ -5,49 +5,27 @@ import type { StateFilter } from '../../lib/types'
 interface FilterBarProps {
   search: string
   onSearchChange: (value: string) => void
-  /** Top tags by frequency, as [tag, count] pairs. */
-  topTags: [string, number][]
-  selectedTags: string[]
-  onTagsChange: (tags: string[]) => void
   stateFilter: StateFilter
   onStateFilterChange: (filter: StateFilter) => void
-  resultCount: number
-  totalCount: number
+  /** Name of the environment the state filter applies to. */
+  envName: string
   onClearAll: () => void
 }
 
-const STATE_OPTIONS: {
-  value: Exclude<StateFilter, null>
-  label: string
-  tone?: 'red'
-  icon?: 'shield'
-}[] = [
-  { value: 'on', label: 'on anywhere' },
-  { value: 'off', label: 'off everywhere' },
-  { value: 'kill-switch', label: 'kill switches', tone: 'red', icon: 'shield' },
+const STATE_OPTIONS: { value: Exclude<StateFilter, null>; label: string }[] = [
+  { value: 'on', label: 'on' },
+  { value: 'off', label: 'off' },
 ]
 
 export function FilterBar({
   search,
   onSearchChange,
-  topTags,
-  selectedTags,
-  onTagsChange,
   stateFilter,
   onStateFilterChange,
-  resultCount,
-  totalCount,
+  envName,
   onClearAll,
 }: FilterBarProps) {
-  function toggleTag(tag: string) {
-    if (selectedTags.includes(tag)) {
-      onTagsChange(selectedTags.filter((t) => t !== tag))
-    } else {
-      onTagsChange([...selectedTags, tag])
-    }
-  }
-
-  const anyFilters = search.trim() !== '' || selectedTags.length > 0 || stateFilter !== null
+  const anyFilters = search.trim() !== '' || stateFilter !== null
 
   return (
     <div className="filters-bar">
@@ -64,33 +42,15 @@ export function FilterBar({
         </span>
       </div>
 
-      {topTags.length > 0 && (
-        <div className="chip-group filter-tags" role="group" aria-label="Tag filters">
-          {topTags.map(([tag, count]) => (
-            <button
-              key={tag}
-              className="chip"
-              aria-pressed={selectedTags.includes(tag)}
-              onClick={() => toggleTag(tag)}
-            >
-              <span>{tag}</span>
-              <span className="chip-n num">{count}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="chip-group" role="group" aria-label="State filter">
-        {STATE_OPTIONS.map(({ value, label, tone, icon }) => (
+      <div className="chip-group" role="group" aria-label={`State filter for ${envName}`}>
+        {STATE_OPTIONS.map(({ value, label }) => (
           <button
             key={value}
             className="chip"
-            data-tone={tone}
             aria-pressed={stateFilter === value}
             onClick={() => onStateFilterChange(stateFilter === value ? null : value)}
           >
-            {icon && <Icon name={icon} size={11} />}
-            {label}
+            {label} in {envName}
           </button>
         ))}
       </div>
@@ -102,11 +62,6 @@ export function FilterBar({
           Clear all <Icon name="x" size={11} />
         </button>
       )}
-      <span className="filters-count num">
-        {anyFilters
-          ? `${resultCount} of ${totalCount}`
-          : `${resultCount} flag${resultCount === 1 ? '' : 's'}`}
-      </span>
     </div>
   )
 }

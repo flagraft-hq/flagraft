@@ -59,12 +59,20 @@ export function useEnvironments(projectId: string): UseEnvironmentsResult {
     setLoading(true)
     setError(null)
 
+    /**
+     * Counts come off the page metadata rather than the rows, so one flag is
+     * enough: `total` is the project-wide count, and every flag's state map
+     * lists every environment. Per-env "on" counts are one filtered count
+     * query each.
+     */
     flagsApi
-      .list(projectId)
+      .list(projectId, { limit: 1, offset: 0 })
       .then(async (flagsRes) => {
-        const flags = flagsRes.data
+        const totalFlags = flagsRes.data.total
         const slugs = new Set<string>()
-        flags.forEach((f) => Object.keys(f.state ?? {}).forEach((s) => slugs.add(s)))
+        flagsRes.data.data.forEach((f) =>
+          Object.keys(f.state ?? {}).forEach((slug) => slugs.add(slug)),
+        )
 
         /** Prefer real environment metadata; fall back to deriving it from slugs. */
         let meta: Env[]
@@ -88,7 +96,16 @@ export function useEnvironments(projectId: string): UseEnvironmentsResult {
           return a.localeCompare(b)
         })
 
-        const list: EnvWithStats[] = ordered.map((slug) => {
+        const onCounts = await Promise.all(
+          ordered.map((slug) =>
+            flagsApi
+              .list(projectId, { limit: 1, offset: 0, state: 'on', env: slug })
+              .then((res) => res.data.total)
+              .catch(() => 0),
+          ),
+        )
+
+        const list: EnvWithStats[] = ordered.map((slug, i) => {
           const m = metaBySlug.get(slug)
           return {
             id: m?.id ?? slug,
@@ -96,8 +113,8 @@ export function useEnvironments(projectId: string): UseEnvironmentsResult {
             name: m?.name ?? titleCase(slug),
             color: m?.color ?? envColorFor(slug),
             protected: m?.protected ?? slug === 'production',
-            flags: flags.length,
-            defaultOn: flags.filter((f) => f.state?.[slug]?.on).length,
+            flags: totalFlags,
+            defaultOn: onCounts[i],
             clientKeys: null,
           }
         })

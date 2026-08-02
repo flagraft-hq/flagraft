@@ -1,0 +1,1 @@
+ALTER TABLE "users" RENAME COLUMN "last_active_at" TO "last_login_at";

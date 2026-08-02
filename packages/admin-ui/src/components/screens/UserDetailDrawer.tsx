@@ -31,7 +31,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   const [showAddProject, setShowAddProject] = useState(false)
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [busy, setBusy] = useState(false)
-  const relativeLastActive = useRelativeDate(user.lastActiveAt ?? undefined)
+  const relativeLastLogin = useRelativeDate(user.lastLoginAt ?? undefined)
 
   /** While the reset modal is open, Escape closes it instead of the drawer. */
   useKeyboardShortcuts({
@@ -124,7 +124,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             <div className="user-drawer-email mono">{user.email}</div>
             <div
               className="row"
-              style={{ gap: 6, marginTop: 10, flexWrap: 'wrap', display: 'flex' }}
+              style={{ gap: '0.375rem', marginTop: '0.625rem', flexWrap: 'wrap', display: 'flex' }}
             >
               <span className={'badge badge-tone-' + roleTone(user.role)}>
                 <span className="role-dot" /> {user.role}
@@ -147,10 +147,10 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
             <DRow label="User ID" value={<span className="mono">{user.id}</span>} />
             <DRow label="Joined" value={<span className="mono">{user.createdAt}</span>} />
             <DRow
-              label="Last active"
+              label="Last login"
               value={
                 <span className="mono">
-                  {user.lastActiveAt == null ? 'never' : relativeLastActive}
+                  {user.lastLoginAt == null ? 'never' : relativeLastLogin}
                 </span>
               }
             />
@@ -169,7 +169,12 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                 <div key={p} className="user-project">
                   <span
                     className="proj-avatar"
-                    style={{ width: 28, height: 28, fontSize: 11, borderRadius: 8 }}
+                    style={{
+                      width: '1.75rem',
+                      height: '1.75rem',
+                      fontSize: '0.6875rem',
+                      borderRadius: '0.5rem',
+                    }}
                   >
                     {p
                       .split(' ')
@@ -178,8 +183,8 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                       .join('')}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{p}</div>
-                    <div className="muted mono" style={{ fontSize: 11 }}>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{p}</div>
+                    <div className="muted mono" style={{ fontSize: '0.6875rem' }}>
                       {user.role}
                     </div>
                   </div>
@@ -225,7 +230,7 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
 
           <section className="user-section">
             <h3>Recent activity</h3>
-            <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
+            <p className="muted" style={{ fontSize: '0.7812rem', margin: 0 }}>
               Activity log coming soon.
             </p>
           </section>

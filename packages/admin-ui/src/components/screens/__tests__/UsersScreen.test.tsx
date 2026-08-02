@@ -25,6 +25,7 @@ vi.mock('../InviteModal', () => ({
 vi.mock('../../../lib/api', () => ({
   usersApi: {
     list: vi.fn(),
+    get: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
     cancelInvite: vi.fn(),
@@ -51,7 +52,8 @@ vi.mock('../../../contexts/ProjectContext', () => ({
 }))
 
 import type { AxiosResponse } from 'axios'
-import type { WorkspaceUser } from '../../../lib/api'
+import type { UserCounts, WorkspaceUser } from '../../../lib/api'
+import type { Page } from '../../../lib/types'
 import { usersApi } from '../../../lib/api'
 
 const mockUsers = [
@@ -64,7 +66,7 @@ const mockUsers = [
     isSystem: false,
     initials: 'A',
     tone: 'teal',
-    lastActiveAt: null,
+    lastLoginAt: null,
     createdAt: '2026-01-01',
     projects: ['Demo'],
   } as WorkspaceUser,
@@ -77,11 +79,36 @@ const mockUsers = [
     isSystem: false,
     initials: 'B',
     tone: 'slate',
-    lastActiveAt: null,
+    lastLoginAt: null,
     createdAt: '2026-02-01',
     projects: [],
   } as WorkspaceUser,
 ]
+
+/**
+ * Wraps rows in the paginated envelope. Bucket counts default to something
+ * consistent with the rows so tests only state the ones they assert on.
+ */
+function page(rows: unknown[], counts: Partial<Record<string, number>> = {}) {
+  return {
+    data: {
+      data: rows,
+      total: rows.length,
+      limit: 25,
+      offset: 0,
+      counts: {
+        all: rows.length,
+        active: 0,
+        invited: 0,
+        suspended: 0,
+        system: 0,
+        owners: 0,
+        admins: 0,
+        ...counts,
+      },
+    },
+  } as unknown as AxiosResponse<Page<WorkspaceUser> & { counts: UserCounts }>
+}
 
 function renderScreen(initialEntry = '/users') {
   return render(
@@ -97,9 +124,7 @@ function renderScreen(initialEntry = '/users') {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(usersApi.list).mockResolvedValue({ data: mockUsers } as unknown as AxiosResponse<
-    WorkspaceUser[]
-  >)
+  vi.mocked(usersApi.list).mockResolvedValue(page(mockUsers))
 })
 
 describe('UsersScreen', () => {
@@ -109,12 +134,17 @@ describe('UsersScreen', () => {
     expect(screen.getByText('Bob')).toBeInTheDocument()
   })
 
-  it('filters by search query', async () => {
+  it('sends the search term to the server after the debounce', async () => {
     renderScreen()
     await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument())
     fireEvent.change(screen.getByPlaceholderText(/search/i), { target: { value: 'alice' } })
-    expect(screen.getByText('Alice')).toBeInTheDocument()
-    expect(screen.queryByText('Bob')).not.toBeInTheDocument()
+
+    /** Debounced, so the request lands once typing pauses -- not per keystroke. */
+    await waitFor(() =>
+      expect(usersApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: 'alice', offset: 0 }),
+      ),
+    )
   })
 
   it('shows invite modal when Invite user is clicked', async () => {
@@ -164,13 +194,20 @@ describe('UsersScreen', () => {
   })
 
   it('opens the drawer for the user named in the ?user= deep link', async () => {
+    /** Fetched directly, so the linked user need not be on the current page. */
+    /** The detail endpoint returns projects as objects, not names. */
+    vi.mocked(usersApi.get).mockResolvedValue({
+      data: { ...mockUsers[1], projects: [{ id: 'p1', name: 'Demo' }] },
+    } as unknown as AxiosResponse<WorkspaceUser & { projects: { id: string; name: string }[] }>)
     renderScreen('/users?user=u2')
+    await waitFor(() => expect(usersApi.get).toHaveBeenCalledWith('u2'))
     await waitFor(() =>
       expect(screen.getByRole('dialog', { name: /user detail: bob/i })).toBeInTheDocument(),
     )
   })
 
   it('ignores a ?user= deep link that matches nobody', async () => {
+    vi.mocked(usersApi.get).mockRejectedValue(new Error('User not found'))
     renderScreen('/users?user=nope')
     await waitFor(() => screen.getByText('Alice'))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -246,9 +283,7 @@ describe('UsersScreen', () => {
   })
 
   it('bulk reinstate patches suspended users back to active', async () => {
-    vi.mocked(usersApi.list).mockResolvedValue({
-      data: [{ ...mockUsers[0], status: 'suspended' }],
-    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    vi.mocked(usersApi.list).mockResolvedValue(page([{ ...mockUsers[0], status: 'suspended' }]))
     vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
     await selectUser('Alice')
     expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
@@ -268,9 +303,7 @@ describe('UsersScreen', () => {
 
   it('bulk resend reports partial success when some invites hit the cooldown', async () => {
     const carl = { ...mockUsers[1], id: 'u3', name: 'Carl', email: 'carl@a.com' }
-    vi.mocked(usersApi.list).mockResolvedValue({
-      data: [mockUsers[1], carl],
-    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    vi.mocked(usersApi.list).mockResolvedValue(page([mockUsers[1], carl]))
     vi.mocked(usersApi.resendInvite)
       .mockResolvedValueOnce({
         data: { emailed: true },
@@ -373,11 +406,23 @@ describe('UsersScreen', () => {
   })
 
   it('disables role change and suspend when only owners are selected', async () => {
-    vi.mocked(usersApi.list).mockResolvedValue({
-      data: [{ ...mockUsers[0], role: 'owner' }],
-    } as unknown as AxiosResponse<WorkspaceUser[]>)
+    vi.mocked(usersApi.list).mockResolvedValue(page([{ ...mockUsers[0], role: 'owner' }]))
     await selectUser('Alice')
     expect(screen.getByRole('combobox', { name: 'Change role' })).toBeDisabled()
     expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
+  })
+
+  it('shows the privileged access stat from the server counts', async () => {
+    vi.mocked(usersApi.list).mockResolvedValue(
+      page([...mockUsers, { ...mockUsers[1], id: 'u3', name: 'Carol', role: 'owner' }], {
+        owners: 1,
+        admins: 1,
+      }),
+    )
+    renderScreen()
+    await waitFor(() => expect(screen.getByText('Privileged access')).toBeInTheDocument())
+    const card = screen.getByText('Privileged access').closest('.users-stat') as HTMLElement
+    expect(within(card).getByText('2')).toBeInTheDocument()
+    expect(within(card).getByText('1 owner · 1 admin')).toBeInTheDocument()
   })
 })

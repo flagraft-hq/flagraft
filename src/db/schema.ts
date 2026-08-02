@@ -129,7 +129,8 @@ export const users = pgTable('users', {
   isSystem: boolean('is_system').notNull().default(false),
   initials: text('initials').notNull().default(''),
   tone: text('tone').notNull().default('teal'),
-  lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
+  /** Stamped on every successful login; null until the user logs in once. */
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   /**
    * Bumped whenever existing sessions must be invalidated (e.g. password
    * reset). Session JWTs carry this value and are rejected on mismatch.

@@ -73,11 +73,16 @@ export function AcceptInviteScreen() {
           <div className="auth-brand-mark">
             <span
               className="brand-mark"
-              style={{ width: 40, height: 40, borderRadius: 12, fontSize: 15 }}
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                borderRadius: '0.75rem',
+                fontSize: '0.9375rem',
+              }}
             >
               FR
             </span>
-            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em' }}>
+            <span style={{ fontSize: '1.0625rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
               Flagraft
             </span>
           </div>
@@ -98,7 +103,7 @@ export function AcceptInviteScreen() {
 
       <main className="auth-main">
         <div className="auth-topbar">
-          <span className="muted" style={{ fontSize: 12.5 }}>
+          <span className="muted" style={{ fontSize: '0.7812rem' }}>
             Already have an account?
           </span>
           <Button
@@ -125,10 +130,10 @@ export function AcceptInviteScreen() {
                 </div>
                 <h3>Invite link expired</h3>
                 <p className="muted">{link.message}</p>
-                <p className="muted" style={{ marginTop: 8 }}>
+                <p className="muted" style={{ marginTop: '0.5rem' }}>
                   Ask your workspace admin to send a fresh invite.
                 </p>
-                <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}>
+                <div className="row" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
                   <Button variant="ghost" onClick={() => navigate('/login', { replace: true })}>
                     Go to sign in
                   </Button>

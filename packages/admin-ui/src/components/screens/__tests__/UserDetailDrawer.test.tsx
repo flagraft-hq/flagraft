@@ -64,7 +64,7 @@ const activeUser: WorkspaceUser = {
   isSystem: false,
   initials: 'AS',
   tone: 'teal',
-  lastActiveAt: '2026-05-01',
+  lastLoginAt: '2026-05-01',
   createdAt: '2026-01-01',
   projects: ['Demo'],
 }

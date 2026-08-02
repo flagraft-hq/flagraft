@@ -3,17 +3,17 @@
 /* Shared grid template applied to the header row and every flag row. */
 .flags-row {
   display: grid;
-  grid-template-columns: 36px minmax(220px, 1.6fr) 150px 168px 168px;
+  grid-template-columns: 2.25rem minmax(13.75rem, 1.6fr) 9.375rem 10.5rem 10.5rem;
   align-items: center;
   gap: var(--s-3);
   padding: 0 var(--s-4);
-  min-height: 60px;
+  min-height: 3.75rem;
   background: var(--bg-elev);
   border-bottom: 1px solid var(--border);
 }
 .flags-row.flags-head {
-  min-height: 38px;
-  background: var(--bg-muted);
+  min-height: 2.375rem;
+  background: var(--bg-subtle);
 }
 .flags-row.body {
   transition: background 0.1s;
@@ -27,14 +27,14 @@
 
 .flags-head .env-label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-3);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.3125rem;
 }
 .flags-head .head-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -44,8 +44,8 @@
   justify-content: flex-end;
 }
 .live-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 999px;
   background: var(--red-500);
   animation: livePulse 2s infinite;
@@ -76,17 +76,17 @@
 .name-stack {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0.0625rem;
   min-width: 0;
 }
 .flag-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   min-width: 0;
   font-weight: 600;
   color: var(--text-1);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .flag-name-text {
   white-space: nowrap;
@@ -98,7 +98,7 @@
   display: inline-flex;
 }
 .flag-key {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
@@ -114,6 +114,7 @@
 .cell-edited {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--s-2);
   min-width: 0;
 }
@@ -128,9 +129,9 @@
   color: var(--pri-fg);
 }
 .avatar-sm {
-  width: 26px;
-  height: 26px;
-  font-size: 10.5px;
+  width: 1.625rem;
+  height: 1.625rem;
+  font-size: 0.6562rem;
 }
 .avatar-teal {
   background: var(--teal-100);
@@ -158,14 +159,14 @@
   min-width: 0;
 }
 .edited-author {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .edited-when {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
 
@@ -173,14 +174,14 @@
 .state-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
 }
 .state-pill .toggle-label {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: 0.0625rem;
+  height: 0.0625rem;
   padding: 0;
-  margin: -1px;
+  margin: -0.0625rem;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
@@ -188,10 +189,10 @@
 }
 .state-label {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 600;
   color: var(--text-3);
-  width: 20px;
+  width: 1.25rem;
 }
 .state-pill-on .state-label {
   color: var(--pri-fg);
@@ -199,13 +200,13 @@
 .state-pill-overrides {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 6px 1px 5px;
+  gap: 0.125rem;
+  padding: 0.0625rem 0.375rem 0.0625rem 0.3125rem;
   border-radius: var(--r-pill);
   background: var(--acc-soft);
   color: var(--acc-fg);
   border: 1px solid var(--acc-soft-border);
-  font-size: 10.5px;
+  font-size: 0.6562rem;
   font-weight: 700;
 }
 .cell-env-prod .state-pill.has-overrides .state-pill-overrides {
@@ -215,19 +216,15 @@
 }
 
 /* ===== Tag cluster (dots + hover popover) ===== */
-.tag-cluster {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
+
 .tag-dots {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 0.1875rem;
 }
 .tag-dot {
-  width: 7px;
-  height: 7px;
+  width: 0.4375rem;
+  height: 0.4375rem;
   border-radius: 999px;
   background: var(--ink-400);
 }
@@ -250,81 +247,43 @@
 .tag-infra {
   background: var(--ink-400);
 }
-.tag-popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-width: 240px;
-  padding: 8px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-2);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-2px);
-  transition:
-    opacity 0.12s ease,
-    transform 0.12s ease,
-    visibility 0.12s;
-}
-.tag-cluster:hover .tag-popover {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 8px;
-  border-radius: var(--r-pill);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  font-size: 11px;
-  color: var(--text-2);
-  white-space: nowrap;
-}
 
 /* FlagBulkActionBar */
 .bulk-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
   background: var(--bg-elev);
-  border-radius: var(--r-lg, 12px);
-  margin-top: 8px;
+  border-radius: var(--r-lg, 0.75rem);
+  margin-top: 0.5rem;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-1);
 }
 .bulk-count {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-1);
-  padding-right: 2px;
+  padding-right: 0.125rem;
 }
 .bulk-sep {
-  width: 1px;
-  height: 18px;
+  width: 0.0625rem;
+  height: 1.125rem;
   background: var(--border);
   flex-shrink: 0;
-  margin: 0 2px;
+  margin: 0 0.125rem;
 }
 .bulk-section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-4);
-  padding: 0 2px;
+  padding: 0 0.125rem;
 }
 .bulk-close {
-  width: 26px;
-  height: 26px;
+  width: 1.625rem;
+  height: 1.625rem;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -332,7 +291,7 @@
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
-  margin-left: 2px;
+  margin-left: 0.125rem;
 }
 .bulk-close:hover {
   background: var(--bg-hover);
@@ -353,14 +312,14 @@
 }
 .page-header h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-1);
 }
 .page-header-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
   color: var(--text-3);
 }
 .page-header-sub .mono {
@@ -371,7 +330,8 @@
 }
 .page-header-actions {
   display: flex;
-  gap: var(--s-2);
+  align-items: center;
+  gap: var(--s-3);
   flex-shrink: 0;
 }
 
@@ -379,12 +339,12 @@
 .sort-head {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -413,6 +373,17 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.flags-list-foot {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-subtle);
 }
 .flags-loading {
   display: flex;
@@ -447,15 +418,15 @@
   margin-bottom: var(--s-2);
 }
 .flags-empty-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-1);
   margin: 0;
 }
 .flags-empty-message {
-  font-size: 14px;
+  font-size: 0.875rem;
   margin: 0;
-  max-width: 360px;
+  max-width: 22.5rem;
 }
 
 /* FilterBar — integrated filters bar (search + chips + count) */
@@ -463,35 +434,37 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
   margin-bottom: var(--s-4);
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
 }
 .search-input {
   position: relative;
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 240px;
+  min-width: 15rem;
+  max-width: 22.5rem;
 }
 .search-input .search-ico {
   position: absolute;
-  left: 10px;
+  left: 0.625rem;
   color: var(--text-4);
   pointer-events: none;
 }
 .search-input .filter-search {
   width: 100%;
-  height: 32px;
-  padding: 0 38px 0 32px;
+  height: 2rem;
+  padding: 0 2.375rem 0 2rem;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  background: var(--bg-app);
+  background: var(--bg-subtle);
   color: var(--text-1);
-  font-size: 13px;
+  font-size: 0.8125rem;
   outline: none;
 }
 .search-input .filter-search:focus {
@@ -500,27 +473,27 @@
 }
 .search-input .kbd-hint {
   position: absolute;
-  right: 8px;
+  right: 0.5rem;
   pointer-events: none;
 }
 
 .chip-group {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 0.375rem;
   align-items: center;
 }
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
+  gap: 0.3125rem;
+  height: 1.75rem;
+  padding: 0 0.625rem;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
   background: var(--bg-elev);
   color: var(--text-2);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -544,7 +517,7 @@
   color: var(--danger-fg);
 }
 .chip-n {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--text-4);
 }
@@ -559,7 +532,7 @@
   color: var(--text-2);
 }
 .filters-count {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
   white-space: nowrap;
 }
@@ -573,14 +546,14 @@
   border: 1px solid var(--red-300);
   border-radius: var(--r-md);
   color: var(--red-700);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .flags-toggle-error button {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--red-700);
-  font-size: 16px;
+  font-size: 1rem;
   padding: 0 var(--s-1);
 }
 /* Create flag modal */
@@ -590,7 +563,7 @@
   gap: var(--s-4);
 }
 .create-flag-textarea {
-  min-height: 76px;
+  min-height: 4.75rem;
   resize: vertical;
   font-family: inherit;
   line-height: 1.5;
@@ -599,17 +572,17 @@
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 12px 14px;
+  padding: 0.75rem 0.875rem;
 }
 .snippet-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-3);
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 .snippet-code {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.6;
   color: var(--text-2);
   white-space: pre-wrap;
@@ -618,7 +591,7 @@
 .create-flag-kbd-hint {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 0.25rem;
+  font-size: 0.75rem;
   margin-right: var(--s-2);
 }

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useState, ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { usersApi } from '../../lib/api'
+import { useUsers } from '../../hooks/useUsers'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import type { WorkspaceUser } from '../../lib/api'
 import { USER_ROLES } from '../../lib/roles'
 import { useToast } from '../../hooks/useToast'
@@ -12,12 +14,16 @@ import { Icon } from '../primitives/Icon'
 import { Select } from '../primitives/Select'
 import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
+import { Pagination } from '../primitives/Pagination'
 import { InviteLinksModal } from './InviteLinksModal'
 import { UserBulkActionBar } from './UserBulkActionBar'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { InviteModal } from './InviteModal'
 
 type StatusFilter = 'all' | 'active' | 'invited' | 'suspended' | 'system'
+
+/** Rows per page before the user picks a different size. */
+const DEFAULT_PAGE_SIZE = 25
 type SortKey = 'name' | 'role' | 'projects' | 'last'
 type SortDir = 'asc' | 'desc'
 
@@ -28,9 +34,6 @@ type SortDir = 'asc' | 'desc'
 export function UsersScreen() {
   const toast = useToast()
   const { resendInvites, fallbackLinks, dismissFallback } = useResendInvite()
-  const [users, setUsers] = useState<WorkspaceUser[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -38,10 +41,38 @@ export function UsersScreen() {
     key: 'last',
     dir: 'desc',
   })
+  const [offset, setOffset] = useState(0)
+  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [detail, setDetail] = useState<WorkspaceUser | null>(null)
   const [showInvite, setShowInvite] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
+
+  /** Typing must not fire a request per keystroke. */
+  const debouncedQuery = useDebouncedValue(q, 300)
+
+  const { users, total, counts, loading, error, refetch } = useUsers({
+    search: debouncedQuery,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    role: roleFilter === 'all' ? undefined : roleFilter,
+    sort: sortBy.key,
+    dir: sortBy.dir,
+    limit,
+    offset,
+  })
+
+  /**
+   * Any change to the filters or sort re-numbers the pages, so page 4 of the
+   * old result set is meaningless. Go back to the first page.
+   */
+  useEffect(() => {
+    setOffset((current) => (current === 0 ? current : 0))
+  }, [debouncedQuery, statusFilter, roleFilter, sortBy])
+
+  /** Selections are per-page; carrying them across pages would hide them. */
+  useEffect(() => {
+    setSelected((current) => (current.size === 0 ? current : new Set()))
+  }, [offset])
 
   /**
    * Deep link from the global search: /users?user=<id> opens that user's
@@ -50,86 +81,30 @@ export function UsersScreen() {
    */
   useEffect(() => {
     const userId = searchParams.get('user')
-    if (!userId || users.length === 0) return
-    const target = users.find((u) => u.id === userId)
-    if (target) setDetail(target)
+    if (!userId) return
     setSearchParams({}, { replace: true })
-  }, [searchParams, users, setSearchParams])
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
+    /**
+     * The linked user may sit on any page, so fetch them directly rather than
+     * looking through the rows that happen to be loaded.
+     */
     usersApi
-      .list()
-      .then((res) => {
-        if (cancelled) return
-        setUsers(res.data)
-        setError(null)
+      .get(userId)
+      .then((res) =>
+        /** The detail endpoint returns project objects; rows carry plain names. */
+        setDetail({ ...res.data, projects: res.data.projects.map((p) => p.name) }),
+      )
+      .catch(() => {
+        /** A stale or bogus link just does nothing. */
       })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Failed to load users')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  }, [searchParams, setSearchParams])
 
-  const counts = useMemo(() => {
-    const c = { all: users.length, active: 0, invited: 0, suspended: 0, system: 0 }
-    users.forEach((u) => {
-      if (u.isSystem) c.system++
-      else if (u.status === 'active') c.active++
-      else if (u.status === 'invited') c.invited++
-      else if (u.status === 'suspended') c.suspended++
-    })
-    return c
-  }, [users])
-
-  const filtered = useMemo(() => {
-    const Q = q.trim().toLowerCase()
-    const xs = users.filter((u) => {
-      if (statusFilter === 'system') {
-        if (!u.isSystem) return false
-      } else if (statusFilter !== 'all') {
-        if (u.isSystem) return false
-        if (u.status !== statusFilter) return false
-      }
-      if (roleFilter !== 'all' && u.role !== roleFilter) return false
-      if (Q) {
-        const hay = (u.name + ' ' + u.email + ' ' + u.projects.join(' ')).toLowerCase()
-        if (!hay.includes(Q)) return false
-      }
-      return true
-    })
-    const ord = sortBy.dir === 'asc' ? 1 : -1
-    xs.sort((a, b) => {
-      if (sortBy.key === 'name') return a.name.localeCompare(b.name) * ord
-      if (sortBy.key === 'role') {
-        const order: Record<string, number> = { owner: 0, admin: 1, editor: 2, viewer: 3 }
-        return ((order[a.role] ?? 9) - (order[b.role] ?? 9)) * ord
-      }
-      if (sortBy.key === 'projects') return (a.projects.length - b.projects.length) * ord
-      if (sortBy.key === 'last') {
-        const ax = a.lastActiveAt ?? ''
-        const bx = b.lastActiveAt ?? ''
-        return ax.localeCompare(bx) * ord
-      }
-      return 0
-    })
-    return xs
-  }, [users, q, statusFilter, roleFilter, sortBy])
-
-  const allChecked = filtered.length > 0 && filtered.every((u) => selected.has(u.id))
-  const someChecked = filtered.some((u) => selected.has(u.id)) && !allChecked
+  const allChecked = users.length > 0 && users.every((u) => selected.has(u.id))
+  const someChecked = users.some((u) => selected.has(u.id)) && !allChecked
 
   function toggleAll() {
     const ns = new Set(selected)
-    if (allChecked) filtered.forEach((u) => ns.delete(u.id))
-    else filtered.forEach((u) => ns.add(u.id))
+    if (allChecked) users.forEach((u) => ns.delete(u.id))
+    else users.forEach((u) => ns.add(u.id))
     setSelected(ns)
   }
 
@@ -143,8 +118,7 @@ export function UsersScreen() {
   const selectedUsers = users.filter((u) => selected.has(u.id))
 
   async function refreshUsers() {
-    const res = await usersApi.list()
-    setUsers(res.data)
+    refetch()
   }
 
   async function handleRowSuspendToggle(u: WorkspaceUser) {
@@ -203,30 +177,14 @@ export function UsersScreen() {
 
   if (loading) {
     return (
-      <div className="users-loading" style={{ padding: 24 }}>
+      <div className="users-loading" style={{ padding: '1.5rem' }}>
         <span className="muted">Loading users...</span>
       </div>
     )
   }
 
   if (error) {
-    return (
-      <ErrorState
-        title="Failed to load users"
-        message={error}
-        onRetry={() => {
-          setError(null)
-          setLoading(true)
-          usersApi
-            .list()
-            .then((res) => setUsers(res.data))
-            .catch((err: unknown) =>
-              setError(err instanceof Error ? err.message : 'Failed to load users'),
-            )
-            .finally(() => setLoading(false))
-        }}
-      />
-    )
+    return <ErrorState title="Failed to load users" message={error} onRetry={refetch} />
   }
 
   return (
@@ -237,9 +195,9 @@ export function UsersScreen() {
           <p className="page-header-sub">
             Everyone with access to this workspace across all projects. Project-specific access
             lives under{' '}
-            <a className="users-settings-link" href="/settings/projects">
+            <Link className="users-settings-link" to="/settings?section=members">
               Project settings → Members
-            </a>
+            </Link>
             .
           </p>
         </div>
@@ -279,15 +237,10 @@ export function UsersScreen() {
           warn={counts.invited > 0}
         />
         <StatCard
-          label="Seats"
-          value={
-            <>
-              {users.length}
-              <span className="unit">/25</span>
-            </>
-          }
-          sub={`${Math.max(0, 25 - users.length)} remaining`}
-          icon="layers"
+          label="Privileged access"
+          value={counts.owners + counts.admins}
+          sub={`${counts.owners} owner · ${counts.admins} admin`}
+          icon="shield"
           tone="slate"
         />
       </div>
@@ -367,20 +320,20 @@ export function UsersScreen() {
               <th>{sortHead('name', 'Person')}</th>
               <th>{sortHead('role', 'Role')}</th>
               <th>{sortHead('projects', 'Project access')}</th>
-              <th>{sortHead('last', 'Last active')}</th>
+              <th>{sortHead('last', 'Last login')}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {users.length === 0 ? (
               <tr>
                 <td colSpan={6}>
-                  <div className="empty-filtered" style={{ padding: 32, textAlign: 'center' }}>
+                  <div className="empty-filtered" style={{ padding: '2rem', textAlign: 'center' }}>
                     <div className="ill" style={{ marginBottom: 10 }}>
                       <Icon name="user" size={28} style={{ color: 'var(--text-3)' }} />
                     </div>
-                    <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>No users match</h3>
-                    <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+                    <h3 style={{ margin: '0 0 6px', fontSize: '0.9375rem' }}>No users match</h3>
+                    <p className="muted" style={{ margin: '0 0 12px', fontSize: '0.8125rem' }}>
                       Try clearing the search or changing the status filter.
                     </p>
                     <Button
@@ -397,7 +350,7 @@ export function UsersScreen() {
                 </td>
               </tr>
             ) : (
-              filtered.map((u) => (
+              users.map((u) => (
                 <UserRow
                   key={u.id}
                   user={u}
@@ -415,10 +368,18 @@ export function UsersScreen() {
         </table>
 
         <div className="users-table-foot">
-          <span className="muted" style={{ fontSize: 12 }}>
-            {filtered.length} of {users.length} users
-          </span>
-          <span style={{ flex: 1 }} />
+          <Pagination
+            total={total}
+            limit={limit}
+            offset={offset}
+            onOffsetChange={setOffset}
+            onLimitChange={(next) => {
+              /** Page numbers change meaning with the size, so start over. */
+              setLimit(next)
+              setOffset(0)
+            }}
+            noun="user"
+          />
         </div>
       </div>
 
@@ -438,22 +399,14 @@ export function UsersScreen() {
           user={detail}
           onClose={() => setDetail(null)}
           onUpdated={(updated) => {
-            setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)))
+            /** The row lives on a server page, so re-read it instead of patching locally. */
             setDetail(updated)
+            refetch()
           }}
         />
       ) : null}
 
-      <InviteModal
-        open={showInvite}
-        onClose={() => setShowInvite(false)}
-        onInvited={() => {
-          usersApi
-            .list()
-            .then((res) => setUsers(res.data))
-            .catch(() => {})
-        }}
-      />
+      <InviteModal open={showInvite} onClose={() => setShowInvite(false)} onInvited={refetch} />
     </div>
   )
 }
@@ -513,7 +466,7 @@ function UserRow({
   onSuspendToggle,
   onCancelInvite,
 }: UserRowProps) {
-  const relativeDate = useRelativeDate(u.lastActiveAt ?? undefined)
+  const relativeDate = useRelativeDate(u.lastLoginAt ?? undefined)
 
   return (
     <tr
@@ -530,7 +483,7 @@ function UserRow({
         <Checkbox checked={selected} onChange={onSelect} ariaLabel={'Select ' + u.name} />
       </td>
       <td>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
           <span className={'avatar sm color-' + u.tone}>{u.initials}</span>
           <div style={{ minWidth: 0 }}>
             <div className="users-name">
@@ -571,12 +524,12 @@ function UserRow({
         </div>
       </td>
       <td>
-        <span className={'users-last mono' + (u.lastActiveAt == null ? ' never' : '')}>
-          {u.lastActiveAt == null ? 'never' : relativeDate}
+        <span className={'users-last mono' + (u.lastLoginAt == null ? ' never' : '')}>
+          {u.lastLoginAt == null ? 'never' : relativeDate}
         </span>
       </td>
       <td onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', gap: 2 }}>
+        <div style={{ display: 'flex', gap: '0.125rem' }}>
           {u.status === 'invited' ? (
             <>
               <Tip tip="Resend invite">

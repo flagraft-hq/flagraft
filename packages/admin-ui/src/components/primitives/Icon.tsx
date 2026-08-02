@@ -41,10 +41,16 @@ interface IconProps extends React.SVGAttributes<SVGSVGElement> {
   size?: number
 }
 
+/**
+ * `size` is given in design pixels but rendered in rem, so icons grow and
+ * shrink with the global scale knob in base.css instead of staying pinned
+ * at their design size while the text around them changes.
+ */
 export function Icon({ name, size = 16, className = '', ...rest }: IconProps) {
+  const rem = `${size / 16}rem`
   const svgProps = {
-    width: size,
-    height: size,
+    width: rem,
+    height: rem,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',

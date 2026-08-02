@@ -10,7 +10,6 @@ import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
 import { Toggle } from '../primitives/Toggle'
 import { Modal } from '../primitives/Modal'
-import { Badge } from '../primitives/Badge'
 import { TextField } from '../primitives/TextField'
 import { useContextFields } from '../../hooks/useContextFields'
 import { EnvStrategies } from './EnvStrategies'
@@ -512,17 +511,6 @@ export function FlagDetailScreen() {
           </div>
         </div>
         <div className="detail-header-aside">
-          {(flag.tags ?? []).length > 0 ? (
-            <div className="detail-tags">
-              {(flag.tags ?? []).map((tag) => (
-                <Badge key={tag} dot>
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <span className="muted detail-no-tags">No tags</span>
-          )}
           <span className="muted mono detail-updated">
             updated {new Date(flag.updated).toLocaleDateString()}
           </span>
