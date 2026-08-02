@@ -13,7 +13,7 @@
 }
 .flags-row.flags-head {
   min-height: 2.375rem;
-  background: var(--bg-muted);
+  background: var(--bg-subtle);
 }
 .flags-row.body {
   transition: background 0.1s;
@@ -114,6 +114,7 @@
 .cell-edited {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--s-2);
   min-width: 0;
 }
@@ -329,7 +330,8 @@
 }
 .page-header-actions {
   display: flex;
-  gap: var(--s-2);
+  align-items: center;
+  gap: var(--s-3);
   flex-shrink: 0;
 }
 
@@ -371,6 +373,17 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.flags-list-foot {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-subtle);
 }
 .flags-loading {
   display: flex;
@@ -427,6 +440,7 @@
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
 }
 .search-input {
   position: relative;
@@ -434,6 +448,7 @@
   align-items: center;
   flex: 1;
   min-width: 15rem;
+  max-width: 22.5rem;
 }
 .search-input .search-ico {
   position: absolute;
@@ -447,7 +462,7 @@
   padding: 0 2.375rem 0 2rem;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  background: var(--bg-app);
+  background: var(--bg-subtle);
   color: var(--text-1);
   font-size: 0.8125rem;
   outline: none;

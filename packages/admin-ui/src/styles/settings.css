@@ -262,12 +262,19 @@
 /* Search + role filter above the members table */
 .members-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
   margin-bottom: 0.75rem;
 }
 .members-toolbar .search-input {
   flex: 1;
+  max-width: 22.5rem;
 }
 
 .settings-table {
@@ -283,6 +290,7 @@
   letter-spacing: 0.06em;
   color: var(--text-4, var(--text-3));
   padding: 0.5rem 0.625rem;
+  background: var(--bg-subtle);
   border-bottom: 1px solid var(--border);
 }
 
@@ -544,7 +552,8 @@
   font-size: 0.7188rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 0 var(--s-3) var(--s-2);
+  padding: 0.5rem 0.625rem;
+  background: var(--bg-subtle);
   border-bottom: 1px solid var(--border);
 }
 

@@ -18,19 +18,26 @@
 /* Search + scope/environment filters above the keys table */
 .keys-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
   margin-bottom: 0.75rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
 }
 .keys-toolbar .search-input {
   flex: 1;
+  max-width: 22.5rem;
 }
 
 .keys-table-foot {
   display: flex;
   align-items: center;
   padding: 0.625rem 0.875rem;
-  background: var(--bg-muted);
+  background: var(--bg-subtle);
   border-top: 1px solid var(--border);
 }
 

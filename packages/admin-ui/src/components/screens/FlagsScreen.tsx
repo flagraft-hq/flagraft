@@ -275,18 +275,20 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
               onClick={(key) => navigate(`/flags/${key}`)}
             />
           ))}
-          <Pagination
-            total={total}
-            limit={limit}
-            offset={offset}
-            onOffsetChange={setOffset}
-            onLimitChange={(next) => {
-              /** Page numbers change meaning with the size, so start over. */
-              setLimit(next)
-              setOffset(0)
-            }}
-            noun="flag"
-          />
+          <div className="flags-list-foot">
+            <Pagination
+              total={total}
+              limit={limit}
+              offset={offset}
+              onOffsetChange={setOffset}
+              onLimitChange={(next) => {
+                /** Page numbers change meaning with the size, so start over. */
+                setLimit(next)
+                setOffset(0)
+              }}
+              noun="flag"
+            />
+          </div>
         </div>
       )}
       <CreateFlagModal

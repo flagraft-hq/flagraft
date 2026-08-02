@@ -97,24 +97,27 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
           <span className="limit-note">
             {environments.length} of {MAX_ENVIRONMENTS_PER_PROJECT} used
           </span>
-          <Tip
-            tip={
-              atLimit
-                ? `Limit reached — delete an environment to add another.`
-                : 'Create a new environment'
-            }
-          >
-            <span>
-              <Button
-                variant="primary"
-                leftIcon="plus"
-                onClick={() => setShowNew(true)}
-                disabled={atLimit}
-              >
-                New environment
-              </Button>
-            </span>
-          </Tip>
+          {atLimit ? (
+            <Tip tip="Limit reached — delete an environment to add another.">
+              <span>
+                <Button
+                  variant="primary"
+                  leftIcon="plus"
+                  disabled
+                >
+                  New environment
+                </Button>
+              </span>
+            </Tip>
+          ) : (
+            <Button
+              variant="primary"
+              leftIcon="plus"
+              onClick={() => setShowNew(true)}
+            >
+              New environment
+            </Button>
+          )}
         </div>
       </div>
 

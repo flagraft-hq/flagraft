@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { API_KEY_TYPES } from '../../src/auth/constants.js'
 import { buildServer } from '../../src/server.js'
@@ -320,6 +320,35 @@ describeIfDb('api keys', () => {
       const anyKey = (await list('limit=1')).data[0] as unknown as { prefix?: string }
       expect((await list('type=client&search=checkout')).total).toBe(1)
       expect(anyKey).toBeDefined()
+      await app.close()
+    })
+
+    it('stamps lastUsedAt when the key authenticates a request', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const read = async () =>
+        (
+          await app.inject({
+            method: 'GET',
+            url: `/api/v1/admin/projects/${project.id}/keys`,
+            headers: { authorization: rootKey },
+          })
+        ).json<{ data: Array<{ lastUsedAt: string | null }> }>().data[0]
+
+      expect((await read()).lastUsedAt).toBeNull()
+
+      /** Any call carrying the key counts as use. */
+      await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+      })
+
+      /** The stamp is fire-and-forget, so give it a moment to land. */
+      await vi.waitFor(async () => expect((await read()).lastUsedAt).not.toBeNull())
       await app.close()
     })
 
