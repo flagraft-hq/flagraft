@@ -37,7 +37,8 @@
   display: flex;
   align-items: center;
   gap: var(--s-1);
-  border-bottom: 1px solid var(--border);
+  /* Solid divider so the row reads as a band, not floating text */
+  border-bottom: 1px solid var(--border-strong);
   margin-bottom: var(--s-6);
   padding-bottom: 0;
   overflow-x: auto;
@@ -56,14 +57,16 @@
   padding: 0.625rem 1rem;
   font-size: 0.8438rem;
   font-weight: 500;
-  color: var(--text-3);
+  color: var(--text-2);
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
-  margin-bottom: -0.0625rem;
+  /* Pull the tab's own border over the row divider so they never double up.
+     Must stay in px to match the 1px divider at any global scale. */
+  margin-bottom: -1px;
 }
 
 .settings-tab:hover {
@@ -80,8 +83,12 @@
 }
 
 .settings-tab svg {
-  color: var(--text-3);
+  color: var(--text-4);
   transition: color 0.15s;
+}
+
+.settings-tab:hover svg {
+  color: var(--text-2);
 }
 
 .settings-tab[aria-selected='true'] svg {

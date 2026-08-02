@@ -19,3 +19,4 @@
 @import './modals.css'; /* SDK snippet modal, edit-flag form */
 @import './toast.css'; /* toast notification stack */
 @import './keys.css'; /* API keys screen: table, security note, issue/reveal dialogs */
+@import './tables.css'; /* shared table chrome -- must stay last, see file header */

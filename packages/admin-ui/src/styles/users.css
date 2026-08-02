@@ -230,7 +230,7 @@
   transition: background 0.06s;
 }
 .users-table tbody tr.users-row:hover {
-  background: var(--bg-muted);
+  background: var(--bg-hover);
 }
 .users-table tbody tr.users-row.selected {
   background: var(--pri-soft);

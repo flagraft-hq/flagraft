@@ -100,21 +100,13 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
           {atLimit ? (
             <Tip tip="Limit reached — delete an environment to add another.">
               <span>
-                <Button
-                  variant="primary"
-                  leftIcon="plus"
-                  disabled
-                >
+                <Button variant="primary" leftIcon="plus" disabled>
                   New environment
                 </Button>
               </span>
             </Tip>
           ) : (
-            <Button
-              variant="primary"
-              leftIcon="plus"
-              onClick={() => setShowNew(true)}
-            >
+            <Button variant="primary" leftIcon="plus" onClick={() => setShowNew(true)}>
               New environment
             </Button>
           )}
