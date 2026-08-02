@@ -14,6 +14,45 @@ describeIfDb('environments', () => {
   })
 
   describe('POST /api/v1/admin/projects/:projectId/environments', () => {
+    it('refuses to create more environments than the per-project cap', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      const create = (slug: string) =>
+        app.inject({
+          method: 'POST',
+          url: `/api/v1/admin/projects/${project.id}/environments`,
+          headers: { authorization: adminKey },
+          payload: { name: slug, slug, protected: false },
+        })
+
+      /** A new project already has development and production, so one fits. */
+      expect((await create('staging')).statusCode).toBe(201)
+
+      const overflow = await create('preview')
+      expect(overflow.statusCode).toBe(409)
+      expect(overflow.json<{ message: string }>().message).toMatch(/at most 3 environments/i)
+
+      /** Deleting one frees a slot again. */
+      const list = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/environments`,
+        headers: { authorization: adminKey },
+      })
+      const staging = list
+        .json<Array<{ id: string; slug: string }>>()
+        .find((e) => e.slug === 'staging')!
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/admin/projects/${project.id}/environments/${staging.id}`,
+        headers: { authorization: adminKey },
+      })
+      expect((await create('preview')).statusCode).toBe(201)
+      await app.close()
+    })
+
     it('creates an environment successfully and returns 201 with correct shape', async () => {
       const app = await buildServer({ db })
       const rootKey = await createRootKey(db!)

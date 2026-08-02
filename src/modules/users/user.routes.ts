@@ -1,7 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 
 import {
-  MAX_PAGE_SIZE,
   inviteUserSchema,
   listUsersQuerySchema,
   patchUserSchema,
@@ -10,6 +9,7 @@ import {
 import * as service from './user.service.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import { isMailerConfigured, sendInviteEmail } from '../../mailer.js'
+import { MAX_PAGE_SIZE } from '../../limits.js'
 
 /**
  * Base URL for invite links: prefer the configured APP_BASE_URL, then the

@@ -1,8 +1,9 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
 import { contextFields } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
+import { MAX_CONTEXT_FIELDS_PER_PROJECT } from '../../limits.js'
 import type { CreateContextFieldInput, UpdateContextFieldInput } from './context-field.schema.js'
 
 type ContextFieldRow = typeof contextFields.$inferSelect
@@ -38,6 +39,19 @@ export async function createContextField(
   projectId: string,
   input: CreateContextFieldInput,
 ) {
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(contextFields)
+    .where(eq(contextFields.projectId, projectId))
+  if (count >= MAX_CONTEXT_FIELDS_PER_PROJECT) {
+    throw new AppError(
+      `A project can have at most ${MAX_CONTEXT_FIELDS_PER_PROJECT} context fields. ` +
+        'Delete one before adding another.',
+      409,
+      'Conflict',
+    )
+  }
+
   const [existing] = await db
     .select({ id: contextFields.id })
     .from(contextFields)

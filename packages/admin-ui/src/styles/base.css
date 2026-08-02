@@ -499,3 +499,13 @@ body {
   color: var(--text-1);
   user-select: none;
 }
+
+/* Shared "N of M used" note beside a create action that has a hard cap */
+.limit-note {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.limit-spacer {
+  flex: 1;
+}

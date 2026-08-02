@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { API_KEY_TYPES } from '../../auth/constants.js'
+import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export const keyProjectParamsSchema = z.object({
   projectId: z.string().uuid(),
@@ -9,9 +10,6 @@ export const keyProjectParamsSchema = z.object({
 export const keyParamsSchema = keyProjectParamsSchema.extend({
   keyId: z.string().uuid(),
 })
-
-/** Hard ceiling on page size so a caller cannot ask for the whole table. */
-export const MAX_PAGE_SIZE = 100
 
 export const listKeysQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(25),

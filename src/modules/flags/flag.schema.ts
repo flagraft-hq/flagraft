@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export const flagParamsSchema = z.object({
   projectId: z.string().uuid(),
@@ -8,9 +9,6 @@ export const flagParamsSchema = z.object({
 export const flagEnvironmentParamsSchema = flagParamsSchema.extend({
   environmentSlug: z.string().min(1),
 })
-
-/** Hard ceiling on page size so a caller cannot ask for the whole table. */
-export const MAX_PAGE_SIZE = 100
 
 export const listFlagsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(25),

@@ -598,7 +598,8 @@
 
 .ctx-section-foot {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: var(--s-3);
   margin-top: var(--s-4);
 }
 

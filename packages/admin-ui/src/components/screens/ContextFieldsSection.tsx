@@ -11,6 +11,7 @@ import { Icon } from '../primitives/Icon'
 import { Modal } from '../primitives/Modal'
 import { Tip } from '../primitives/Tip'
 import { ContextFieldDialog } from './ContextFieldDialog'
+import { MAX_CONTEXT_FIELDS_PER_PROJECT } from '../../lib/limits'
 
 /** Badge tone per field type — enum reads teal, version amber, the rest neutral. */
 const TYPE_VARIANT: Record<FieldType, 'default' | 'success' | 'warning'> = {
@@ -29,6 +30,9 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
   const [deleteTarget, setDeleteTarget] = useState<ContextField | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  /** The backend refuses past this, so stop the user before the round trip. */
+  const atLimit = fields.length >= MAX_CONTEXT_FIELDS_PER_PROJECT
 
   function openAdd() {
     setEditing(null)
@@ -61,7 +65,8 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
       <p className="ctx-section-sub">
         The attributes targeting rules match on. The SDK sends these alongside each evaluation. Only
         fields registered here can be referenced in rules, unknown keys are ignored, so a typo like{' '}
-        <span className="mono">userid</span> can’t silently break a rollout.
+        <span className="mono">userid</span> can’t silently break a rollout. A project can define up
+        to {MAX_CONTEXT_FIELDS_PER_PROJECT}.
       </p>
 
       {loading ? (
@@ -136,7 +141,12 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
           )}
 
           <div className="ctx-section-foot">
-            <Button variant="primary" leftIcon="plus" onClick={openAdd}>
+            <span className="limit-note">
+              {fields.length} of {MAX_CONTEXT_FIELDS_PER_PROJECT} fields used
+              {atLimit && ' — delete one to add another'}
+            </span>
+            <span className="limit-spacer" />
+            <Button variant="primary" leftIcon="plus" onClick={openAdd} disabled={atLimit}>
               Add field
             </Button>
           </div>

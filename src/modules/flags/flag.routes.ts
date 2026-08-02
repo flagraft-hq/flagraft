@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 
 import {
-  MAX_PAGE_SIZE,
   createFlagSchema,
   flagEnvironmentParamsSchema,
   flagParamsSchema,
@@ -10,6 +9,7 @@ import {
 } from './flag.schema.js'
 import { cacheKeys } from '../../cache/keys.js'
 import * as service from './flag.service.js'
+import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export async function flagRoutes(fastify: FastifyInstance) {
   fastify.post(

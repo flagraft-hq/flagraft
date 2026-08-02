@@ -1,9 +1,7 @@
 import { z } from 'zod'
 
 import { DEFAULT_USER_ROLE, USER_ROLES } from '../../auth/constants.js'
-
-/** Hard ceiling on page size so a caller cannot ask for the whole table. */
-export const MAX_PAGE_SIZE = 100
+import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export const listUsersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(25),

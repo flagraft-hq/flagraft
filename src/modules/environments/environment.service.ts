@@ -1,14 +1,28 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
 import { environments } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
+import { MAX_ENVIRONMENTS_PER_PROJECT } from '../../limits.js'
 import type { CreateEnvironmentInput, UpdateEnvironmentInput } from './environment.schema.js'
 
 /**
  * Creates a new environment within a project
  */
 export async function createEnvironment(db: Db, projectId: string, input: CreateEnvironmentInput) {
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(environments)
+    .where(eq(environments.projectId, projectId))
+  if (count >= MAX_ENVIRONMENTS_PER_PROJECT) {
+    throw new AppError(
+      `A project can have at most ${MAX_ENVIRONMENTS_PER_PROJECT} environments. ` +
+        'Delete one before adding another.',
+      409,
+      'Conflict',
+    )
+  }
+
   const [environment] = await db
     .insert(environments)
     .values({ ...input, projectId })

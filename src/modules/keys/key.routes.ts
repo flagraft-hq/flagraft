@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify'
 
 import {
-  MAX_PAGE_SIZE,
   createKeySchema,
   keyParamsSchema,
   keyProjectParamsSchema,
   listKeysQuerySchema,
 } from './key.schema.js'
 import * as service from './key.service.js'
+import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export async function keyRoutes(fastify: FastifyInstance) {
   fastify.post(
