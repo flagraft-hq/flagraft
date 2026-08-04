@@ -59,10 +59,10 @@ export async function projectRoutes(fastify: FastifyInstance) {
   fastify.patch(
     '/admin/projects/:projectId',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Update a project name.',
+        description: 'Update a project name. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: { projectId: { type: 'string' } },
@@ -83,10 +83,11 @@ export async function projectRoutes(fastify: FastifyInstance) {
   fastify.delete(
     '/admin/projects/:projectId',
     {
-      preHandler: fastify.requireRootKey,
+      preHandler: fastify.requireOwner,
       schema: {
         tags: ['admin'],
-        description: 'Delete a project and all its data. Requires a root admin key.',
+        description:
+          'Delete a project and all its data. Requires the owner role or a root admin key.',
         params: {
           type: 'object',
           properties: { projectId: { type: 'string' } },

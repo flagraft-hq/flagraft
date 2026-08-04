@@ -7,6 +7,7 @@ import {
   resetPasswordSchema,
 } from './user.schema.js'
 import * as service from './user.service.js'
+import { USER_ROLES } from '../../auth/constants.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import { isMailerConfigured, sendInviteEmail } from '../../mailer.js'
 import { MAX_PAGE_SIZE } from '../../limits.js'
@@ -133,6 +134,17 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.patch('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req) => {
     const { id } = req.params as { id: string }
     const data = patchUserSchema.parse(req.body)
+
+    /**
+     * Admins administer the workspace but must not be able to make themselves
+     * owners. A root API key has no role and keeps this power, because that is
+     * how the first owner gets set up.
+     */
+    const actorRole = req.keyContext?.userRole
+    if (data.role === USER_ROLES.OWNER && actorRole && actorRole !== USER_ROLES.OWNER) {
+      throw new AppError('Only an owner can grant the owner role', 403, 'Forbidden')
+    }
+
     return service.toPublicUser(await service.patchUser(fastify.db, id, data))
   })
 

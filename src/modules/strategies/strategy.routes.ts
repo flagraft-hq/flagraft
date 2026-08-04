@@ -42,11 +42,12 @@ export async function strategyRoutes(fastify: FastifyInstance) {
   fastify.put(
     strategiesPath,
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireEnvironmentWrite,
       schema: {
         tags: ['admin'],
         description:
-          'Replace the whole ordered list of targeting strategies for a flag in an environment.',
+          'Replace the whole ordered list of targeting strategies for a flag in an ' +
+          'environment. Protected environments are limited to owners and admins.',
         params: paramsJsonSchema,
       },
     },

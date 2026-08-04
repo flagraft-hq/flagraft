@@ -13,10 +13,10 @@ export async function environmentRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/admin/projects/:projectId/environments',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Create a new environment within a project.',
+        description: 'Create a new environment within a project. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: { projectId: { type: 'string' } },
@@ -58,10 +58,12 @@ export async function environmentRoutes(fastify: FastifyInstance) {
   fastify.patch(
     '/admin/projects/:projectId/environments/:environmentId',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Update an environment (name, protected). The slug is immutable.',
+        description:
+          'Update an environment (name, protected). The slug is immutable. ' +
+          'Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: {
@@ -86,10 +88,12 @@ export async function environmentRoutes(fastify: FastifyInstance) {
   fastify.delete(
     '/admin/projects/:projectId/environments/:environmentId',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Delete an environment and invalidate its cached flag state.',
+        description:
+          'Delete an environment and invalidate its cached flag state. Protected ' +
+          'environments must have protection turned off first. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: {

@@ -2,8 +2,10 @@ import { createHash, randomBytes } from 'node:crypto'
 import { and, asc, desc, eq, exists, ilike, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
+import { USER_ROLES } from '../../auth/constants.js'
 import { users, userProjects, projects } from '../../db/schema.js'
 import type { User } from '../../db/schema.js'
+import { AppError } from '../../plugins/errorHandler.js'
 import { createUser, hashPassword } from '../auth/auth.service.js'
 import type { ListUsersQuery } from './user.schema.js'
 
@@ -326,11 +328,44 @@ export async function acceptInvite(
   return updated
 }
 
+/**
+ * Rejects a change that would leave the workspace without an owner. Demoting,
+ * suspending or deleting the only owner would lock everybody out of the
+ * owner-only actions, and nobody left could undo it.
+ */
+async function assertNotLastOwner(db: Db, id: string): Promise<void> {
+  const [target] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1)
+
+  if (target?.role !== USER_ROLES.OWNER) return
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(users)
+    .where(eq(users.role, USER_ROLES.OWNER))
+
+  if (count <= 1) {
+    throw new AppError(
+      'The workspace must keep at least one owner. Promote someone else first.',
+      409,
+      'Conflict',
+    )
+  }
+}
+
 export async function patchUser(
   db: Db,
   id: string,
   data: { role?: string; status?: string; name?: string },
 ): Promise<User> {
+  /** Both a demotion and a suspension take the last owner out of action. */
+  if ((data.role && data.role !== USER_ROLES.OWNER) || data.status === 'suspended') {
+    await assertNotLastOwner(db, id)
+  }
+
   const updates: Record<string, unknown> = {}
   if (data.role) updates.role = data.role
   if (data.status) updates.status = data.status
@@ -382,6 +417,7 @@ export async function resetPassword(
 }
 
 export async function deleteUser(db: Db, id: string): Promise<void> {
+  await assertNotLastOwner(db, id)
   await db.delete(users).where(eq(users.id, id))
 }
 

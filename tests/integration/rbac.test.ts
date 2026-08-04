@@ -52,6 +52,45 @@ describeIfDb('session RBAC', () => {
     return { id, email, cookies: { flagraft_session: cookie.value } }
   }
 
+  /**
+   * Promotes an invited admin to owner with the root key, which is the only
+   * way to reach the owner role -- invites cannot hand it out.
+   */
+  async function ownerSession(app: App, rootKey: string, projectIds: string[]) {
+    const session = await sessionUser(app, rootKey, 'admin', projectIds)
+    const promote = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${session.id}`,
+      headers: { authorization: rootKey },
+      payload: { role: 'owner' },
+    })
+    expect(promote.statusCode).toBe(200)
+    return session
+  }
+
+  /** Creates a flag with the root key so role checks are not in the way. */
+  async function createFlag(app: App, rootKey: string, projectId: string, key: string) {
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${projectId}/flags`,
+      headers: { authorization: rootKey },
+      payload: { name: key, key },
+    })
+    expect(res.statusCode).toBe(201)
+  }
+
+  async function environmentId(app: App, rootKey: string, projectId: string, slug: string) {
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/projects/${projectId}/environments`,
+      headers: { authorization: rootKey },
+    })
+    expect(res.statusCode).toBe(200)
+    const found = res.json<{ id: string; slug: string }[]>().find((e) => e.slug === slug)
+    expect(found).toBeDefined()
+    return found!.id
+  }
+
   it('viewer can read their project but cannot mutate anything', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)
@@ -339,6 +378,327 @@ describeIfDb('session RBAC', () => {
       payload: { email: 'invited-reset@co.com', password: 'invited-new-pass' },
     })
     expect(login.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('editor can toggle a flag in development but not in protected production', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'toggle-proj')
+    await createFlag(app, rootKey, project.id, 'toggle.me')
+    const editor = await sessionUser(app, rootKey, 'editor', [project.id])
+
+    const dev = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/flags/toggle.me/environments/development/enable`,
+      cookies: editor.cookies,
+    })
+    expect(dev.statusCode).toBe(200)
+
+    const prod = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/flags/toggle.me/environments/production/enable`,
+      cookies: editor.cookies,
+    })
+    expect(prod.statusCode).toBe(403)
+    await app.close()
+  })
+
+  it('owner and admin can toggle a flag in protected production', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'prod-toggle')
+    await createFlag(app, rootKey, project.id, 'prod.flag')
+    const admin = await sessionUser(app, rootKey, 'admin', [project.id])
+    const owner = await ownerSession(app, rootKey, [project.id])
+
+    const byAdmin = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/flags/prod.flag/environments/production/enable`,
+      cookies: admin.cookies,
+    })
+    expect(byAdmin.statusCode).toBe(200)
+
+    const byOwner = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/flags/prod.flag/environments/production/disable`,
+      cookies: owner.cookies,
+    })
+    expect(byOwner.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('editor can change targeting in development but not in protected production', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'targeting-proj')
+    await createFlag(app, rootKey, project.id, 'target.me')
+    const editor = await sessionUser(app, rootKey, 'editor', [project.id])
+    const payload = { strategies: [{ constraints: [] }] }
+
+    const dev = await app.inject({
+      method: 'PUT',
+      url: `/api/v1/admin/projects/${project.id}/flags/target.me/environments/development/strategies`,
+      cookies: editor.cookies,
+      payload,
+    })
+    expect(dev.statusCode).toBe(200)
+
+    const prod = await app.inject({
+      method: 'PUT',
+      url: `/api/v1/admin/projects/${project.id}/flags/target.me/environments/production/strategies`,
+      cookies: editor.cookies,
+      payload,
+    })
+    expect(prod.statusCode).toBe(403)
+    await app.close()
+  })
+
+  it('editor can create and edit flags but not delete them', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'flag-delete-proj')
+    await createFlag(app, rootKey, project.id, 'keep.me')
+    const editor = await sessionUser(app, rootKey, 'editor', [project.id])
+
+    const rename = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/projects/${project.id}/flags/keep.me`,
+      cookies: editor.cookies,
+      payload: { name: 'Renamed Flag' },
+    })
+    expect(rename.statusCode).toBe(200)
+
+    /** Deleting a flag turns it off everywhere, protected environments included. */
+    const remove = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}/flags/keep.me`,
+      cookies: editor.cookies,
+    })
+    expect(remove.statusCode).toBe(403)
+
+    const owner = await ownerSession(app, rootKey, [project.id])
+    const byOwner = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}/flags/keep.me`,
+      cookies: owner.cookies,
+    })
+    expect(byOwner.statusCode).toBe(204)
+    await app.close()
+  })
+
+  it('editor cannot manage environments', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'env-proj')
+    const devId = await environmentId(app, rootKey, project.id, 'development')
+    const editor = await sessionUser(app, rootKey, 'editor', [project.id])
+
+    const create = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/environments`,
+      cookies: editor.cookies,
+      payload: { name: 'Staging', slug: 'staging', protected: false },
+    })
+    expect(create.statusCode).toBe(403)
+
+    const update = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/projects/${project.id}/environments/${devId}`,
+      cookies: editor.cookies,
+      payload: { name: 'Renamed' },
+    })
+    expect(update.statusCode).toBe(403)
+
+    const remove = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}/environments/${devId}`,
+      cookies: editor.cookies,
+    })
+    expect(remove.statusCode).toBe(403)
+
+    /** Reading them is still fine -- the UI needs the list. */
+    const list = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/projects/${project.id}/environments`,
+      cookies: editor.cookies,
+    })
+    expect(list.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('editor cannot issue or revoke API keys', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'keys-proj')
+    const editor = await sessionUser(app, rootKey, 'editor', [project.id])
+
+    const issue = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/keys`,
+      cookies: editor.cookies,
+      payload: { type: 'admin', description: 'Sneaky key' },
+    })
+    expect(issue.statusCode).toBe(403)
+
+    const existing = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/keys`,
+      headers: { authorization: rootKey },
+      payload: { type: 'admin', description: 'Legit key' },
+    })
+    expect(existing.statusCode).toBe(201)
+
+    const revoke = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}/keys/${existing.json<{ id: string }>().id}`,
+      cookies: editor.cookies,
+    })
+    expect(revoke.statusCode).toBe(403)
+    await app.close()
+  })
+
+  it('editor cannot edit project settings or context fields', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'settings-proj')
+    const editor = await sessionUser(app, rootKey, 'editor', [project.id])
+
+    const rename = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/projects/${project.id}`,
+      cookies: editor.cookies,
+      payload: { name: 'Renamed By Editor' },
+    })
+    expect(rename.statusCode).toBe(403)
+
+    const addField = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/context-fields`,
+      cookies: editor.cookies,
+      payload: { key: 'plan', name: 'Plan', type: 'string' },
+    })
+    expect(addField.statusCode).toBe(403)
+    await app.close()
+  })
+
+  it('an admin cannot delete a project but an owner can', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'delete-proj')
+    const admin = await sessionUser(app, rootKey, 'admin', [project.id])
+
+    const byAdmin = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}`,
+      cookies: admin.cookies,
+    })
+    expect(byAdmin.statusCode).toBe(403)
+
+    const owner = await ownerSession(app, rootKey, [project.id])
+    const byOwner = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}`,
+      cookies: owner.cookies,
+    })
+    expect(byOwner.statusCode).toBe(204)
+    await app.close()
+  })
+
+  it('an admin cannot grant the owner role but an owner can', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const admin = await sessionUser(app, rootKey, 'admin', [])
+    const target = await sessionUser(app, rootKey, 'editor', [])
+
+    const selfPromote = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${admin.id}`,
+      cookies: admin.cookies,
+      payload: { role: 'owner' },
+    })
+    expect(selfPromote.statusCode).toBe(403)
+
+    const owner = await ownerSession(app, rootKey, [])
+    const byOwner = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${target.id}`,
+      cookies: owner.cookies,
+      payload: { role: 'owner' },
+    })
+    expect(byOwner.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('the last owner cannot be demoted, suspended or deleted', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+
+    /** The boot owner is seeded on ready, so wait for it before looking. */
+    await app.ready()
+    /** First boot seeds exactly one owner, which is the one at risk here. */
+    const [soleOwner] = await db!
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.role, 'owner'))
+    expect(soleOwner).toBeDefined()
+
+    for (const payload of [{ role: 'admin' }, { status: 'suspended' }]) {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/users/${soleOwner.id}`,
+        headers: { authorization: rootKey },
+        payload,
+      })
+      expect(res.statusCode).toBe(409)
+    }
+
+    const removed = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${soleOwner.id}`,
+      headers: { authorization: rootKey },
+    })
+    expect(removed.statusCode).toBe(409)
+
+    /** With a second owner in place the first one can step down. */
+    await ownerSession(app, rootKey, [])
+    const demote = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${soleOwner.id}`,
+      headers: { authorization: rootKey },
+      payload: { role: 'admin' },
+    })
+    expect(demote.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('a protected environment cannot be deleted until protection is turned off', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'protected-proj')
+    const prodId = await environmentId(app, rootKey, project.id, 'production')
+
+    const blocked = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}/environments/${prodId}`,
+      headers: { authorization: rootKey },
+    })
+    expect(blocked.statusCode).toBe(409)
+
+    const unprotect = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/projects/${project.id}/environments/${prodId}`,
+      headers: { authorization: rootKey },
+      payload: { protected: false },
+    })
+    expect(unprotect.statusCode).toBe(200)
+
+    const allowed = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/projects/${project.id}/environments/${prodId}`,
+      headers: { authorization: rootKey },
+    })
+    expect(allowed.statusCode).toBe(204)
     await app.close()
   })
 

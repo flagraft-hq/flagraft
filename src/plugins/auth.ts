@@ -9,10 +9,11 @@ import fp from 'fastify-plugin'
 import {
   API_KEY_TYPES,
   READ_ONLY_ROLES,
+  USER_ROLES,
   WORKSPACE_ADMIN_ROLES,
   type ApiKeyType,
 } from '../auth/constants.js'
-import { apiKeys, userProjects, users } from '../db/schema.js'
+import { apiKeys, environments, userProjects, users } from '../db/schema.js'
 import { AppError } from './errorHandler.js'
 
 /**
@@ -41,6 +42,9 @@ declare module 'fastify' {
   interface FastifyInstance {
     requireAdminKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     requireRootKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    requireProjectAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    requireOwner: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    requireEnvironmentWrite: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     requireClientKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     requireUserSession: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
   }
@@ -72,6 +76,16 @@ function projectIdFromParams(request: FastifyRequest): string | undefined {
   }
 
   const value = (params as { projectId?: unknown }).projectId
+  return typeof value === 'string' ? value : undefined
+}
+
+function environmentSlugFromParams(request: FastifyRequest): string | undefined {
+  const params = request.params
+  if (typeof params !== 'object' || params === null || !('environmentSlug' in params)) {
+    return undefined
+  }
+
+  const value = (params as { environmentSlug?: unknown }).environmentSlug
   return typeof value === 'string' ? value : undefined
 }
 
@@ -207,6 +221,69 @@ async function authPlugin(fastify: FastifyInstance) {
       throw new AppError('Workspace admin access required', 403, 'Forbidden')
     }
   })
+
+  /**
+   * Decorator for actions the role matrix reserves for owners and admins:
+   * managing environments, issuing API keys and editing project settings.
+   * Editors are members of the project but must not reach these, while API
+   * keys keep the scope-based access they have always had.
+   */
+  fastify.decorate('requireProjectAdmin', async (request: FastifyRequest, reply: FastifyReply) => {
+    await fastify.requireAdminKey(request, reply)
+
+    const role = request.keyContext!.userRole
+    if (role !== undefined && !WORKSPACE_ADMIN_ROLES.has(role)) {
+      throw new AppError('Only owners and admins can do this', 403, 'Forbidden')
+    }
+  })
+
+  /**
+   * Decorator for the owner-only row of the role matrix: deleting a project.
+   * Admins are workspace administrators but not owners, so they are refused
+   * here. A root API key keeps full power because the CLI relies on it.
+   */
+  fastify.decorate('requireOwner', async (request: FastifyRequest, reply: FastifyReply) => {
+    await fastify.requireAdminKey(request, reply)
+
+    const context = request.keyContext!
+    const allowed = context.userRole
+      ? context.userRole === USER_ROLES.OWNER
+      : /** No role means an API key; only a workspace-wide one qualifies. */
+        context.isRoot
+    if (!allowed) {
+      throw new AppError('Only the workspace owner can do this', 403, 'Forbidden')
+    }
+  })
+
+  /**
+   * Decorator for writes that land in one specific environment: toggling a
+   * flag and replacing its targeting. Editors may do this in everyday
+   * environments but not in protected ones such as production.
+   */
+  fastify.decorate(
+    'requireEnvironmentWrite',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await fastify.requireAdminKey(request, reply)
+
+      const role = request.keyContext!.userRole
+      /** API keys and workspace admins are unrestricted; only editors are fenced. */
+      if (role === undefined || WORKSPACE_ADMIN_ROLES.has(role)) return
+
+      const projectId = projectIdFromParams(request)
+      const slug = environmentSlugFromParams(request)
+      if (!projectId || !slug) return
+
+      const [environment] = await fastify.db
+        .select({ protected: environments.protected })
+        .from(environments)
+        .where(and(eq(environments.projectId, projectId), eq(environments.slug, slug)))
+        .limit(1)
+
+      if (environment?.protected) {
+        throw new AppError(`Only owners and admins can change flags in ${slug}`, 403, 'Forbidden')
+      }
+    },
+  )
 
   /**
    * Decorator that ensures the request has a valid client key

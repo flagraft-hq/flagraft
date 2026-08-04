@@ -67,12 +67,30 @@ export async function updateEnvironment(
  * Deletes an environment from a project
  */
 export async function deleteEnvironment(db: Db, projectId: string, environmentId: string) {
-  const [environment] = await db
-    .delete(environments)
+  const [existing] = await db
+    .select({ protected: environments.protected })
+    .from(environments)
     .where(and(eq(environments.projectId, projectId), eq(environments.id, environmentId)))
-    .returning()
+    .limit(1)
 
-  if (!environment) {
+  if (!existing) {
     throw new AppError('Environment not found', 404, 'NotFound')
   }
+
+  /**
+   * Protection is what keeps editors out of an environment, so deleting a
+   * protected one would be a way around that. Turning protection off is an
+   * owner/admin action, which makes the intent explicit.
+   */
+  if (existing.protected) {
+    throw new AppError(
+      'This environment is protected. Turn protection off before deleting it.',
+      409,
+      'Conflict',
+    )
+  }
+
+  await db
+    .delete(environments)
+    .where(and(eq(environments.projectId, projectId), eq(environments.id, environmentId)))
 }

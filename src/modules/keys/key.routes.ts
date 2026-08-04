@@ -13,10 +13,10 @@ export async function keyRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/admin/projects/:projectId/keys',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Create a new API key for a project.',
+        description: 'Create a new API key for a project. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: { projectId: { type: 'string' } },
@@ -71,10 +71,10 @@ export async function keyRoutes(fastify: FastifyInstance) {
   fastify.delete(
     '/admin/projects/:projectId/keys/:keyId',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Revoke an API key.',
+        description: 'Revoke an API key. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: {

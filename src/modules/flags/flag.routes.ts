@@ -129,10 +129,12 @@ export async function flagRoutes(fastify: FastifyInstance) {
   fastify.delete(
     '/admin/projects/:projectId/flags/:flagKey',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Delete a feature flag.',
+        description:
+          'Delete a feature flag. Removing it changes behaviour in every environment, ' +
+          'including protected ones, so this requires the owner or admin role.',
         params: {
           type: 'object',
           properties: {
@@ -158,10 +160,12 @@ export async function flagRoutes(fastify: FastifyInstance) {
     fastify.post(
       `/admin/projects/:projectId/flags/:flagKey/environments/:environmentSlug/${action}`,
       {
-        preHandler: fastify.requireAdminKey,
+        preHandler: fastify.requireEnvironmentWrite,
         schema: {
           tags: ['admin'],
-          description: `${action === 'enable' ? 'Enable' : 'Disable'} a feature flag in a specific environment.`,
+          description:
+            `${action === 'enable' ? 'Enable' : 'Disable'} a feature flag in a specific ` +
+            'environment. Protected environments are limited to owners and admins.',
           params: {
             type: 'object',
             properties: {
