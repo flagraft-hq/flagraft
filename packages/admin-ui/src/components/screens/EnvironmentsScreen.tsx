@@ -3,9 +3,11 @@ import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useEnvironments } from '../../hooks/useEnvironments'
 import type { EnvWithStats } from '../../hooks/useEnvironments'
+import { usePermissions } from '../../hooks/usePermissions'
 import { environmentsApi } from '../../lib/api'
 import { Button } from '../primitives/Button'
 import { CopyButton } from '../primitives/CopyButton'
+import { Denied } from '../primitives/Denied'
 import { FormError } from '../primitives/FormError'
 import { Icon } from '../primitives/Icon'
 import { Badge } from '../primitives/Badge'
@@ -43,6 +45,7 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
   const { environments, loading, error, refetch } = useEnvironments(projectId)
   const { refetchEnvironments } = useProject()
   const toast = useToast()
+  const { canProjectAdmin } = usePermissions()
   const [showNew, setShowNew] = useState(false)
   const [editing, setEditing] = useState<EnvWithStats | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<EnvWithStats | null>(null)
@@ -106,9 +109,16 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
               </span>
             </Tip>
           ) : (
-            <Button variant="primary" leftIcon="plus" onClick={() => setShowNew(true)}>
-              New environment
-            </Button>
+            <Denied when={!canProjectAdmin} reason="Only owners and admins can manage environments">
+              <Button
+                variant="primary"
+                leftIcon="plus"
+                disabled={!canProjectAdmin}
+                onClick={() => setShowNew(true)}
+              >
+                New environment
+              </Button>
+            </Denied>
           )}
         </div>
       </div>
@@ -129,20 +139,34 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
                 </Tip>
               )}
               <span className="spacer" />
-              <Tip tip="Edit environment">
+              <Tip
+                tip={
+                  canProjectAdmin
+                    ? 'Edit environment'
+                    : 'Only owners and admins can manage environments'
+                }
+              >
                 <button
                   className="icon-btn"
                   aria-label="Edit environment"
+                  disabled={!canProjectAdmin}
                   onClick={() => setEditing(env)}
                 >
                   <Icon name="edit" size={14} />
                 </button>
               </Tip>
               {!env.protected && (
-                <Tip tip="Delete environment">
+                <Tip
+                  tip={
+                    canProjectAdmin
+                      ? 'Delete environment'
+                      : 'Only owners and admins can manage environments'
+                  }
+                >
                   <button
                     className="icon-btn"
                     aria-label="Delete environment"
+                    disabled={!canProjectAdmin}
                     onClick={() => setDeleteTarget(env)}
                   >
                     <Icon name="trash" size={14} />

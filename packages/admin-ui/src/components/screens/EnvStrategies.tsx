@@ -1,9 +1,11 @@
 import { useState } from 'react'
 
 import { useStrategies } from '../../hooks/useStrategies'
+import { usePermissions } from '../../hooks/usePermissions'
 import { OPERATORS_BY_TYPE } from '../../lib/operators'
 import type { ContextField, StrategyConstraint } from '../../lib/types'
 import { Button } from '../primitives/Button'
+import { Denied } from '../primitives/Denied'
 import { StrategyEditorModal } from './StrategyEditorModal'
 
 interface EnvStrategiesProps {
@@ -44,15 +46,25 @@ function Condition({ c, contextFields }: { c: StrategyConstraint; contextFields:
 export function EnvStrategies({ projectId, flagKey, env, contextFields }: EnvStrategiesProps) {
   const { strategies, loading, error, refetch } = useStrategies(projectId, flagKey, env)
   const [editing, setEditing] = useState(false)
+  const { canWriteEnv } = usePermissions()
+  const allowed = canWriteEnv(env)
 
   return (
     <div className="env-strategies">
       <div className="env-strategies-head">
         <span className="env-strategies-label">Targeting</span>
         <span className="spacer" />
-        <Button size="sm" variant="primary" leftIcon="target" onClick={() => setEditing(true)}>
-          Edit targeting
-        </Button>
+        <Denied when={!allowed} reason={`Your role can’t change targeting in ${env}`}>
+          <Button
+            size="sm"
+            variant="primary"
+            leftIcon="target"
+            disabled={!allowed}
+            onClick={() => setEditing(true)}
+          >
+            Edit targeting
+          </Button>
+        </Denied>
       </div>
 
       {loading ? (

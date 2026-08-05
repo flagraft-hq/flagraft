@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { projectsApi, ApiError } from '../../../lib/api'
 import { useProject } from '../../../contexts/ProjectContext'
 import { useToast } from '../../../hooks/useToast'
+import { usePermissions } from '../../../hooks/usePermissions'
 import { Button } from '../../primitives/Button'
+import { Denied } from '../../primitives/Denied'
 import { FormError } from '../../primitives/FormError'
 import { TextField } from '../../primitives/TextField'
 import { CopyButton } from '../../primitives/CopyButton'
@@ -15,6 +17,7 @@ import { SettingsCard, SettingsRow } from './SettingsCard'
 export function SettingsGeneral() {
   const { activeProject, setActiveProject, environments } = useProject()
   const toast = useToast()
+  const { canProjectAdmin } = usePermissions()
 
   const [name, setName] = useState(activeProject?.name ?? '')
   const [description, setDescription] = useState(activeProject?.description ?? '')
@@ -62,9 +65,18 @@ export function SettingsGeneral() {
             <Button variant="ghost" disabled={!dirty || saving} onClick={discard}>
               Discard
             </Button>
-            <Button variant="primary" disabled={!dirty || saving} onClick={() => void save()}>
-              {saving ? 'Saving…' : 'Save changes'}
-            </Button>
+            <Denied
+              when={!canProjectAdmin}
+              reason="Only owners and admins can edit project settings"
+            >
+              <Button
+                variant="primary"
+                disabled={!dirty || saving || !canProjectAdmin}
+                onClick={() => void save()}
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </Button>
+            </Denied>
           </>
         }
       >

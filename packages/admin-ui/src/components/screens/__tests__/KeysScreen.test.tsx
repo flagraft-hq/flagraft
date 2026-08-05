@@ -2,6 +2,17 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { KeysScreen } from '../KeysScreen'
 
+/** Role gating has its own tests; these render as an owner so nothing is disabled. */
+vi.mock('../../../hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: 'owner',
+    canWrite: true,
+    canProjectAdmin: true,
+    canOwnerAct: true,
+    canWriteEnv: () => true,
+  }),
+}))
+
 vi.mock('../../../contexts/ProjectContext', () => ({
   useProject: vi.fn(),
 }))

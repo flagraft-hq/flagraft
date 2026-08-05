@@ -4,8 +4,10 @@ import { useProject } from '../../contexts/ProjectContext'
 import { useFlags } from '../../hooks/useFlags'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import type { SortField, SortDir } from '../../hooks/useFlags'
+import { usePermissions } from '../../hooks/usePermissions'
 import { Button } from '../primitives/Button'
 import { Checkbox } from '../primitives/Checkbox'
+import { Denied } from '../primitives/Denied'
 import { ErrorState } from '../primitives/ErrorState'
 import { Pagination } from '../primitives/Pagination'
 import { Icon } from '../primitives/Icon'
@@ -67,6 +69,7 @@ export function FlagsScreen() {
 
 function FlagsScreenInner({ projectId }: { projectId: string }) {
   const { activeEnv, environments, activeProject } = useProject()
+  const { canWrite } = usePermissions()
   const staleFlagDays = activeProject?.settings?.flagDefaults?.staleFlagDays
   /**
    * The flags list shows the development and production columns by design.
@@ -174,9 +177,16 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           <Button variant="ghost" leftIcon="refresh" onClick={refetch}>
             Refresh
           </Button>
-          <Button variant="primary" leftIcon="plus" onClick={() => setShowCreate(true)}>
-            New flag
-          </Button>
+          <Denied when={!canWrite} reason="Your role is read-only">
+            <Button
+              variant="primary"
+              leftIcon="plus"
+              disabled={!canWrite}
+              onClick={() => setShowCreate(true)}
+            >
+              New flag
+            </Button>
+          </Denied>
         </div>
       </div>
 

@@ -2,9 +2,11 @@ import { useState } from 'react'
 
 import { contextFieldsApi, ApiError } from '../../lib/api'
 import { useContextFields } from '../../hooks/useContextFields'
+import { usePermissions } from '../../hooks/usePermissions'
 import type { ContextField, FieldType } from '../../lib/types'
 import { Badge } from '../primitives/Badge'
 import { Button } from '../primitives/Button'
+import { Denied } from '../primitives/Denied'
 import { ErrorState } from '../primitives/ErrorState'
 import { FormError } from '../primitives/FormError'
 import { Icon } from '../primitives/Icon'
@@ -12,6 +14,9 @@ import { Modal } from '../primitives/Modal'
 import { Tip } from '../primitives/Tip'
 import { ContextFieldDialog } from './ContextFieldDialog'
 import { MAX_CONTEXT_FIELDS_PER_PROJECT } from '../../lib/limits'
+
+/** Context fields live in project settings, so they follow the same rule. */
+const CONTEXT_FIELD_DENIED = 'Only owners and admins can edit project settings'
 
 /** Badge tone per field type — enum reads teal, version amber, the rest neutral. */
 const TYPE_VARIANT: Record<FieldType, 'default' | 'success' | 'warning'> = {
@@ -25,6 +30,7 @@ const TYPE_VARIANT: Record<FieldType, 'default' | 'success' | 'warning'> = {
 
 export function ContextFieldsSection({ projectId }: { projectId: string }) {
   const { fields, loading, error, refetch } = useContextFields(projectId)
+  const { canProjectAdmin } = usePermissions()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ContextField | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ContextField | null>(null)
@@ -114,19 +120,21 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
                     </td>
                     <td>
                       <div className="ctx-row-actions">
-                        <Tip tip="Edit field">
+                        <Tip tip={canProjectAdmin ? 'Edit field' : CONTEXT_FIELD_DENIED}>
                           <button
                             className="icon-btn"
                             aria-label={`Edit ${f.key}`}
+                            disabled={!canProjectAdmin}
                             onClick={() => openEdit(f)}
                           >
                             <Icon name="edit" size={13} />
                           </button>
                         </Tip>
-                        <Tip tip="Delete field">
+                        <Tip tip={canProjectAdmin ? 'Delete field' : CONTEXT_FIELD_DENIED}>
                           <button
                             className="icon-btn"
                             aria-label={`Delete ${f.key}`}
+                            disabled={!canProjectAdmin}
                             onClick={() => setDeleteTarget(f)}
                           >
                             <Icon name="trash" size={13} />
@@ -146,9 +154,16 @@ export function ContextFieldsSection({ projectId }: { projectId: string }) {
               {atLimit && ' — delete one to add another'}
             </span>
             <span className="limit-spacer" />
-            <Button variant="primary" leftIcon="plus" onClick={openAdd} disabled={atLimit}>
-              Add field
-            </Button>
+            <Denied when={!canProjectAdmin} reason={CONTEXT_FIELD_DENIED}>
+              <Button
+                variant="primary"
+                leftIcon="plus"
+                onClick={openAdd}
+                disabled={atLimit || !canProjectAdmin}
+              >
+                Add field
+              </Button>
+            </Denied>
           </div>
         </>
       )}

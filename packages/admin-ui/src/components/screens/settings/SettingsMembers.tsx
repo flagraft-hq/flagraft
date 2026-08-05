@@ -6,10 +6,12 @@ import { useProject } from '../../../contexts/ProjectContext'
 import { useToast } from '../../../hooks/useToast'
 import { useUsers } from '../../../hooks/useUsers'
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
+import { usePermissions } from '../../../hooks/usePermissions'
 import { useRelativeDate } from '../../../hooks/useRelativeDate'
 import { USER_ROLES, type UserRole } from '../../../lib/roles'
 import { Badge } from '../../primitives/Badge'
 import { Button } from '../../primitives/Button'
+import { Denied } from '../../primitives/Denied'
 import { ErrorState } from '../../primitives/ErrorState'
 import { FormError } from '../../primitives/FormError'
 import { Icon } from '../../primitives/Icon'
@@ -45,6 +47,7 @@ export function SettingsMembers() {
   const toast = useToast()
   const { user } = useAuth()
   const { activeProject } = useProject()
+  const { canProjectAdmin } = usePermissions()
   const [inviteOpen, setInviteOpen] = useState(false)
   const [suspendTarget, setSuspendTarget] = useState<WorkspaceUser | null>(null)
   const [search, setSearch] = useState('')
@@ -106,9 +109,16 @@ export function SettingsMembers() {
               }}
               noun="member"
             />
-            <Button variant="primary" leftIcon="plus" onClick={() => setInviteOpen(true)}>
-              Invite member
-            </Button>
+            <Denied when={!canProjectAdmin} reason="Only owners and admins can invite members">
+              <Button
+                variant="primary"
+                leftIcon="plus"
+                disabled={!canProjectAdmin}
+                onClick={() => setInviteOpen(true)}
+              >
+                Invite member
+              </Button>
+            </Denied>
           </>
         }
       >
@@ -157,6 +167,7 @@ export function SettingsMembers() {
                   key={m.id}
                   member={m}
                   isSelf={m.id === user?.id}
+                  canManage={canProjectAdmin}
                   onChangeRole={(role) => void changeRole(m, role)}
                   onSuspend={() => setSuspendTarget(m)}
                 />
@@ -225,16 +236,19 @@ export function SettingsMembers() {
 function MemberRow({
   member,
   isSelf,
+  canManage,
   onChangeRole,
   onSuspend,
 }: {
   member: WorkspaceUser
   isSelf: boolean
+  /** False for editors and viewers, who may only read the member list. */
+  canManage: boolean
   onChangeRole: (role: UserRole) => void
   onSuspend: () => void
 }) {
   const relative = useRelativeDate(member.lastLoginAt ?? undefined)
-  const locked = member.role === USER_ROLES.OWNER || isSelf
+  const locked = member.role === USER_ROLES.OWNER || isSelf || !canManage
 
   return (
     <tr>
@@ -289,7 +303,13 @@ function MemberRow({
       <td>
         <div className="ctx-row-actions">
           <Tip
-            tip={locked ? 'You can’t suspend an owner or yourself' : 'Suspend member'}
+            tip={
+              !canManage
+                ? 'Only owners and admins can manage members'
+                : locked
+                  ? 'You can’t suspend an owner or yourself'
+                  : 'Suspend member'
+            }
             position="left"
           >
             <button

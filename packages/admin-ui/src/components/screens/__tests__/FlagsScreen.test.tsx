@@ -2,6 +2,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FlagsScreen } from '../FlagsScreen'
 
+/** Role gating has its own tests; these render as an owner so nothing is disabled. */
+vi.mock('../../../hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: 'owner',
+    canWrite: true,
+    canProjectAdmin: true,
+    canOwnerAct: true,
+    canWriteEnv: () => true,
+  }),
+}))
+
 vi.mock('../../../hooks/useFlags', () => ({
   useFlags: vi.fn(),
 }))

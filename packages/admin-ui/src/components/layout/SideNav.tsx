@@ -1,6 +1,7 @@
 import React from 'react'
 import { Icon, IconName } from '../primitives/Icon'
 import { useAuth } from '../../contexts/AuthContext'
+import { USER_ROLES } from '../../lib/roles'
 
 export type NavItemId = 'flags' | 'audit' | 'environments' | 'keys' | 'users' | 'settings'
 
@@ -41,9 +42,20 @@ const NAV: NavGroup[] = [
 
 export function SideNav({ current, onNav }: SideNavProps) {
   const { user, logout } = useAuth()
+
+  /**
+   * Only owners and admins can load the Users screen, so for everyone else
+   * the link would go nowhere but an error state.
+   */
+  const canSeeUsers = user?.role === USER_ROLES.OWNER || user?.role === USER_ROLES.ADMIN
+  const groups = NAV.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => it.id !== 'users' || canSeeUsers),
+  }))
+
   return (
     <nav className="sidenav">
-      {NAV.map((g) => (
+      {groups.map((g) => (
         <React.Fragment key={g.group}>
           <div className="nav-section">{g.group}</div>
           {g.items.map((it) => (

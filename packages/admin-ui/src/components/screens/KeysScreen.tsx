@@ -4,10 +4,12 @@ import { useToast } from '../../hooks/useToast'
 import { useApiKeys } from '../../hooks/useApiKeys'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
+import { usePermissions } from '../../hooks/usePermissions'
 import { keysApi } from '../../lib/api'
 import type { ApiKey, ApiKeyType, Env } from '../../lib/types'
 import { Button } from '../primitives/Button'
 import { Badge } from '../primitives/Badge'
+import { Denied } from '../primitives/Denied'
 import { Modal } from '../primitives/Modal'
 import { Select } from '../primitives/Select'
 import { TextField } from '../primitives/TextField'
@@ -34,6 +36,7 @@ export function KeysScreen() {
 function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projectSlug: string }) {
   const { environments } = useProject()
   const toast = useToast()
+  const { canProjectAdmin } = usePermissions()
   const [showNew, setShowNew] = useState(false)
   const [revealKey, setRevealKey] = useState<string | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null)
@@ -103,9 +106,16 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
           </p>
         </div>
         <div className="page-header-actions">
-          <Button variant="primary" leftIcon="plus" onClick={() => setShowNew(true)}>
-            Issue key
-          </Button>
+          <Denied when={!canProjectAdmin} reason="Only owners and admins can issue keys">
+            <Button
+              variant="primary"
+              leftIcon="plus"
+              disabled={!canProjectAdmin}
+              onClick={() => setShowNew(true)}
+            >
+              Issue key
+            </Button>
+          </Denied>
         </div>
       </div>
 
@@ -247,6 +257,7 @@ function KeyRow({
 }) {
   const created = useRelativeDate(apiKey.createdAt)
   const lastUsed = useRelativeDate(apiKey.lastUsedAt ?? undefined)
+  const { canProjectAdmin } = usePermissions()
 
   return (
     <tr>
@@ -276,8 +287,13 @@ function KeyRow({
       <td>
         <div className="keys-actions">
           <CopyButton value={apiKey.prefix} iconOnly tip="Copy prefix" />
-          <Tip tip="Revoke">
-            <button className="icon-btn" aria-label="Revoke key" onClick={onRevoke}>
+          <Tip tip={canProjectAdmin ? 'Revoke' : 'Only owners and admins can revoke keys'}>
+            <button
+              className="icon-btn"
+              aria-label="Revoke key"
+              disabled={!canProjectAdmin}
+              onClick={onRevoke}
+            >
               <Icon name="trash" size={14} />
             </button>
           </Tip>
