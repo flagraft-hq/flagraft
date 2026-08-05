@@ -188,6 +188,9 @@ export const projectsApi = {
 
   update: (id: string, data: { name?: string; description?: string; settings?: ProjectSettings }) =>
     http.patch<Project>(`/api/v1/admin/projects/${id}`, data),
+
+  /** Owner-only on the server; takes the project's flags, environments and keys with it. */
+  delete: (id: string) => http.delete(`/api/v1/admin/projects/${id}`),
 }
 
 export interface AuthUser {

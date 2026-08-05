@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { projectsApi, ApiError } from '../../../lib/api'
 import { useProject } from '../../../contexts/ProjectContext'
 import { useToast } from '../../../hooks/useToast'
 import { usePermissions } from '../../../hooks/usePermissions'
+import type { Project } from '../../../lib/types'
 import { Button } from '../../primitives/Button'
 import { Denied } from '../../primitives/Denied'
 import { FormError } from '../../primitives/FormError'
+import { Modal } from '../../primitives/Modal'
 import { TextField } from '../../primitives/TextField'
 import { CopyButton } from '../../primitives/CopyButton'
 import { SettingsCard, SettingsRow } from './SettingsCard'
@@ -15,14 +17,15 @@ import { SettingsCard, SettingsRow } from './SettingsCard'
  * General project settings — name, description, project details, and danger zone.
  */
 export function SettingsGeneral() {
-  const { activeProject, setActiveProject, environments } = useProject()
+  const { activeProject, setActiveProject, refetchProjects, environments } = useProject()
   const toast = useToast()
-  const { canProjectAdmin } = usePermissions()
+  const { canProjectAdmin, canOwnerAct } = usePermissions()
 
   const [name, setName] = useState(activeProject?.name ?? '')
   const [description, setDescription] = useState(activeProject?.description ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   if (!activeProject) return null
 
@@ -146,11 +149,96 @@ export function SettingsGeneral() {
               keys. This action cannot be undone.
             </div>
           </div>
-          <Button variant="danger" disabled>
-            Delete project
-          </Button>
+          <Denied when={!canOwnerAct} reason="Only the workspace owner can delete a project">
+            <Button variant="danger" disabled={!canOwnerAct} onClick={() => setDeleteOpen(true)}>
+              Delete project
+            </Button>
+          </Denied>
         </div>
       </SettingsCard>
+
+      <DeleteProjectDialog
+        project={deleteOpen ? activeProject : null}
+        onClose={() => setDeleteOpen(false)}
+        onDeleted={() => {
+          setDeleteOpen(false)
+          /** The active project just disappeared; reload the list and re-pick one. */
+          refetchProjects()
+        }}
+      />
     </div>
+  )
+}
+
+/**
+ * Confirms a project deletion. The project's slug has to be typed out, because
+ * this removes every flag, environment and key underneath it and there is no
+ * way back.
+ */
+function DeleteProjectDialog({
+  project,
+  onClose,
+  onDeleted,
+}: {
+  project: Project | null
+  onClose: () => void
+  onDeleted: () => void
+}) {
+  const toast = useToast()
+  const [confirmation, setConfirmation] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  /** Clear the typed slug whenever the dialog opens for a different project. */
+  useEffect(() => {
+    setConfirmation('')
+    setError(null)
+  }, [project?.id])
+
+  async function confirm() {
+    if (!project || confirmation !== project.slug) return
+    setBusy(true)
+    setError(null)
+    try {
+      await projectsApi.delete(project.id)
+      toast.push({ title: `Project "${project.name}" deleted`, variant: 'success' })
+      onDeleted()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete project')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal open={project !== null} onClose={onClose} titleId="delete-project-title">
+      <Modal.Header
+        id="delete-project-title"
+        subtitle="Every flag, environment, targeting rule and API key in this project is removed. This cannot be undone."
+      >
+        Delete {project?.name}?
+      </Modal.Header>
+      <Modal.Body>
+        <FormError message={error} />
+        <TextField
+          label={`Type ${project?.slug ?? ''} to confirm`}
+          value={confirmation}
+          onChange={setConfirmation}
+          placeholder={project?.slug}
+        />
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="ghost" onClick={onClose} disabled={busy}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          disabled={busy || confirmation !== project?.slug}
+          onClick={() => void confirm()}
+        >
+          {busy ? 'Deleting…' : 'Delete project'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }
