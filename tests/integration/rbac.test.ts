@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { buildServer } from '../../src/server.js'
@@ -805,6 +805,47 @@ describeIfDb('session RBAC', () => {
       payload: { role: 'admin' },
     })
     expect(demoteByOwner.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('racing two demotions against the last two active owners lets exactly one through', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    await app.ready()
+    /** Exactly two active owners exist at this point: the boot owner and this one. */
+    const [bootOwner] = await db!
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.role, 'owner'))
+    expect(bootOwner).toBeDefined()
+    const secondOwner = await ownerSession(app, rootKey, [])
+
+    const [resA, resB] = await Promise.all([
+      app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/users/${bootOwner.id}`,
+        headers: { authorization: rootKey },
+        payload: { role: 'admin' },
+      }),
+      app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/users/${secondOwner.id}`,
+        headers: { authorization: rootKey },
+        payload: { role: 'admin' },
+      }),
+    ])
+
+    /**
+     * Without a lock, both requests can read "2 active owners" before either
+     * commits and both proceed, leaving zero. Exactly one must win.
+     */
+    expect([resA.statusCode, resB.statusCode].sort()).toEqual([200, 409])
+
+    const [{ count }] = await db!
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users)
+      .where(and(eq(users.role, 'owner'), eq(users.status, 'active')))
+    expect(count).toBe(1)
     await app.close()
   })
 
