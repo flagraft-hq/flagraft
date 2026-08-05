@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { BulkBar } from '../primitives/BulkBar'
 import { Button } from '../primitives/Button'
+import { Denied } from '../primitives/Denied'
 import { Modal } from '../primitives/Modal'
 import { flagsApi } from '../../lib/api'
+import { usePermissions } from '../../hooks/usePermissions'
 import { useToast } from '../../hooks/useToast'
 
 interface BulkActionBarProps {
@@ -23,6 +25,8 @@ export function FlagBulkActionBar({
   const [loading, setLoading] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const toast = useToast()
+  const { canWriteEnv, canProjectAdmin } = usePermissions()
+  const canToggle = canWriteEnv(activeEnv)
 
   if (selectedKeys.length === 0) return null
 
@@ -87,34 +91,40 @@ export function FlagBulkActionBar({
 
   return (
     <BulkBar count={selectedKeys.length} onClear={onCancel} busy={loading}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          void handleEnableAll()
-        }}
-        disabled={loading}
-      >
-        Enable All
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          void handleDisableAll()
-        }}
-        disabled={loading}
-      >
-        Disable All
-      </Button>
-      <Button
-        variant="danger"
-        size="sm"
-        onClick={() => setShowDeleteConfirm(true)}
-        disabled={loading}
-      >
-        Delete
-      </Button>
+      <Denied when={!canToggle} reason={`Your role can’t change flags in ${activeEnv}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            void handleEnableAll()
+          }}
+          disabled={loading || !canToggle}
+        >
+          Enable All
+        </Button>
+      </Denied>
+      <Denied when={!canToggle} reason={`Your role can’t change flags in ${activeEnv}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            void handleDisableAll()
+          }}
+          disabled={loading || !canToggle}
+        >
+          Disable All
+        </Button>
+      </Denied>
+      <Denied when={!canProjectAdmin} reason="Only owners and admins can delete flags">
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={loading || !canProjectAdmin}
+        >
+          Delete
+        </Button>
+      </Denied>
 
       <Modal
         open={showDeleteConfirm}

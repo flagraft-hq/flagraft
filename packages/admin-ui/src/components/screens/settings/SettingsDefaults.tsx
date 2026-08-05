@@ -3,8 +3,10 @@ import { useState } from 'react'
 import { projectsApi, ApiError } from '../../../lib/api'
 import { useProject } from '../../../contexts/ProjectContext'
 import { useToast } from '../../../hooks/useToast'
+import { usePermissions } from '../../../hooks/usePermissions'
 import type { DefaultFlagState, FlagDefaults } from '../../../lib/types'
 import { Button } from '../../primitives/Button'
+import { Denied } from '../../primitives/Denied'
 import { FormError } from '../../primitives/FormError'
 import { Select } from '../../primitives/Select'
 import { Toggle } from '../../primitives/Toggle'
@@ -35,6 +37,7 @@ function staleToValue(days: number | null | undefined): string {
 export function SettingsDefaults() {
   const { activeProject, setActiveProject } = useProject()
   const toast = useToast()
+  const { canProjectAdmin } = usePermissions()
 
   const saved: FlagDefaults = activeProject?.settings?.flagDefaults ?? {}
   const [state, setState] = useState<DefaultFlagState>(saved.defaultState ?? 'off')
@@ -89,9 +92,15 @@ export function SettingsDefaults() {
           <Button variant="ghost" disabled={!dirty || saving} onClick={discard}>
             Discard
           </Button>
-          <Button variant="primary" disabled={!dirty || saving} onClick={() => void save()}>
-            {saving ? 'Saving…' : 'Save changes'}
-          </Button>
+          <Denied when={!canProjectAdmin} reason="Only owners and admins can edit project settings">
+            <Button
+              variant="primary"
+              disabled={!dirty || saving || !canProjectAdmin}
+              onClick={() => void save()}
+            >
+              {saving ? 'Saving…' : 'Save changes'}
+            </Button>
+          </Denied>
         </>
       }
     >

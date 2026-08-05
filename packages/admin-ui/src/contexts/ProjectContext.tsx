@@ -10,6 +10,8 @@ interface ProjectContextType {
   projects: Project[]
   activeProject: Project | null
   setActiveProject: (project: Project) => void
+  /** Reloads the project list and re-picks the active one, e.g. after a delete. */
+  refetchProjects: () => void
   /** Environments for the active project — the single source of truth for env names/scope. */
   environments: Env[]
   refetchEnvironments: () => void
@@ -27,11 +29,13 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [environments, setEnvironments] = useState<Env[]>([])
   const [activeEnv, setActiveEnv] = useState<EnvSlug>('development')
   const [envTick, setEnvTick] = useState(0)
+  const [projectTick, setProjectTick] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
 
   const refetchEnvironments = useCallback(() => setEnvTick((t) => t + 1), [])
+  const refetchProjects = useCallback(() => setProjectTick((t) => t + 1), [])
 
   useEffect(() => {
     if (!user) {
@@ -48,7 +52,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       .then((res) => {
         if (cancelled) return
         setProjects(res.data)
-        if (res.data.length > 0) setActiveProject(res.data[0])
+        /**
+         * Falls back to null when the list is empty, so deleting the last
+         * project cannot leave a deleted one selected.
+         */
+        setActiveProject(res.data[0] ?? null)
         setError(null)
       })
       .catch((err: unknown) => {
@@ -61,7 +69,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [user?.id])
+  }, [user?.id, projectTick])
 
   /** Load the active project's environments — the source the whole app reads names from. */
   useEffect(() => {
@@ -94,6 +102,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         projects,
         activeProject,
         setActiveProject,
+        refetchProjects,
         environments,
         refetchEnvironments,
         activeEnv,

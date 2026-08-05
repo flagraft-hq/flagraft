@@ -79,7 +79,7 @@ export function TopBar({
           <span>ff_ad_a91c</span>
           <span className="muted">· admin</span>
         </span>
-        <Tip tip="Keyboard shortcuts (?)">
+        <Tip tip="Keyboard shortcuts (?)" position="bottom">
           <button className="icon-btn" onClick={onShowHelp} aria-label="Keyboard shortcuts">
             <Icon name="keyboard" size={16} />
           </button>

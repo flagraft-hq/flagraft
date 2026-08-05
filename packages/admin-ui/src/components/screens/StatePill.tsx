@@ -5,6 +5,8 @@ interface StatePillProps {
   env: string
   onToggle: (checked: boolean) => void
   flagKey?: string
+  /** Set when the current role may not change this environment. */
+  disabled?: boolean
 }
 
 /**
@@ -12,7 +14,7 @@ interface StatePillProps {
  * and a small on/off label into one unit, matching the redesigned flags
  * layout where each environment is a column.
  */
-export function StatePill({ on, env, onToggle, flagKey }: StatePillProps) {
+export function StatePill({ on, env, onToggle, flagKey, disabled = false }: StatePillProps) {
   const classes = ['state-pill', on ? 'state-pill-on' : 'state-pill-off'].join(' ')
 
   return (
@@ -20,6 +22,7 @@ export function StatePill({ on, env, onToggle, flagKey }: StatePillProps) {
       <Toggle
         checked={on}
         size="sm"
+        disabled={disabled}
         onChange={onToggle}
         label={flagKey ? `${flagKey} in ${env}` : env}
       />

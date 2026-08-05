@@ -3,6 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { FlagRow } from '../FlagRow'
 import type { Flag } from '../../../lib/types'
 
+/** Role gating has its own tests; these render as an owner so nothing is disabled. */
+vi.mock('../../../hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: 'owner',
+    canWrite: true,
+    canProjectAdmin: true,
+    canOwnerAct: true,
+    canWriteEnv: () => true,
+  }),
+}))
+
 vi.mock('../../../hooks/useRelativeDate', () => ({
   useRelativeDate: () => '2 days ago',
 }))

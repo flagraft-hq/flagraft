@@ -33,10 +33,10 @@ export async function contextFieldRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/admin/projects/:projectId/context-fields',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Create a context field within a project.',
+        description: 'Create a context field within a project. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: { projectId: { type: 'string' } },
@@ -58,10 +58,11 @@ export async function contextFieldRoutes(fastify: FastifyInstance) {
   fastify.patch(
     '/admin/projects/:projectId/context-fields/:fieldId',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Update a context field. The key is immutable.',
+        description:
+          'Update a context field. The key is immutable. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: {
@@ -92,10 +93,10 @@ export async function contextFieldRoutes(fastify: FastifyInstance) {
   fastify.delete(
     '/admin/projects/:projectId/context-fields/:fieldId',
     {
-      preHandler: fastify.requireAdminKey,
+      preHandler: fastify.requireProjectAdmin,
       schema: {
         tags: ['admin'],
-        description: 'Delete a context field.',
+        description: 'Delete a context field. Requires the owner or admin role.',
         params: {
           type: 'object',
           properties: {

@@ -2,8 +2,10 @@ import { createHash, randomBytes } from 'node:crypto'
 import { and, asc, desc, eq, exists, ilike, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
+import { USER_ROLES } from '../../auth/constants.js'
 import { users, userProjects, projects } from '../../db/schema.js'
 import type { User } from '../../db/schema.js'
+import { AppError } from '../../plugins/errorHandler.js'
 import { createUser, hashPassword } from '../auth/auth.service.js'
 import type { ListUsersQuery } from './user.schema.js'
 
@@ -35,6 +37,12 @@ export function toPublicUser(user: User) {
 }
 
 export type PublicUser = ReturnType<typeof toPublicUser>
+
+/** Looks up just a user's current role, for permission checks made before acting on them. */
+export async function getUserRole(db: Db, id: string): Promise<string | undefined> {
+  const [row] = await db.select({ role: users.role }).from(users).where(eq(users.id, id)).limit(1)
+  return row?.role
+}
 
 /**
  * Escapes the LIKE wildcards in user input so a search for "50%" looks for a
@@ -326,30 +334,74 @@ export async function acceptInvite(
   return updated
 }
 
+/** The transaction type db.transaction()'s callback receives -- not exported by drizzle directly. */
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+
+/**
+ * Rejects a change that would leave the workspace without a usable owner.
+ * Demoting, suspending or deleting the only *active* owner would lock
+ * everybody out of owner-only actions, and nobody left could undo it. An
+ * invited or already-suspended owner row does not count -- it cannot act as
+ * an owner today, so removing it cannot strand the workspace any further.
+ *
+ * Must run inside the same transaction as the mutation it guards. `FOR
+ * UPDATE` locks every active-owner row for the transaction's lifetime, so a
+ * second concurrent demotion/deletion targeting a different owner blocks
+ * here until the first commits -- then re-reads the now-current, smaller set
+ * instead of the stale count it would have seen without the lock. Without
+ * this, two requests can each see "2 owners left" and both proceed, leaving
+ * none.
+ */
+async function assertNotLastOwner(tx: Tx, id: string): Promise<void> {
+  const activeOwners = await tx
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.role, USER_ROLES.OWNER), eq(users.status, 'active')))
+    .for('update')
+
+  /** The target isn't a currently-active owner, so this change can't strand anyone. */
+  if (!activeOwners.some((owner) => owner.id === id)) return
+
+  if (activeOwners.length <= 1) {
+    throw new AppError(
+      'The workspace must keep at least one active owner. Promote someone else first.',
+      409,
+      'Conflict',
+    )
+  }
+}
+
 export async function patchUser(
   db: Db,
   id: string,
   data: { role?: string; status?: string; name?: string },
 ): Promise<User> {
-  const updates: Record<string, unknown> = {}
-  if (data.role) updates.role = data.role
-  if (data.status) updates.status = data.status
-  if (data.name) {
-    updates.name = data.name
-    updates.initials = data.name
-      .split(' ')
-      .filter(Boolean)
-      .map((w: string) => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-  const [updated] = await db
-    .update(users)
-    .set({ ...updates, updatedAt: new Date() })
-    .where(eq(users.id, id))
-    .returning()
-  return updated
+  return db.transaction(async (tx) => {
+    /** Both a demotion and a suspension take the last owner out of action. */
+    if ((data.role && data.role !== USER_ROLES.OWNER) || data.status === 'suspended') {
+      await assertNotLastOwner(tx, id)
+    }
+
+    const updates: Record<string, unknown> = {}
+    if (data.role) updates.role = data.role
+    if (data.status) updates.status = data.status
+    if (data.name) {
+      updates.name = data.name
+      updates.initials = data.name
+        .split(' ')
+        .filter(Boolean)
+        .map((w: string) => w[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    }
+    const [updated] = await tx
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning()
+    return updated
+  })
 }
 
 /**
@@ -382,7 +434,10 @@ export async function resetPassword(
 }
 
 export async function deleteUser(db: Db, id: string): Promise<void> {
-  await db.delete(users).where(eq(users.id, id))
+  await db.transaction(async (tx) => {
+    await assertNotLastOwner(tx, id)
+    await tx.delete(users).where(eq(users.id, id))
+  })
 }
 
 export async function addUserToProject(db: Db, userId: string, projectId: string): Promise<void> {

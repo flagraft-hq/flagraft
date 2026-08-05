@@ -4,6 +4,8 @@ import { Button } from '../primitives/Button'
 import { Badge } from '../primitives/Badge'
 import { Modal } from '../primitives/Modal'
 import { Tip } from '../primitives/Tip'
+import { Denied } from '../primitives/Denied'
+import { usePermissions } from '../../hooks/usePermissions'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { StatePill } from './StatePill'
 import type { Flag } from '../../lib/types'
@@ -55,6 +57,7 @@ export function FlagRow({
   const relativeDate = useRelativeDate(flag.updated)
   const [confirmState, setConfirmState] = useState<{ env: string; checked: boolean } | null>(null)
   const avatar = avatarFor(flag.author)
+  const { canWriteEnv } = usePermissions()
 
   /**
    * Enabling or disabling a production environment routes through a confirmation modal;
@@ -121,21 +124,27 @@ export function FlagRow({
         </div>
       </div>
 
-      {envNames.map((env) => (
-        <div
-          key={env}
-          className={`cell-env${isProductionEnv(env) ? ' cell-env-prod' : ''}${
-            env === activeEnv ? ' cell-env-active' : ''
-          }`}
-        >
-          <StatePill
-            on={flag.state?.[env]?.on ?? false}
-            env={env}
-            flagKey={flag.key}
-            onToggle={(checked) => handleToggleChange(env, checked)}
-          />
-        </div>
-      ))}
+      {envNames.map((env) => {
+        const allowed = canWriteEnv(env)
+        return (
+          <div
+            key={env}
+            className={`cell-env${isProductionEnv(env) ? ' cell-env-prod' : ''}${
+              env === activeEnv ? ' cell-env-active' : ''
+            }`}
+          >
+            <Denied when={!allowed} reason={`Your role can’t change flags in ${env}`}>
+              <StatePill
+                on={flag.state?.[env]?.on ?? false}
+                env={env}
+                flagKey={flag.key}
+                disabled={!allowed}
+                onToggle={(checked) => handleToggleChange(env, checked)}
+              />
+            </Denied>
+          </div>
+        )
+      })}
 
       <div className="cell-edited">
         <span className={`avatar avatar-sm avatar-${avatar.color}`} aria-hidden="true">

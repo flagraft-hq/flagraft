@@ -4,7 +4,9 @@ import { flagsApi } from '../../lib/api'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import type { Flag } from '../../lib/types'
+import { usePermissions } from '../../hooks/usePermissions'
 import { Button } from '../primitives/Button'
+import { Denied } from '../primitives/Denied'
 import { ErrorState } from '../primitives/ErrorState'
 import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
@@ -269,6 +271,7 @@ function EnvironmentsTab({
 }) {
   const toast = useToast()
   const { environments } = useProject()
+  const { canWriteEnv } = usePermissions()
   const { fields: contextFields } = useContextFields(projectId)
   /** Display the environment's real name; fall back to the slug if unknown. */
   const nameFor = (slug: string) => environments.find((e) => e.slug === slug)?.name ?? slug
@@ -319,11 +322,14 @@ function EnvironmentsTab({
                   {nameFor(env)}
                 </span>
                 <span className="spacer" />
-                <Toggle
-                  checked={isOn}
-                  size="lg"
-                  onChange={(newValue) => handleToggle(env, newValue)}
-                />
+                <Denied when={!canWriteEnv(env)} reason={`Your role can’t change flags in ${env}`}>
+                  <Toggle
+                    checked={isOn}
+                    size="lg"
+                    disabled={!canWriteEnv(env)}
+                    onChange={(newValue) => handleToggle(env, newValue)}
+                  />
+                </Denied>
               </div>
               <div className="env-card-state">
                 <span className={isOn ? 'env-state-on' : 'env-state-off'}>
@@ -368,6 +374,7 @@ export function FlagDetailScreen() {
   const navigate = useNavigate()
   const { activeProject } = useProject()
   const toast = useToast()
+  const { canWrite, canProjectAdmin } = usePermissions()
 
   const [flag, setFlag] = useState<Flag | null>(null)
   const [loading, setLoading] = useState(true)
@@ -471,17 +478,28 @@ export function FlagDetailScreen() {
           <Button variant="ghost" size="sm" leftIcon="code" onClick={() => setShowSdkModal(true)}>
             SDK snippet
           </Button>
-          <Button variant="ghost" size="sm" leftIcon="edit" onClick={() => setShowEditModal(true)}>
-            Edit
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            leftIcon="trash"
-            onClick={() => setShowDeleteModal(true)}
-          >
-            Delete
-          </Button>
+          <Denied when={!canWrite} reason="Your role is read-only">
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon="edit"
+              disabled={!canWrite}
+              onClick={() => setShowEditModal(true)}
+            >
+              Edit
+            </Button>
+          </Denied>
+          <Denied when={!canProjectAdmin} reason="Only owners and admins can delete flags">
+            <Button
+              variant="danger"
+              size="sm"
+              leftIcon="trash"
+              disabled={!canProjectAdmin}
+              onClick={() => setShowDeleteModal(true)}
+            >
+              Delete
+            </Button>
+          </Denied>
         </div>
       </div>
 
