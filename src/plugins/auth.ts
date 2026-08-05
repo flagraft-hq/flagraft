@@ -89,6 +89,17 @@ function environmentSlugFromParams(request: FastifyRequest): string | undefined 
   return typeof value === 'string' ? value : undefined
 }
 
+/**
+ * True when the context may write to a protected environment: an API key
+ * (no role) or a workspace admin (owner/admin) session. Editors are the only
+ * ones fenced out. Shared by requireEnvironmentWrite and by flag creation,
+ * which must not let a project's "default on" setting auto-enable a
+ * protected environment for an editor.
+ */
+export function canBypassEnvironmentProtection(context: KeyContext): boolean {
+  return context.userRole === undefined || WORKSPACE_ADMIN_ROLES.has(context.userRole)
+}
+
 async function authPlugin(fastify: FastifyInstance) {
   fastify.addHook('preHandler', async (request) => {
     if (request.routeOptions.config?.skipAuth) return
@@ -265,9 +276,7 @@ async function authPlugin(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       await fastify.requireAdminKey(request, reply)
 
-      const role = request.keyContext!.userRole
-      /** API keys and workspace admins are unrestricted; only editors are fenced. */
-      if (role === undefined || WORKSPACE_ADMIN_ROLES.has(role)) return
+      if (canBypassEnvironmentProtection(request.keyContext!)) return
 
       const projectId = projectIdFromParams(request)
       const slug = environmentSlugFromParams(request)

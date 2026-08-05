@@ -38,6 +38,12 @@ export function toPublicUser(user: User) {
 
 export type PublicUser = ReturnType<typeof toPublicUser>
 
+/** Looks up just a user's current role, for permission checks made before acting on them. */
+export async function getUserRole(db: Db, id: string): Promise<string | undefined> {
+  const [row] = await db.select({ role: users.role }).from(users).where(eq(users.id, id)).limit(1)
+  return row?.role
+}
+
 /**
  * Escapes the LIKE wildcards in user input so a search for "50%" looks for a
  * literal percent sign instead of matching everything.
@@ -329,27 +335,29 @@ export async function acceptInvite(
 }
 
 /**
- * Rejects a change that would leave the workspace without an owner. Demoting,
- * suspending or deleting the only owner would lock everybody out of the
- * owner-only actions, and nobody left could undo it.
+ * Rejects a change that would leave the workspace without a usable owner.
+ * Demoting, suspending or deleting the only *active* owner would lock
+ * everybody out of owner-only actions, and nobody left could undo it. An
+ * invited or already-suspended owner row does not count -- it cannot act as
+ * an owner today, so removing it cannot strand the workspace any further.
  */
 async function assertNotLastOwner(db: Db, id: string): Promise<void> {
   const [target] = await db
-    .select({ role: users.role })
+    .select({ role: users.role, status: users.status })
     .from(users)
     .where(eq(users.id, id))
     .limit(1)
 
-  if (target?.role !== USER_ROLES.OWNER) return
+  if (target?.role !== USER_ROLES.OWNER || target.status !== 'active') return
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(users)
-    .where(eq(users.role, USER_ROLES.OWNER))
+    .where(and(eq(users.role, USER_ROLES.OWNER), eq(users.status, 'active')))
 
   if (count <= 1) {
     throw new AppError(
-      'The workspace must keep at least one owner. Promote someone else first.',
+      'The workspace must keep at least one active owner. Promote someone else first.',
       409,
       'Conflict',
     )

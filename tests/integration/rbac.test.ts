@@ -79,6 +79,17 @@ describeIfDb('session RBAC', () => {
     expect(res.statusCode).toBe(201)
   }
 
+  /** Sets the project's default state for newly-created flags. */
+  async function setDefaultState(app: App, rootKey: string, projectId: string, state: string) {
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/projects/${projectId}`,
+      headers: { authorization: rootKey },
+      payload: { settings: { flagDefaults: { defaultState: state } } },
+    })
+    expect(res.statusCode).toBe(200)
+  }
+
   async function environmentId(app: App, rootKey: string, projectId: string, slug: string) {
     const res = await app.inject({
       method: 'GET',
@@ -428,6 +439,45 @@ describeIfDb('session RBAC', () => {
     await app.close()
   })
 
+  it('a project default of "on" does not let an editor create a flag already enabled in protected production', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'default-on-proj')
+    await setDefaultState(app, rootKey, project.id, 'on')
+    const editor = await sessionUser(app, rootKey, 'editor', [project.id])
+
+    const create = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/flags`,
+      cookies: editor.cookies,
+      payload: { name: 'sneaky-default', key: 'sneaky.default' },
+    })
+    expect(create.statusCode).toBe(201)
+    const flag = create.json<{ state: Record<string, { on: boolean }> }>()
+    expect(flag.state.development.on).toBe(true)
+    expect(flag.state.production.on).toBe(false)
+    await app.close()
+  })
+
+  it('a project default of "on" does let an owner create a flag already enabled in protected production', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const project = await createProject(app, rootKey, 'default-on-owner')
+    await setDefaultState(app, rootKey, project.id, 'on')
+    const owner = await ownerSession(app, rootKey, [project.id])
+
+    const create = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/projects/${project.id}/flags`,
+      cookies: owner.cookies,
+      payload: { name: 'deliberate-default', key: 'deliberate.default' },
+    })
+    expect(create.statusCode).toBe(201)
+    const flag = create.json<{ state: Record<string, { on: boolean }> }>()
+    expect(flag.state.production.on).toBe(true)
+    await app.close()
+  })
+
   it('editor can change targeting in development but not in protected production', async () => {
     const app = await buildServer({ db })
     const rootKey = await createRootKey(db!)
@@ -669,6 +719,92 @@ describeIfDb('session RBAC', () => {
       payload: { role: 'admin' },
     })
     expect(demote.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('an invited owner-to-be does not count toward the active-owner guard', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    await app.ready()
+    const [bootOwner] = await db!
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.role, 'owner'))
+    expect(bootOwner).toBeDefined()
+
+    /** Promote an invite to owner before it is ever accepted -- status stays 'invited'. */
+    const inviteRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/users/invite',
+      headers: { authorization: rootKey, origin: 'https://flags.example' },
+      payload: { emails: ['pending-owner@co.com'], role: 'editor', projectIds: [] },
+    })
+    expect(inviteRes.statusCode).toBe(201)
+    const { id: pendingOwnerId } = inviteRes.json<{ id: string }[]>()[0]
+    const promote = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${pendingOwnerId}`,
+      headers: { authorization: rootKey },
+      payload: { role: 'owner' },
+    })
+    expect(promote.statusCode).toBe(200)
+
+    /** The boot owner is still the only *active* one, so it stays protected. */
+    const demoteBoot = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${bootOwner.id}`,
+      headers: { authorization: rootKey },
+      payload: { role: 'admin' },
+    })
+    expect(demoteBoot.statusCode).toBe(409)
+
+    /** The pending owner never became active, so removing it is unrestricted. */
+    const deletePending = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${pendingOwnerId}`,
+      headers: { authorization: rootKey },
+    })
+    expect(deletePending.statusCode).toBe(204)
+    await app.close()
+  })
+
+  it('an admin cannot demote, suspend, or delete an owner, but another owner can', async () => {
+    const app = await buildServer({ db })
+    const rootKey = await createRootKey(db!)
+    const target = await ownerSession(app, rootKey, [])
+    const actorOwner = await ownerSession(app, rootKey, [])
+    const admin = await sessionUser(app, rootKey, 'admin', [])
+
+    const demoteByAdmin = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${target.id}`,
+      cookies: admin.cookies,
+      payload: { role: 'admin' },
+    })
+    expect(demoteByAdmin.statusCode).toBe(403)
+
+    const suspendByAdmin = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${target.id}`,
+      cookies: admin.cookies,
+      payload: { status: 'suspended' },
+    })
+    expect(suspendByAdmin.statusCode).toBe(403)
+
+    const deleteByAdmin = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${target.id}`,
+      cookies: admin.cookies,
+    })
+    expect(deleteByAdmin.statusCode).toBe(403)
+
+    const demoteByOwner = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${target.id}`,
+      cookies: actorOwner.cookies,
+      payload: { role: 'admin' },
+    })
+    expect(demoteByOwner.statusCode).toBe(200)
     await app.close()
   })
 

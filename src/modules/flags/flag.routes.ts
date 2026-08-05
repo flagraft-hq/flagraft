@@ -9,6 +9,7 @@ import {
 } from './flag.schema.js'
 import { cacheKeys } from '../../cache/keys.js'
 import * as service from './flag.service.js'
+import { canBypassEnvironmentProtection } from '../../plugins/auth.js'
 import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export async function flagRoutes(fastify: FastifyInstance) {
@@ -33,6 +34,7 @@ export async function flagRoutes(fastify: FastifyInstance) {
         params.projectId,
         createFlagSchema.parse(request.body),
         request.keyContext?.userId,
+        canBypassEnvironmentProtection(request.keyContext!),
       )
       await fastify.cache.deleteByPrefix(cacheKeys.flagStatePrefix(params.projectId))
       return reply.status(201).send(flag)

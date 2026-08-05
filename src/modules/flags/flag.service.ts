@@ -23,8 +23,17 @@ function escapeLike(value: string): string {
 /**
  * Resolves the initial on/off state for a new flag in one environment, based on
  * the project's default. 'dev' turns the flag on only in the development env.
+ * A protected environment is never auto-enabled for a caller who couldn't
+ * have turned it on directly (an editor) -- otherwise a project default of
+ * "on" would let flag creation bypass the toggle/targeting write guard.
  */
-function initialEnabled(defaultState: DefaultFlagState | undefined, envSlug: string): boolean {
+function initialEnabled(
+  defaultState: DefaultFlagState | undefined,
+  envSlug: string,
+  isProtected: boolean,
+  allowProtectedInitialState: boolean,
+): boolean {
+  if (isProtected && !allowProtectedInitialState) return false
   if (defaultState === 'on') return true
   if (defaultState === 'dev') return envSlug === 'development'
   return false
@@ -130,6 +139,7 @@ export async function createFlag(
   projectId: string,
   input: CreateFlagInput,
   authorId?: string | null,
+  allowProtectedInitialState = false,
 ) {
   const flag = await db.transaction(async (tx) => {
     const [project] = await tx
@@ -158,7 +168,12 @@ export async function createFlag(
         envs.map((environment) => ({
           flagId: newFlag.id,
           environmentId: environment.id,
-          enabled: initialEnabled(flagDefaults.defaultState, environment.slug),
+          enabled: initialEnabled(
+            flagDefaults.defaultState,
+            environment.slug,
+            environment.protected,
+            allowProtectedInitialState,
+          ),
         })),
       )
     }

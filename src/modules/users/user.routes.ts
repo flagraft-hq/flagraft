@@ -25,6 +25,12 @@ function inviteBaseUrl(fastify: FastifyInstance, req: FastifyRequest): string {
   ).replace(/\/$/, '')
 }
 
+/** True for a root API key (no role) or a session whose role is owner. */
+function isOwnerActor(req: FastifyRequest): boolean {
+  const role = req.keyContext?.userRole
+  return !role || role === USER_ROLES.OWNER
+}
+
 export async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/admin/users',
@@ -134,15 +140,31 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.patch('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req) => {
     const { id } = req.params as { id: string }
     const data = patchUserSchema.parse(req.body)
+    const ownerActor = isOwnerActor(req)
 
     /**
      * Admins administer the workspace but must not be able to make themselves
      * owners. A root API key has no role and keeps this power, because that is
      * how the first owner gets set up.
      */
-    const actorRole = req.keyContext?.userRole
-    if (data.role === USER_ROLES.OWNER && actorRole && actorRole !== USER_ROLES.OWNER) {
+    if (data.role === USER_ROLES.OWNER && !ownerActor) {
       throw new AppError('Only an owner can grant the owner role', 403, 'Forbidden')
+    }
+
+    /**
+     * An owner row is protected the same way the admin UI treats it: an
+     * admin may administer editors and viewers, but demoting or suspending
+     * an owner is an owner-to-owner action.
+     */
+    if (!ownerActor && (data.role !== undefined || data.status !== undefined)) {
+      const targetRole = await service.getUserRole(fastify.db, id)
+      if (targetRole === USER_ROLES.OWNER) {
+        throw new AppError(
+          'Only an owner can change another owner’s role or status',
+          403,
+          'Forbidden',
+        )
+      }
     }
 
     return service.toPublicUser(await service.patchUser(fastify.db, id, data))
@@ -162,6 +184,15 @@ export async function userRoutes(fastify: FastifyInstance) {
 
   fastify.delete('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req, reply) => {
     const { id } = req.params as { id: string }
+
+    /** Same owner-to-owner rule as the PATCH route: an admin cannot remove an owner. */
+    if (!isOwnerActor(req)) {
+      const targetRole = await service.getUserRole(fastify.db, id)
+      if (targetRole === USER_ROLES.OWNER) {
+        throw new AppError('Only an owner can delete another owner', 403, 'Forbidden')
+      }
+    }
+
     await service.deleteUser(fastify.db, id)
     return reply.status(204).send()
   })
