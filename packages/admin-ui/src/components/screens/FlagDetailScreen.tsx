@@ -5,12 +5,14 @@ import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import type { Flag } from '../../lib/types'
 import { usePermissions } from '../../hooks/usePermissions'
+import { Badge } from '../primitives/Badge'
 import { Button } from '../primitives/Button'
 import { Denied } from '../primitives/Denied'
 import { ErrorState } from '../primitives/ErrorState'
 import { CopyButton } from '../primitives/CopyButton'
 import { Icon } from '../primitives/Icon'
 import { Toggle } from '../primitives/Toggle'
+import { Tip } from '../primitives/Tip'
 import { Modal } from '../primitives/Modal'
 import { TextField } from '../primitives/TextField'
 import { useContextFields } from '../../hooks/useContextFields'
@@ -280,8 +282,15 @@ function EnvironmentsTab({
   const executeToggle = (env: string, newValue: boolean) => {
     void flagsApi
       .toggle(projectId, flagKey, env, newValue)
-      .then(() => {
-        toast.push({ title: `${env} toggled`, variant: 'success' })
+      .then((res) => {
+        if (res.data.pending) {
+          toast.push({
+            title: `Waiting on a second admin to confirm this change in ${env}`,
+            variant: 'default',
+          })
+        } else {
+          toast.push({ title: `${env} toggled`, variant: 'success' })
+        }
         onToggled()
       })
       .catch(() => {
@@ -336,6 +345,15 @@ function EnvironmentsTab({
                   {isOn ? 'Enabled' : 'Disabled'}
                 </span>
                 <span className="muted"> · default value</span>
+                {envState?.pending && (
+                  <Tip
+                    tip={`${envState.pending.requestedBy} requested ${envState.pending.requestedEnabled ? 'on' : 'off'} -- toggle the same way to confirm.`}
+                  >
+                    <span style={{ marginLeft: 6 }}>
+                      <Badge variant="warning">pending</Badge>
+                    </span>
+                  </Tip>
+                )}
               </div>
               <EnvStrategies
                 projectId={projectId}

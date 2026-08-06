@@ -17,6 +17,9 @@ vi.mock('../../../hooks/useFlags', () => ({
   useFlags: vi.fn(),
 }))
 
+const pushToast = vi.fn()
+vi.mock('../../../hooks/useToast', () => ({ useToast: () => ({ push: pushToast }) }))
+
 vi.mock('../../../contexts/ProjectContext', () => ({
   useProject: vi.fn(),
 }))
@@ -396,7 +399,7 @@ describe('FlagsScreen integration', () => {
       error: null,
       refetch: mockRefetch,
     })
-    mockToggle.mockResolvedValue({})
+    mockToggle.mockResolvedValue({ data: {} })
     render(<FlagsScreen />)
     fireEvent.click(screen.getByTestId('toggle-flag-alpha'))
     await waitFor(() =>

@@ -94,7 +94,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockFlagsApi.get.mockResolvedValue({ data: mockFlag })
   mockFlagsApi.delete.mockResolvedValue({})
-  mockFlagsApi.toggle.mockResolvedValue({})
+  mockFlagsApi.toggle.mockResolvedValue({ data: {} })
   mockContextFieldsApi.list.mockResolvedValue({ data: [] })
   mockStrategiesApi.list.mockResolvedValue({ data: [] })
   mockUseProject.mockReturnValue(defaultProjectContext)
@@ -241,7 +241,7 @@ describe('FlagDetailScreen', () => {
 
   it('toggling an environment calls flagsApi.toggle and shows a success toast', async () => {
     const user = userEvent.setup()
-    mockFlagsApi.toggle.mockResolvedValue({})
+    mockFlagsApi.toggle.mockResolvedValue({ data: {} })
     renderScreen()
     await waitFor(() => expect(screen.getAllByRole('switch').length).toBeGreaterThan(0))
     const switches = screen.getAllByRole('switch')

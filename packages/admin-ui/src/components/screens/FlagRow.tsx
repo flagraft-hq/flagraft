@@ -139,6 +139,7 @@ export function FlagRow({
                 env={env}
                 flagKey={flag.key}
                 disabled={!allowed}
+                pending={flag.state?.[env]?.pending}
                 onToggle={(checked) => handleToggleChange(env, checked)}
               />
             </Denied>

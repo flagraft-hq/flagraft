@@ -53,6 +53,7 @@ const adminKey = {
   description: 'CI key',
   lastUsedAt: null,
   createdAt: '2026-05-01',
+  expiresAt: null,
 }
 
 const refetch = vi.fn()
@@ -87,8 +88,8 @@ describe('KeysScreen', () => {
     const table = document.querySelector('.keys-table') as HTMLElement
     expect(within(table).getByText('admin')).toBeInTheDocument()
     expect(screen.getByText(/ff_ad_a91c/)).toBeInTheDocument()
-    // A key that has never been used shows "Never".
-    expect(screen.getByText('Never')).toBeInTheDocument()
+    /** "Never" appears both for "last used" and for a key with no expiry set. */
+    expect(within(table).getAllByText('Never')).toHaveLength(2)
   })
 
   it('renders the pager and filter controls', () => {

@@ -11,9 +11,18 @@ export interface FlagDefaults {
   requireDescription?: boolean
 }
 
+/** Production-safety controls, under Project settings > Security. */
+export interface SecuritySettings {
+  /** A second, distinct owner/admin (or admin API key) must repeat a protected-env toggle. */
+  requireApprovalInProd?: boolean
+  /** Max lifetime for newly-issued admin keys, in days; null/undefined = no expiry. */
+  keyTtlDays?: number | null
+}
+
 /** Project-level settings bag. Groups are optional; readers fall back to defaults. */
 export interface ProjectSettings {
   flagDefaults?: FlagDefaults
+  security?: SecuritySettings
 }
 
 export interface Project {
@@ -45,6 +54,8 @@ export interface ApiKey {
   description: string | null
   lastUsedAt: string | null
   createdAt: string
+  /** Set only for admin keys issued under a project TTL; null = no expiry. */
+  expiresAt: string | null
 }
 
 /** Returned only at creation — carries the plaintext key, shown to the user once. */
@@ -52,8 +63,15 @@ export interface CreatedApiKey extends ApiKey {
   key: string
 }
 
+export interface PendingToggle {
+  requestedEnabled: boolean
+  requestedBy: string
+}
+
 export interface FlagEnvState {
   on: boolean
+  /** Present while a toggle awaits a second, distinct admin to confirm it. */
+  pending?: PendingToggle
 }
 
 /** One page of a list endpoint. Every paginated admin list uses this shape. */

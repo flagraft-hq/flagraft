@@ -19,6 +19,12 @@ export const projectSettingsSchema = z.object({
       requireDescription: z.boolean().optional(),
     })
     .optional(),
+  security: z
+    .object({
+      requireApprovalInProd: z.boolean().optional(),
+      keyTtlDays: z.number().int().positive().nullable().optional(),
+    })
+    .optional(),
 })
 
 export const patchProjectSchema = createProjectSchema

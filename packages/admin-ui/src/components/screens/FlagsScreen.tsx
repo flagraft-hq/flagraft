@@ -5,6 +5,7 @@ import { useFlags } from '../../hooks/useFlags'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import type { SortField, SortDir } from '../../hooks/useFlags'
 import { usePermissions } from '../../hooks/usePermissions'
+import { useToast } from '../../hooks/useToast'
 import { Button } from '../primitives/Button'
 import { Checkbox } from '../primitives/Checkbox'
 import { Denied } from '../primitives/Denied'
@@ -70,6 +71,7 @@ export function FlagsScreen() {
 function FlagsScreenInner({ projectId }: { projectId: string }) {
   const { activeEnv, environments, activeProject } = useProject()
   const { canWrite } = usePermissions()
+  const toast = useToast()
   const staleFlagDays = activeProject?.settings?.flagDefaults?.staleFlagDays
   /**
    * The flags list shows the development and production columns by design.
@@ -157,7 +159,13 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
 
   async function handleToggle(key: string, env: string, enabled: boolean) {
     try {
-      await flagsApi.toggle(projectId, key, env, enabled)
+      const res = await flagsApi.toggle(projectId, key, env, enabled)
+      if (res.data.pending) {
+        toast.push({
+          title: `Waiting on a second admin to confirm this change in ${env}`,
+          variant: 'default',
+        })
+      }
       refetch()
     } catch (err) {
       setToggleError(err instanceof Error ? err.message : 'Failed to update flag')

@@ -33,6 +33,15 @@ export interface ProjectSettings {
     /** Require a description before a flag can be created. */
     requireDescription?: boolean
   }
+  security?: {
+    /**
+     * Requires a second, distinct owner/admin (or admin API key) to repeat
+     * a toggle in a protected environment before it actually applies.
+     */
+    requireApprovalInProd?: boolean
+    /** Max lifetime for newly-issued admin keys, in days; null/undefined = no expiry. */
+    keyTtlDays?: number | null
+  }
 }
 
 export const projects = pgTable('projects', {
@@ -109,6 +118,8 @@ export const apiKeys = pgTable(
     description: text('description'),
     createdAt: createdAt(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    /** Admin keys only; null means no expiry. Enforced at auth time. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
   },
   () => [
     check(
@@ -193,6 +204,42 @@ export interface StrategyConstraint {
   values: string[]
 }
 
+/**
+ * One flag+environment awaiting a second, distinct admin to confirm a
+ * toggle, when the project requires approval in protected environments.
+ * At most one row per (flagId, environmentId): a repeat request from the
+ * original requester is a no-op, a different desired state replaces it, and
+ * a different requester repeating the same desired state is the
+ * confirmation -- see requestOrConfirmToggle in flag.service.ts.
+ */
+export const pendingFlagToggles = pgTable(
+  'pending_flag_toggles',
+  {
+    id: id(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    flagId: uuid('flag_id')
+      .notNull()
+      .references(() => featureFlags.id, { onDelete: 'cascade' }),
+    environmentId: uuid('environment_id')
+      .notNull()
+      .references(() => environments.id, { onDelete: 'cascade' }),
+    requestedEnabled: boolean('requested_enabled').notNull(),
+    /** `user:<id>` for a session, `key:<id>` for an API key -- identifies who requested. */
+    requestedByIdentity: text('requested_by_identity').notNull(),
+    /** Display name snapshotted at request time, for the pending badge. */
+    requestedByLabel: text('requested_by_label').notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    unique('pending_flag_toggles_flag_id_environment_id_unique').on(
+      table.flagId,
+      table.environmentId,
+    ),
+  ],
+)
+
 export const targetingStrategies = pgTable('targeting_strategies', {
   id: id(),
   flagId: uuid('flag_id')
@@ -214,6 +261,19 @@ export const projectRelations = relations(projects, ({ many }) => ({
   apiKeys: many(apiKeys),
   members: many(userProjects),
   contextFields: many(contextFields),
+  pendingFlagToggles: many(pendingFlagToggles),
+}))
+
+export const pendingFlagToggleRelations = relations(pendingFlagToggles, ({ one }) => ({
+  project: one(projects, { fields: [pendingFlagToggles.projectId], references: [projects.id] }),
+  flag: one(featureFlags, {
+    fields: [pendingFlagToggles.flagId],
+    references: [featureFlags.id],
+  }),
+  environment: one(environments, {
+    fields: [pendingFlagToggles.environmentId],
+    references: [environments.id],
+  }),
 }))
 
 export const contextFieldRelations = relations(contextFields, ({ one }) => ({
@@ -286,3 +346,5 @@ export type ContextField = typeof contextFields.$inferSelect
 export type NewContextField = typeof contextFields.$inferInsert
 export type TargetingStrategy = typeof targetingStrategies.$inferSelect
 export type NewTargetingStrategy = typeof targetingStrategies.$inferInsert
+export type PendingFlagToggle = typeof pendingFlagToggles.$inferSelect
+export type NewPendingFlagToggle = typeof pendingFlagToggles.$inferInsert

@@ -2,10 +2,12 @@ import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
 
 import { API_KEY_TYPES } from '../../auth/constants.js'
 import type { Db } from '../../db/index.js'
-import { apiKeys, environments } from '../../db/schema.js'
+import { apiKeys, environments, projects } from '../../db/schema.js'
 import { generateKey } from '../../plugins/auth.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import type { CreateKeyInput, ListKeysQuery } from './key.schema.js'
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
  * Formats a raw database API key record for public consumption (hiding sensitive data)
@@ -19,6 +21,7 @@ function publicKey(row: typeof apiKeys.$inferSelect) {
     description: row.description,
     lastUsedAt: row.lastUsedAt,
     createdAt: row.createdAt,
+    expiresAt: row.expiresAt,
   }
 }
 
@@ -45,6 +48,24 @@ export async function createKey(db: Db, projectId: string, input: CreateKeyInput
     }
   }
 
+  /**
+   * Client keys are unlimited (per the Security settings copy); only newly
+   * issued admin keys inherit the project's TTL. Existing keys are never
+   * retroactively expired by a later TTL change.
+   */
+  let expiresAt: Date | null = null
+  if (input.type === API_KEY_TYPES.ADMIN) {
+    const [project] = await db
+      .select({ settings: projects.settings })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1)
+    const ttlDays = project?.settings.security?.keyTtlDays
+    if (typeof ttlDays === 'number') {
+      expiresAt = new Date(Date.now() + ttlDays * DAY_MS)
+    }
+  }
+
   const generated = generateKey()
   const [row] = await db
     .insert(apiKeys)
@@ -55,6 +76,7 @@ export async function createKey(db: Db, projectId: string, input: CreateKeyInput
       keyPrefix: generated.prefix,
       type: input.type,
       description: input.description,
+      expiresAt,
     })
     .returning()
 

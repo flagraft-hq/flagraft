@@ -87,9 +87,12 @@ export const flagsApi = {
 
   /**
    * The backend has separate enable/disable endpoints instead of a single PATCH.
+   * When the project requires approval in prod, a lone confirmation doesn't
+   * apply yet -- the response is 202 with `pending: true` instead of the
+   * updated flag-environment row.
    */
   toggle: (projectId: string, key: string, env: string, enabled: boolean) =>
-    http.post(
+    http.post<{ pending?: boolean; requestedEnabled?: boolean; requestedBy?: string }>(
       `/api/v1/admin/projects/${projectId}/flags/${key}/environments/${env}/${enabled ? 'enable' : 'disable'}`,
     ),
 

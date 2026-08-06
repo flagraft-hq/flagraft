@@ -50,4 +50,16 @@ describe('StatePill', () => {
     await user.click(container.querySelector('[role="switch"]') as HTMLElement)
     expect(onToggle).toHaveBeenCalledWith(true)
   })
+
+  it('shows no pending badge when nothing is awaiting a second admin', () => {
+    render(<StatePill {...defaultProps} />)
+    expect(screen.queryByText('pending')).not.toBeInTheDocument()
+  })
+
+  it('shows a pending badge when a toggle awaits a second, distinct admin', () => {
+    render(
+      <StatePill {...defaultProps} pending={{ requestedEnabled: true, requestedBy: 'Jordan' }} />,
+    )
+    expect(screen.getByText('pending')).toBeInTheDocument()
+  })
 })

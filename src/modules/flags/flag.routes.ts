@@ -9,7 +9,7 @@ import {
 } from './flag.schema.js'
 import { cacheKeys } from '../../cache/keys.js'
 import * as service from './flag.service.js'
-import { canBypassEnvironmentProtection } from '../../plugins/auth.js'
+import { canBypassEnvironmentProtection, resolveActorLabel } from '../../plugins/auth.js'
 import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export async function flagRoutes(fastify: FastifyInstance) {
@@ -167,7 +167,9 @@ export async function flagRoutes(fastify: FastifyInstance) {
           tags: ['admin'],
           description:
             `${action === 'enable' ? 'Enable' : 'Disable'} a feature flag in a specific ` +
-            'environment. Protected environments are limited to owners and admins.',
+            'environment. Protected environments are limited to owners and admins, and if the ' +
+            'project requires approval in prod, a second distinct admin must repeat the same ' +
+            "call before it takes effect -- the first call returns 202 and doesn't apply yet.",
           params: {
             type: 'object',
             properties: {
@@ -179,17 +181,26 @@ export async function flagRoutes(fastify: FastifyInstance) {
           },
         },
       },
-      async (request) => {
+      async (request, reply) => {
         const params = flagEnvironmentParamsSchema.parse(request.params)
-        const row = await service.setFlagEnabled(
+        const actor = await resolveActorLabel(fastify.db, request.keyContext!)
+        const result = await service.setFlagEnabled(
           fastify.db,
           params.projectId,
           params.flagKey,
           params.environmentSlug,
           enabled,
+          actor,
         )
-        await fastify.cache.delete(cacheKeys.flagState(params.projectId, row.environmentId))
-        return row
+        if (!result.applied) {
+          return reply.status(202).send({
+            pending: true,
+            requestedEnabled: result.requestedEnabled,
+            requestedBy: result.requestedBy,
+          })
+        }
+        await fastify.cache.delete(cacheKeys.flagState(params.projectId, result.row.environmentId))
+        return result.row
       },
     )
   }

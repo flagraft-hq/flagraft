@@ -13,6 +13,7 @@ import {
   WORKSPACE_ADMIN_ROLES,
   type ApiKeyType,
 } from '../auth/constants.js'
+import type { Db } from '../db/index.js'
 import { apiKeys, environments, userProjects, users } from '../db/schema.js'
 import { AppError } from './errorHandler.js'
 
@@ -100,6 +101,36 @@ export function canBypassEnvironmentProtection(context: KeyContext): boolean {
   return context.userRole === undefined || WORKSPACE_ADMIN_ROLES.has(context.userRole)
 }
 
+/**
+ * Identifies who is behind a request, for actions that need to tell two
+ * different actors apart (e.g. the two-distinct-admin production approval
+ * rule). `userId` is only set for a browser session; anything else is an API
+ * key, identified by its own row id since it has no user behind it.
+ */
+export async function resolveActorLabel(
+  db: Db,
+  context: KeyContext,
+): Promise<{ identity: string; label: string }> {
+  if (context.userId) {
+    const [user] = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, context.userId))
+      .limit(1)
+    return { identity: `user:${context.userId}`, label: user?.name ?? 'Unknown user' }
+  }
+
+  const [key] = await db
+    .select({ description: apiKeys.description, prefix: apiKeys.keyPrefix })
+    .from(apiKeys)
+    .where(eq(apiKeys.id, context.keyId))
+    .limit(1)
+  return {
+    identity: `key:${context.keyId}`,
+    label: key?.description?.trim() || `API key ${key?.prefix ?? context.keyId.slice(0, 8)}`,
+  }
+}
+
 async function authPlugin(fastify: FastifyInstance) {
   fastify.addHook('preHandler', async (request) => {
     if (request.routeOptions.config?.skipAuth) return
@@ -161,6 +192,10 @@ async function authPlugin(fastify: FastifyInstance) {
 
     if (!key) {
       throw new AppError('Invalid authorization key', 401, 'Unauthorized')
+    }
+
+    if (key.expiresAt && key.expiresAt.getTime() <= Date.now()) {
+      throw new AppError('API key expired', 401, 'Unauthorized')
     }
 
     request.keyContext = {

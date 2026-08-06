@@ -1,4 +1,7 @@
 import { Toggle } from '../primitives/Toggle'
+import { Tip } from '../primitives/Tip'
+import { Badge } from '../primitives/Badge'
+import type { PendingToggle } from '../../lib/types'
 
 interface StatePillProps {
   on: boolean
@@ -7,6 +10,8 @@ interface StatePillProps {
   flagKey?: string
   /** Set when the current role may not change this environment. */
   disabled?: boolean
+  /** Set while a toggle in this environment awaits a second, distinct admin. */
+  pending?: PendingToggle
 }
 
 /**
@@ -14,7 +19,14 @@ interface StatePillProps {
  * and a small on/off label into one unit, matching the redesigned flags
  * layout where each environment is a column.
  */
-export function StatePill({ on, env, onToggle, flagKey, disabled = false }: StatePillProps) {
+export function StatePill({
+  on,
+  env,
+  onToggle,
+  flagKey,
+  disabled = false,
+  pending,
+}: StatePillProps) {
   const classes = ['state-pill', on ? 'state-pill-on' : 'state-pill-off'].join(' ')
 
   return (
@@ -27,6 +39,15 @@ export function StatePill({ on, env, onToggle, flagKey, disabled = false }: Stat
         label={flagKey ? `${flagKey} in ${env}` : env}
       />
       <span className="state-label">{on ? 'on' : 'off'}</span>
+      {pending && (
+        <Tip
+          tip={`${pending.requestedBy} requested ${pending.requestedEnabled ? 'on' : 'off'} -- toggle the same way to confirm.`}
+        >
+          <span>
+            <Badge variant="warning">pending</Badge>
+          </span>
+        </Tip>
+      )}
     </div>
   )
 }

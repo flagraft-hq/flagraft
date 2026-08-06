@@ -87,8 +87,3 @@ export function Segmented({
     </div>
   )
 }
-
-/** Small dashed note marking a section whose controls are not yet persisted. */
-export function NotWiredNote({ children }: { children: ReactNode }) {
-  return <div className="settings-note">{children}</div>
-}

@@ -23,6 +23,18 @@ import { Pagination } from '../primitives/Pagination'
 /** Rows per page before the user picks a different size. */
 const DEFAULT_PAGE_SIZE = 25
 
+/** Absolute date for a key's expiry -- a future/past distinction matters more than "in 3 months". */
+function formatExpiry(expiresAt: string | null): string {
+  if (!expiresAt) return 'Never'
+  const date = new Date(expiresAt)
+  const formatted = date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  return date.getTime() < Date.now() ? `Expired ${formatted}` : formatted
+}
+
 export function KeysScreen() {
   const { activeProject } = useProject()
 
@@ -168,6 +180,7 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
                 <th>Prefix</th>
                 <th>Last used</th>
                 <th>Created</th>
+                <th>Expires</th>
                 <th aria-label="Actions" />
               </tr>
             </thead>
@@ -284,6 +297,7 @@ function KeyRow({
       </td>
       <td className="keys-date">{apiKey.lastUsedAt ? lastUsed : 'Never'}</td>
       <td className="keys-date muted">{created}</td>
+      <td className="keys-date">{formatExpiry(apiKey.expiresAt)}</td>
       <td>
         <div className="keys-actions">
           <CopyButton value={apiKey.prefix} iconOnly tip="Copy prefix" />
