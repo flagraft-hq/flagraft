@@ -5,14 +5,17 @@ import type {
   EvaluationResult,
   Feature,
   FlagraftClientOptions,
+  StaleEvent,
 } from './types.js'
 
 const DEFAULT_TTL_SECONDS = 30
+const DEFAULT_STALE_TTL_SECONDS = 300
 
 export class FlagraftClient {
   private readonly baseUrl: string
   private readonly apiKey: string
   private readonly fetchImpl: typeof fetch
+  private readonly onStale?: (event: StaleEvent) => void
   private readonly singleCache: TtlCache<EvaluationResult>
   private readonly bulkCache: TtlCache<Feature[]>
 
@@ -20,9 +23,11 @@ export class FlagraftClient {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '')
     this.apiKey = options.apiKey
     this.fetchImpl = options.fetch ?? globalThis.fetch
+    this.onStale = options.onStale
     const ttl = options.ttl ?? DEFAULT_TTL_SECONDS
-    this.singleCache = new TtlCache<EvaluationResult>(ttl)
-    this.bulkCache = new TtlCache<Feature[]>(ttl)
+    const staleTtl = options.staleTtl ?? DEFAULT_STALE_TTL_SECONDS
+    this.singleCache = new TtlCache<EvaluationResult>(ttl, staleTtl)
+    this.bulkCache = new TtlCache<Feature[]>(ttl, staleTtl)
   }
 
   async isEnabled(flagKey: string, context: EvaluationContext = {}): Promise<boolean> {
@@ -35,10 +40,18 @@ export class FlagraftClient {
       this.singleCache.set(cacheKey, result)
       return result.enabled
     } catch (error) {
-      if (error instanceof FlagraftError) {
-        if (error.statusCode === 404) return false
-        throw error
+      /**
+       * An unknown flag is a real answer rather than an outage, so it stays false.
+       */
+      if (error instanceof FlagraftError && error.statusCode === 404) return false
+
+      const stale = this.singleCache.getStale(cacheKey)
+      if (stale) {
+        this.reportStale(flagKey, stale.storedAt)
+        return stale.value.enabled
       }
+
+      if (error instanceof FlagraftError) throw error
       // eslint-disable-next-line no-console
       console.warn('[flagraft] flag evaluation failed, defaulting to false', error)
       return false
@@ -63,10 +76,38 @@ export class FlagraftClient {
       this.bulkCache.set(cacheKey, features)
       return features
     } catch (error) {
+      const stale = this.bulkCache.getStale(cacheKey)
+      if (stale) {
+        this.reportStale(null, stale.storedAt)
+        return stale.value
+      }
+
       if (error instanceof FlagraftError) throw error
       // eslint-disable-next-line no-console
       console.warn('[flagraft] bulk evaluation failed, returning empty list', error)
       return []
+    }
+  }
+
+  /**
+   * Tells the host application that a cached value outlived its TTL and was
+   * served anyway. A callback that throws must never break flag evaluation,
+   * so it is wrapped.
+   */
+  private reportStale(flagKey: string | null, storedAt: number): void {
+    if (!this.onStale) {
+      const seconds = Math.round((Date.now() - storedAt) / 1000)
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[flagraft] serving stale value for ${flagKey ?? 'all features'} (fetched ${seconds}s ago)`,
+      )
+      return
+    }
+    try {
+      this.onStale({ flagKey, fetchedAt: new Date(storedAt) })
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[flagraft] onStale callback threw', error)
     }
   }
 

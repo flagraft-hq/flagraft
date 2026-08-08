@@ -66,16 +66,20 @@ new FlagraftClient({
   baseUrl: 'https://flags.example.com',
   apiKey: 'ff_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
   ttl: 30,
+  staleTtl: 300,
+  onStale: ({ flagKey, fetchedAt }) => logger.warn({ flagKey, fetchedAt }, 'stale flag'),
   fetch: globalThis.fetch,
 })
 ```
 
-| Option    | Type           | Default            | Description                                                                                                      |
-| --------- | -------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `baseUrl` | `string`       | (required)         | Base URL of the Flagraft server. Trailing slashes are normalized away. The SDK appends `/api/v1/...` itself.     |
-| `apiKey`  | `string`       | (required)         | A client API key. Sent as the raw `Authorization` header value (no `Bearer` prefix), matching the Flagraft auth. |
-| `ttl`     | `number`       | `30`               | SDK-side cache TTL in seconds. Set to `0` to bypass the SDK cache (the server still has its own cache).          |
-| `fetch`   | `typeof fetch` | `globalThis.fetch` | Optional `fetch` override. Useful for tests (with `msw`), custom transports, or environments without a global.   |
+| Option     | Type                      | Default            | Description                                                                                                         |
+| ---------- | ------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `baseUrl`  | `string`                  | (required)         | Base URL of the Flagraft server. Trailing slashes are normalized away. The SDK appends `/api/v1/...` itself.        |
+| `apiKey`   | `string`                  | (required)         | A client API key. Sent as the raw `Authorization` header value (no `Bearer` prefix), matching the Flagraft auth.    |
+| `ttl`      | `number`                  | `30`               | SDK-side cache TTL in seconds. Set to `0` to bypass the SDK cache (the server still has its own cache).             |
+| `staleTtl` | `number`                  | `300`              | How long an expired value stays usable as a fallback when a refetch fails. Set to `0` to disable. See "Caching".    |
+| `onStale`  | `(e: StaleEvent) => void` | `console.warn`     | Called with `{ flagKey, fetchedAt }` whenever a stale value is served. Use it to log structurally or emit a metric. |
+| `fetch`    | `typeof fetch`            | `globalThis.fetch` | Optional `fetch` override. Useful for tests (with `msw`), custom transports, or environments without a global.      |
 
 ---
 
@@ -111,8 +115,9 @@ The second argument is optional. See [`EvaluationContext`](#evaluationcontext) f
 
 - Returns `true` or `false` based on the server's evaluation, which considers whether the flag is enabled in the environment and whether any of its targeting strategies match the context.
 - Returns `false` if the flag does not exist (the server responds 404).
-- Returns `false` and logs a warning to `console.warn` if the request fails entirely (network down, DNS error, server unreachable, msw error response, abort).
-- Throws `FlagraftError` on any other 4xx or 5xx response, so unexpected misconfiguration (bad key, scope mismatch, rate limit, server bug) surfaces loudly during integration.
+- On any other failure, returns the **last known value** for that flag and context if one is still inside the stale window, and notifies `onStale`. See [Stale-on-error](#stale-on-error).
+- With no stale value available: returns `false` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
+- With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration.
 
 ### `getFeatures(context?) => Promise<Record<string, boolean>>`
 
@@ -237,20 +242,57 @@ const flags = new FlagraftClient({ baseUrl, apiKey, ttl: 0 })
 
 > **Note:** the SDK cache is per `FlagraftClient` instance. Reuse a single instance across your application for cache hits to actually happen. Creating a new client per request defeats the cache.
 
+### Size cap
+
+The cache holds at most **10,000 entries**. Because the cache key includes the whole evaluation context, an app that passes a per-user context creates one entry per user, so an uncapped cache would grow for the life of the process. Once the cap is reached, the oldest-written entry is dropped to make room. This is drop-oldest rather than true LRU, which is indistinguishable in practice at a 30-second TTL.
+
+### Stale-on-error
+
+When a value's TTL expires, the SDK does not immediately forget it. It keeps the value for a further `staleTtl` seconds (default `300`) and serves it **only if a refetch fails**. A fresh value always wins; the stale copy is a fallback, never a first choice.
+
+```
+00:00  fetch ok       -> true   (fresh)
+00:30  ttl expires
+00:31  server down    -> true   (stale, onStale fires)
+05:30  staleTtl expires, entry dropped
+05:31  server down    -> false  (default)
+```
+
+Without this, a five-minute Flagraft outage silently flips **every flag in your app off** the moment its TTL lapses. "Possibly a few minutes out of date" beats "definitely wrong". Set `staleTtl: 0` to opt out and go back to failing to the default immediately.
+
+**The one case to think about** is a kill switch. If you turn `payments-enabled` off _during_ an outage that also makes Flagraft unreachable, your app keeps reading the cached `true` until the stale window closes. Shorten `staleTtl` if that risk outweighs the outage protection for your workload.
+
+Staleness is reported through `onStale`, which receives the flag key (`null` for `getAllFeatures`) and the value's age in milliseconds. Wire it to your logger or metrics so "we ran on stale flags all afternoon" is visible rather than buried in a `console.warn`.
+
+```ts
+const flags = new FlagraftClient({
+  baseUrl,
+  apiKey,
+  onStale: ({ flagKey, fetchedAt }) => {
+    logger.warn({ flagKey, fetchedAt }, 'flagraft: serving stale flag')
+    metrics.increment('flags.stale')
+  },
+})
+```
+
 ---
 
 ## Error model
 
-| Condition                         | Behaviour                                                                                                |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Server returns 200                | Result returned, cached for `ttl` seconds.                                                               |
-| Network failure / fetch rejects   | `isEnabled` returns `false`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `[]` / `{}`. |
-| Server returns 404 (`isEnabled`)  | Returns `false` (the flag is treated as off).                                                            |
-| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                       |
-| Server returns 5xx                | Throws `FlagraftError`.                                                                                  |
-| Server returns 429 (rate limited) | Throws `FlagraftError` with `statusCode: 429`.                                                           |
+Any failure is first offered to the stale fallback. The table below describes what happens when **no stale value is available** — because the call is the first one, or the stale window has closed.
 
-The split between "swallow" (network) and "throw" (HTTP error) is deliberate: network blips are routine and a flag check should never wedge a request, but a 403 means your key or scope is wrong and you want to know about it loudly.
+| Condition                         | Behaviour                                                                                                       |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Server returns 200                | Result returned, cached for `ttl` seconds.                                                                      |
+| Network failure / fetch rejects   | `isEnabled` returns `false`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.        |
+| Server returns 404 (`isEnabled`)  | Returns `false` (the flag is treated as off). Never served stale — an unknown flag is an answer, not an outage. |
+| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                              |
+| Server returns 5xx                | Throws `FlagraftError`.                                                                                         |
+| Server returns 429 (rate limited) | Throws `FlagraftError` with `statusCode: 429`.                                                                  |
+
+The split between "swallow" (network) and "throw" (HTTP error) is deliberate: network blips are routine and a flag check should never wedge a request, but a 403 on a cold client means your key or scope is wrong and you want to know about it loudly.
+
+Note that a stale value can only exist after a successful call, so a misconfigured key still throws on the first request during integration. Once a client has warmed up, a later 403, 429 or 500 is treated as an outage and rides on the stale value until the window closes.
 
 ---
 
@@ -475,7 +517,9 @@ import { FlagraftClient, FlagraftError } from '@flagraft/sdk'
 
 **Every call returns `false`**: check that your `apiKey` is a _client_ key, not an admin key. Admin keys get a 403 at `/api/v1/client/*`, which throws `FlagraftError` rather than returning `false`. Wrap a call in a try/catch and inspect the error to confirm.
 
-**Flag changes do not appear**: stale cache. Either lower `ttl`, restart the process, or construct a new `FlagraftClient`. The cache has no public invalidation method by design; the upstream server already invalidates its own cache on writes, so a low SDK TTL is the right knob.
+**Flag changes do not appear**: stale cache. Either lower `ttl`, restart the process, or construct a new `FlagraftClient`. The cache has no public invalidation method; the upstream server already invalidates its own cache on writes, so a low SDK TTL is the right knob.
+
+**Flags look frozen at an old state during an incident**: that is `staleTtl` doing its job — the server is unreachable and the SDK is serving the last known-good values. Wire up `onStale` to see it happening, and lower `staleTtl` (or set it to `0`) if your app would rather fail to defaults.
 
 **Tests hang or hit the real network**: pass a custom `fetch` (see "Testing" above), or use `msw` with `onUnhandledRequest: 'error'` so unmocked requests fail loudly.
 

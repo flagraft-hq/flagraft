@@ -153,6 +153,164 @@ describe('FlagraftClient.getFeatures', () => {
   })
 })
 
+describe('stale-on-error', () => {
+  it('serves the last known value when a refetch fails', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/flaky`, () =>
+        up
+          ? HttpResponse.json({ name: 'flaky', enabled: true, reason: 'default' })
+          : HttpResponse.error(),
+      ),
+    )
+
+    const onStale = vi.fn()
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale })
+    const fetchedAt = new Date()
+    await expect(client.isEnabled('flaky')).resolves.toBe(true)
+
+    up = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('flaky')).resolves.toBe(true)
+    expect(onStale).toHaveBeenCalledWith({ flagKey: 'flaky', fetchedAt })
+    vi.useRealTimers()
+  })
+
+  it('falls back to the default once the stale window closes', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/expiring`, () =>
+        up
+          ? HttpResponse.json({ name: 'expiring', enabled: true, reason: 'default' })
+          : HttpResponse.error(),
+      ),
+    )
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 30, staleTtl: 300 })
+    await client.isEnabled('expiring')
+
+    up = false
+    vi.advanceTimersByTime(331_000)
+    await expect(client.isEnabled('expiring')).resolves.toBe(false)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('serves stale after an HTTP error instead of throwing', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/degraded`, () =>
+        up
+          ? HttpResponse.json({ name: 'degraded', enabled: true, reason: 'default' })
+          : HttpResponse.json(
+              { error: 'InternalServerError', message: 'Internal error', statusCode: 500 },
+              { status: 500 },
+            ),
+      ),
+    )
+
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale: () => {} })
+    await client.isEnabled('degraded')
+
+    up = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('degraded')).resolves.toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('still throws when there is no stale value to fall back to', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/forbidden-cold`, () =>
+        HttpResponse.json(
+          { error: 'Forbidden', message: 'Client key required', statusCode: 403 },
+          { status: 403 },
+        ),
+      ),
+    )
+
+    const client = makeClient({ staleTtl: 300 })
+    await expect(client.isEnabled('forbidden-cold')).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('serves the stale feature list for getAllFeatures', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, () =>
+        up ? HttpResponse.json({ features: [{ name: 'a', enabled: true }] }) : HttpResponse.error(),
+      ),
+    )
+
+    const onStale = vi.fn()
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale })
+    const fetchedAt = new Date()
+    await client.getAllFeatures()
+
+    up = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.getAllFeatures()).resolves.toEqual([{ name: 'a', enabled: true }])
+    expect(onStale).toHaveBeenCalledWith({ flagKey: null, fetchedAt })
+    vi.useRealTimers()
+  })
+
+  it('does not let a throwing onStale callback break evaluation', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/noisy`, () =>
+        up
+          ? HttpResponse.json({ name: 'noisy', enabled: true, reason: 'default' })
+          : HttpResponse.error(),
+      ),
+    )
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({
+      ttl: 30,
+      staleTtl: 300,
+      onStale: () => {
+        throw new Error('logger exploded')
+      },
+    })
+    await client.isEnabled('noisy')
+
+    up = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('noisy')).resolves.toBe(true)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('keeps 404 as false rather than serving stale', async () => {
+    vi.useFakeTimers()
+    let exists = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/deleted`, () =>
+        exists
+          ? HttpResponse.json({ name: 'deleted', enabled: true, reason: 'default' })
+          : HttpResponse.json(
+              { error: 'NotFound', message: 'Flag not found', statusCode: 404 },
+              { status: 404 },
+            ),
+      ),
+    )
+
+    const onStale = vi.fn()
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale })
+    await client.isEnabled('deleted')
+
+    exists = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('deleted')).resolves.toBe(false)
+    expect(onStale).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+})
+
 describe('context value coercion', () => {
   it('stringifies numbers, booleans and Dates into the query string', async () => {
     let query = ''
