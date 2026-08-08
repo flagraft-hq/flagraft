@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/FR_banner_hd.png" alt="Flagraft, an open source self-hosted feature flag management service for Node.js, TypeScript, and Postgres" width="500" />
+  <img src="./assets/FR_banner.png" alt="Flagraft, an open source self-hosted feature flag management service for Node.js, TypeScript, and Postgres" width="500" />
 </p>
 
 # Flagraft: Open Source Self-Hosted Feature Flag Management
