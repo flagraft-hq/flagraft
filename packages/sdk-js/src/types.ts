@@ -37,6 +37,13 @@ export interface FlagraftClientOptions {
    */
   staleTtl?: number
   /**
+   * How long one HTTP request may take before it is aborted, in
+   * milliseconds. Milliseconds rather than seconds because a flag lookup
+   * worth waiting sub-second on is a normal thing to want. Set to 0 to wait
+   * forever. Defaults to 2000.
+   */
+  timeoutMs?: number
+  /**
    * Called whenever a stale value is served, so the host application can log
    * it or emit a metric. Falls back to console.warn when not provided.
    */

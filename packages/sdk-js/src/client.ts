@@ -10,11 +10,13 @@ import type {
 
 const DEFAULT_TTL_SECONDS = 30
 const DEFAULT_STALE_TTL_SECONDS = 300
+const DEFAULT_TIMEOUT_MS = 2000
 
 export class FlagraftClient {
   private readonly baseUrl: string
   private readonly apiKey: string
   private readonly fetchImpl: typeof fetch
+  private readonly timeoutMs: number
   private readonly onStale?: (event: StaleEvent) => void
   private readonly singleCache: TtlCache<EvaluationResult>
   private readonly bulkCache: TtlCache<Feature[]>
@@ -23,6 +25,7 @@ export class FlagraftClient {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '')
     this.apiKey = options.apiKey
     this.fetchImpl = options.fetch ?? globalThis.fetch
+    this.timeoutMs = Math.max(0, options.timeoutMs ?? DEFAULT_TIMEOUT_MS)
     this.onStale = options.onStale
     const ttl = options.ttl ?? DEFAULT_TTL_SECONDS
     const staleTtl = options.staleTtl ?? DEFAULT_STALE_TTL_SECONDS
@@ -111,31 +114,42 @@ export class FlagraftClient {
     }
   }
 
+  /**
+   * A fresh signal for every request, because AbortSignal.timeout starts its
+   * clock the moment it is created and a shared one would fire early. Returns
+   * undefined when timeouts are switched off, or on a runtime old enough to
+   * lack AbortSignal.timeout, where no timeout beats a crash.
+   */
+  private timeoutSignal(): AbortSignal | undefined {
+    if (this.timeoutMs === 0) return undefined
+    if (typeof AbortSignal?.timeout !== 'function') return undefined
+    return AbortSignal.timeout(this.timeoutMs)
+  }
+
+  /** Issues an authenticated GET and parses the JSON body, or throws. */
+  private async request<T>(url: string): Promise<T> {
+    const response = await this.fetchImpl(url, {
+      method: 'GET',
+      headers: { authorization: this.apiKey },
+      signal: this.timeoutSignal(),
+    })
+    if (!response.ok) {
+      await this.throwFromResponse(response)
+    }
+    return (await response.json()) as T
+  }
+
   private async fetchSingle(
     flagKey: string,
     context: EvaluationContext,
   ): Promise<EvaluationResult> {
     const url = `${this.baseUrl}/api/v1/client/features/${encodeURIComponent(flagKey)}${this.queryString(context)}`
-    const response = await this.fetchImpl(url, {
-      method: 'GET',
-      headers: { authorization: this.apiKey },
-    })
-    if (!response.ok) {
-      await this.throwFromResponse(response)
-    }
-    return (await response.json()) as EvaluationResult
+    return this.request<EvaluationResult>(url)
   }
 
   private async fetchAll(context: EvaluationContext): Promise<Feature[]> {
     const url = `${this.baseUrl}/api/v1/client/features${this.queryString(context)}`
-    const response = await this.fetchImpl(url, {
-      method: 'GET',
-      headers: { authorization: this.apiKey },
-    })
-    if (!response.ok) {
-      await this.throwFromResponse(response)
-    }
-    const body = (await response.json()) as { features: Feature[] }
+    const body = await this.request<{ features: Feature[] }>(url)
     return body.features
   }
 
