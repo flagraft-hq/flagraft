@@ -67,19 +67,23 @@ new FlagraftClient({
   apiKey: 'ff_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
   ttl: 30,
   staleTtl: 300,
+  timeoutMs: 2000,
   onStale: ({ flagKey, fetchedAt }) => logger.warn({ flagKey, fetchedAt }, 'stale flag'),
   fetch: globalThis.fetch,
 })
 ```
 
-| Option     | Type                      | Default            | Description                                                                                                         |
-| ---------- | ------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `baseUrl`  | `string`                  | (required)         | Base URL of the Flagraft server. Trailing slashes are normalized away. The SDK appends `/api/v1/...` itself.        |
-| `apiKey`   | `string`                  | (required)         | A client API key. Sent as the raw `Authorization` header value (no `Bearer` prefix), matching the Flagraft auth.    |
-| `ttl`      | `number`                  | `30`               | SDK-side cache TTL in seconds. Set to `0` to bypass the SDK cache (the server still has its own cache).             |
-| `staleTtl` | `number`                  | `300`              | How long an expired value stays usable as a fallback when a refetch fails. Set to `0` to disable. See "Caching".    |
-| `onStale`  | `(e: StaleEvent) => void` | `console.warn`     | Called with `{ flagKey, fetchedAt }` whenever a stale value is served. Use it to log structurally or emit a metric. |
-| `fetch`    | `typeof fetch`            | `globalThis.fetch` | Optional `fetch` override. Useful for tests (with `msw`), custom transports, or environments without a global.      |
+| Option      | Type                      | Default            | Description                                                                                                         |
+| ----------- | ------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `baseUrl`   | `string`                  | (required)         | Base URL of the Flagraft server. Trailing slashes are normalized away. The SDK appends `/api/v1/...` itself.        |
+| `apiKey`    | `string`                  | (required)         | A client API key. Sent as the raw `Authorization` header value (no `Bearer` prefix), matching the Flagraft auth.    |
+| `ttl`       | `number`                  | `30`               | SDK-side cache TTL in **seconds**. Set to `0` to bypass the SDK cache (the server still has its own cache).         |
+| `staleTtl`  | `number`                  | `300`              | How long, in **seconds**, an expired value stays usable as a fallback when a refetch fails. `0` disables it.        |
+| `timeoutMs` | `number`                  | `2000`             | How long one HTTP request may take before it is aborted, in **milliseconds**. Set to `0` to wait forever.           |
+| `onStale`   | `(e: StaleEvent) => void` | `console.warn`     | Called with `{ flagKey, fetchedAt }` whenever a stale value is served. Use it to log structurally or emit a metric. |
+| `fetch`     | `typeof fetch`            | `globalThis.fetch` | Optional `fetch` override. Useful for tests (with `msw`), custom transports, or environments without a global.      |
+
+> **Units:** `ttl` and `staleTtl` are seconds; `timeoutMs` is milliseconds and says so in its name. A timeout worth setting is often sub-second, which seconds cannot express cleanly, so the two units are deliberate rather than an oversight.
 
 ---
 
@@ -115,6 +119,7 @@ The second argument is optional. See [`EvaluationContext`](#evaluationcontext) f
 
 - Returns `true` or `false` based on the server's evaluation, which considers whether the flag is enabled in the environment and whether any of its targeting strategies match the context.
 - Returns `false` if the flag does not exist (the server responds 404).
+- Never waits longer than `timeoutMs` (default 2000ms) on the network. See [Timeouts](#timeouts).
 - On any other failure, returns the **last known value** for that flag and context if one is still inside the stale window, and notifies `onStale`. See [Stale-on-error](#stale-on-error).
 - With no stale value available: returns `false` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
 - With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration.
@@ -277,6 +282,24 @@ const flags = new FlagraftClient({
 
 ---
 
+## Timeouts
+
+Every request carries an `AbortSignal.timeout(timeoutMs)`, default **2000ms**. Without one, an unresponsive Flagraft server does not fail — it simply never answers, and the `await` in your request handler hangs for as long as the socket stays open. That is the one failure mode a "fail-safe" flag client must not have, because no amount of fallback logic runs if control never returns.
+
+A timed-out request is treated exactly like a network failure: it tries the stale value first, then falls back to the default.
+
+```ts
+const flags = new FlagraftClient({ baseUrl, apiKey, timeoutMs: 500 })
+```
+
+A fresh signal is created per request, since `AbortSignal.timeout` starts counting the moment it is constructed — a shared one would fire early and abort healthy requests.
+
+**Choosing a value.** The server answers evaluations from its own in-memory cache, so a healthy response is single-digit milliseconds. The default of 2000ms is a generous ceiling that only trips on a genuinely stuck server, not on ordinary latency. Lower it if flag checks sit on a latency-critical path; raise it if you run Flagraft across a slow link. `timeoutMs: 0` disables the abort entirely and restores the old wait-forever behaviour.
+
+> On a runtime without `AbortSignal.timeout` (Node 18 with only a `fetch` polyfill, for instance), the SDK sends no signal rather than crashing. You get no timeout there, so upgrade to Node 20+ if you need one.
+
+---
+
 ## Error model
 
 Any failure is first offered to the stale fallback. The table below describes what happens when **no stale value is available** — because the call is the first one, or the stale window has closed.
@@ -284,6 +307,7 @@ Any failure is first offered to the stale fallback. The table below describes wh
 | Condition                         | Behaviour                                                                                                       |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Server returns 200                | Result returned, cached for `ttl` seconds.                                                                      |
+| Request exceeds `timeoutMs`       | Aborted, then treated as a network failure (stale first, then the default).                                     |
 | Network failure / fetch rejects   | `isEnabled` returns `false`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.        |
 | Server returns 404 (`isEnabled`)  | Returns `false` (the flag is treated as off). Never served stale — an unknown flag is an answer, not an outage. |
 | Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                              |
@@ -520,6 +544,10 @@ import { FlagraftClient, FlagraftError } from '@flagraft/sdk'
 **Flag changes do not appear**: stale cache. Either lower `ttl`, restart the process, or construct a new `FlagraftClient`. The cache has no public invalidation method; the upstream server already invalidates its own cache on writes, so a low SDK TTL is the right knob.
 
 **Flags look frozen at an old state during an incident**: that is `staleTtl` doing its job — the server is unreachable and the SDK is serving the last known-good values. Wire up `onStale` to see it happening, and lower `staleTtl` (or set it to `0`) if your app would rather fail to defaults.
+
+**Flag checks fail after ~2 seconds under load**: requests are hitting `timeoutMs`. Confirm the server is healthy and reachable, then raise `timeoutMs` if the latency is genuine rather than a stuck connection.
+
+**`TimeoutError: The operation was timed out`** in your logs: the abort fired. The SDK swallows it and falls back (stale, then the default), so this is a warning about server health, not a crash.
 
 **Tests hang or hit the real network**: pass a custom `fetch` (see "Testing" above), or use `msw` with `onUnhandledRequest: 'error'` so unmocked requests fail loudly.
 

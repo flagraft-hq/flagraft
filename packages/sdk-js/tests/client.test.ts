@@ -311,6 +311,94 @@ describe('stale-on-error', () => {
   })
 })
 
+/**
+ * These use a fetch override rather than msw so the request can hang until the
+ * SDK's own signal aborts it, which is the behaviour under test.
+ */
+describe('request timeout', () => {
+  /** Never settles on its own; rejects only when the caller's signal fires. */
+  function hangingFetch(): typeof fetch {
+    return ((_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason as Error))
+      })) as unknown as typeof fetch
+  }
+
+  function respondingFetch(body: unknown, capture?: (init?: RequestInit) => void): typeof fetch {
+    return ((_url: string, init?: RequestInit) => {
+      capture?.(init)
+      return Promise.resolve(new Response(JSON.stringify(body)))
+    }) as unknown as typeof fetch
+  }
+
+  it('passes an abort signal on every request by default', async () => {
+    let seen: AbortSignal | null | undefined
+    const client = makeClient({
+      fetch: respondingFetch({ name: 'x', enabled: true, reason: 'default' }, (init) => {
+        seen = init?.signal
+      }),
+    })
+
+    await client.isEnabled('x')
+    expect(seen).toBeInstanceOf(AbortSignal)
+    expect(seen?.aborted).toBe(false)
+  })
+
+  it('sends no signal when timeoutMs is 0', async () => {
+    let seen: AbortSignal | null | undefined
+    const client = makeClient({
+      timeoutMs: 0,
+      fetch: respondingFetch({ name: 'x', enabled: true, reason: 'default' }, (init) => {
+        seen = init?.signal
+      }),
+    })
+
+    await client.isEnabled('x')
+    expect(seen).toBeUndefined()
+  })
+
+  it('aborts a hanging request instead of waiting forever', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ timeoutMs: 20, staleTtl: 0, fetch: hangingFetch() })
+
+    await expect(client.isEnabled('slow')).resolves.toBe(false)
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('returns an empty list when a bulk request times out', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ timeoutMs: 20, staleTtl: 0, fetch: hangingFetch() })
+
+    await expect(client.getAllFeatures()).resolves.toEqual([])
+    warn.mockRestore()
+  })
+
+  it('serves the stale value when a refetch times out', async () => {
+    let hang = false
+    const fetchImpl = ((_url: string, init?: RequestInit) => {
+      if (!hang) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ name: 'slow', enabled: true, reason: 'default' })),
+        )
+      }
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason as Error))
+      })
+    }) as unknown as typeof fetch
+
+    const onStale = vi.fn()
+    /** 50ms fresh window so the entry expires without fake timers. */
+    const client = makeClient({ ttl: 0.05, staleTtl: 60, timeoutMs: 20, onStale, fetch: fetchImpl })
+    await expect(client.isEnabled('slow')).resolves.toBe(true)
+
+    hang = true
+    await new Promise((resolve) => setTimeout(resolve, 70))
+    await expect(client.isEnabled('slow')).resolves.toBe(true)
+    expect(onStale).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('context value coercion', () => {
   it('stringifies numbers, booleans and Dates into the query string', async () => {
     let query = ''
