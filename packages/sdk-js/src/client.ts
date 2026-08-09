@@ -10,6 +10,12 @@ import type {
 
 const DEFAULT_TTL_SECONDS = 30
 const DEFAULT_STALE_TTL_SECONDS = 300
+/**
+ * How long a "this flag does not exist" answer is remembered. Deliberately
+ * not an option: the usual cause is code that shipped before someone created
+ * the flag, and a few seconds is short enough that nobody needs to tune it.
+ */
+const MISSING_TTL_SECONDS = 5
 const DEFAULT_TIMEOUT_MS = 2000
 
 export class FlagraftClient {
@@ -20,6 +26,12 @@ export class FlagraftClient {
   private readonly onStale?: (event: StaleEvent) => void
   private readonly singleCache: TtlCache<EvaluationResult>
   private readonly bulkCache: TtlCache<Feature[]>
+  /**
+   * Flags the server said it does not have. Keyed by flag key alone, with no
+   * context, because whether a flag exists never depends on who is asking --
+   * one entry covers every caller.
+   */
+  private readonly missingCache: TtlCache<true>
 
   constructor(options: FlagraftClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '')
@@ -29,11 +41,24 @@ export class FlagraftClient {
     this.onStale = options.onStale
     const ttl = options.ttl ?? DEFAULT_TTL_SECONDS
     const staleTtl = options.staleTtl ?? DEFAULT_STALE_TTL_SECONDS
+    /**
+     * ttl 0 means "no SDK caching at all", so it switches the negative cache
+     * off too rather than leaving a surprising second cache running.
+     */
+    const missingTtl = ttl === 0 ? 0 : MISSING_TTL_SECONDS
     this.singleCache = new TtlCache<EvaluationResult>(ttl, staleTtl)
     this.bulkCache = new TtlCache<Feature[]>(ttl, staleTtl)
+    this.missingCache = new TtlCache<true>(missingTtl)
   }
 
   async isEnabled(flagKey: string, context: EvaluationContext = {}): Promise<boolean> {
+    /**
+     * Checked before the per-context cache, since a flag that does not exist
+     * is missing for every context and would otherwise be re-asked once per
+     * distinct caller.
+     */
+    if (this.missingCache.get(flagKey)) return false
+
     const cacheKey = makeKey(flagKey, context)
     const cached = this.singleCache.get(cacheKey)
     if (cached) return cached.enabled
@@ -44,9 +69,14 @@ export class FlagraftClient {
       return result.enabled
     } catch (error) {
       /**
-       * An unknown flag is a real answer rather than an outage, so it stays false.
+       * An unknown flag is a real answer rather than an outage, so it stays
+       * false and is remembered briefly. Without that, a mistyped or not yet
+       * created flag key means an HTTP round trip on every single call.
        */
-      if (error instanceof FlagraftError && error.statusCode === 404) return false
+      if (error instanceof FlagraftError && error.statusCode === 404) {
+        this.missingCache.set(flagKey, true)
+        return false
+      }
 
       const stale = this.singleCache.getStale(cacheKey)
       if (stale) {

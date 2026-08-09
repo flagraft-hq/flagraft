@@ -118,7 +118,7 @@ The second argument is optional. See [`EvaluationContext`](#evaluationcontext) f
 **Behaviour:**
 
 - Returns `true` or `false` based on the server's evaluation, which considers whether the flag is enabled in the environment and whether any of its targeting strategies match the context.
-- Returns `false` if the flag does not exist (the server responds 404).
+- Returns `false` if the flag does not exist (the server responds 404), and remembers that for 5 seconds. See [Unknown flags](#unknown-flags).
 - Never waits longer than `timeoutMs` (default 2000ms) on the network. See [Timeouts](#timeouts).
 - On any other failure, returns the **last known value** for that flag and context if one is still inside the stale window, and notifies `onStale`. See [Stale-on-error](#stale-on-error).
 - With no stale value available: returns `false` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
@@ -251,6 +251,16 @@ const flags = new FlagraftClient({ baseUrl, apiKey, ttl: 0 })
 
 The cache holds at most **10,000 entries**. Because the cache key includes the whole evaluation context, an app that passes a per-user context creates one entry per user, so an uncapped cache would grow for the life of the process. Once the cap is reached, the oldest-written entry is dropped to make room. This is drop-oldest rather than true LRU, which is indistinguishable in practice at a 30-second TTL.
 
+### Unknown flags
+
+A flag the server does not have answers `404`, which `isEnabled` reports as `false`. That answer is cached too, keyed by flag key alone, for a fixed **5 seconds**.
+
+Without it, the one question guaranteed to repeat forever — a mistyped key, a flag deleted during cleanup, or code deployed before someone created the flag — would make an HTTP round trip on **every single call**, since only successful lookups were being remembered. On a endpoint serving 2 requests a second that is 120 requests a minute against a server whose default rate limit is 100 per minute per IP. Exhaust that budget and the server starts returning `429` to _every_ flag call from that host, so one typo takes down flags that were spelled correctly.
+
+The entry is keyed by flag key with **no context**, because whether a flag exists never depends on who is asking. One entry covers every caller, which matters precisely when the calling code passes a per-user context.
+
+Five seconds is much shorter than `ttl` on purpose, and it is not an option. The common cause of a 404 is code that shipped ahead of the flag being created, and you want the app to notice within seconds once it appears — that lag is the one cost of caching the miss, and no application needs a different number for it. Setting `ttl: 0` switches this cache off along with the others.
+
 ### Stale-on-error
 
 When a value's TTL expires, the SDK does not immediately forget it. It keeps the value for a further `staleTtl` seconds (default `300`) and serves it **only if a refetch fails**. A fresh value always wins; the stale copy is a fallback, never a first choice.
@@ -304,15 +314,15 @@ A fresh signal is created per request, since `AbortSignal.timeout` starts counti
 
 Any failure is first offered to the stale fallback. The table below describes what happens when **no stale value is available** — because the call is the first one, or the stale window has closed.
 
-| Condition                         | Behaviour                                                                                                       |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Server returns 200                | Result returned, cached for `ttl` seconds.                                                                      |
-| Request exceeds `timeoutMs`       | Aborted, then treated as a network failure (stale first, then the default).                                     |
-| Network failure / fetch rejects   | `isEnabled` returns `false`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.        |
-| Server returns 404 (`isEnabled`)  | Returns `false` (the flag is treated as off). Never served stale — an unknown flag is an answer, not an outage. |
-| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                              |
-| Server returns 5xx                | Throws `FlagraftError`.                                                                                         |
-| Server returns 429 (rate limited) | Throws `FlagraftError` with `statusCode: 429`.                                                                  |
+| Condition                         | Behaviour                                                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Server returns 200                | Result returned, cached for `ttl` seconds.                                                                        |
+| Request exceeds `timeoutMs`       | Aborted, then treated as a network failure (stale first, then the default).                                       |
+| Network failure / fetch rejects   | `isEnabled` returns `false`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.          |
+| Server returns 404 (`isEnabled`)  | Returns `false` and remembers it for 5 seconds. Never served stale — an unknown flag is an answer, not an outage. |
+| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                                |
+| Server returns 5xx                | Throws `FlagraftError`.                                                                                           |
+| Server returns 429 (rate limited) | Throws `FlagraftError` with `statusCode: 429`.                                                                    |
 
 The split between "swallow" (network) and "throw" (HTTP error) is deliberate: network blips are routine and a flag check should never wedge a request, but a 403 on a cold client means your key or scope is wrong and you want to know about it loudly.
 
@@ -544,6 +554,8 @@ import { FlagraftClient, FlagraftError } from '@flagraft/sdk'
 **Flag changes do not appear**: stale cache. Either lower `ttl`, restart the process, or construct a new `FlagraftClient`. The cache has no public invalidation method; the upstream server already invalidates its own cache on writes, so a low SDK TTL is the right knob.
 
 **Flags look frozen at an old state during an incident**: that is `staleTtl` doing its job — the server is unreachable and the SDK is serving the last known-good values. Wire up `onStale` to see it happening, and lower `staleTtl` (or set it to `0`) if your app would rather fail to defaults.
+
+**A flag you just created still reads `false`**: the SDK cached the 404 from before it existed. It clears itself within 5 seconds. If it persists beyond that, the flag key or the key's environment scope does not match what you created.
 
 **Flag checks fail after ~2 seconds under load**: requests are hitting `timeoutMs`. Confirm the server is healthy and reachable, then raise `timeoutMs` if the latency is genuine rather than a stuck connection.
 

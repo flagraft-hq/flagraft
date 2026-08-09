@@ -153,6 +153,95 @@ describe('FlagraftClient.getFeatures', () => {
   })
 })
 
+describe('caching unknown flags', () => {
+  /** Counts requests and always answers 404, like a mistyped flag key. */
+  function missingHandler(flagKey: string, counter: { calls: number }) {
+    return http.get(`${BASE}/api/v1/client/features/${flagKey}`, () => {
+      counter.calls += 1
+      return HttpResponse.json(
+        { error: 'NotFound', message: 'Flag not found', statusCode: 404 },
+        { status: 404 },
+      )
+    })
+  }
+
+  it('asks the server only once for a flag that does not exist', async () => {
+    const counter = { calls: 0 }
+    mswServer.use(missingHandler('typo', counter))
+
+    const client = makeClient()
+    await expect(client.isEnabled('typo')).resolves.toBe(false)
+    await expect(client.isEnabled('typo')).resolves.toBe(false)
+    await expect(client.isEnabled('typo')).resolves.toBe(false)
+    expect(counter.calls).toBe(1)
+  })
+
+  it('shares one entry across every context, since existence is context-free', async () => {
+    const counter = { calls: 0 }
+    mswServer.use(missingHandler('typo', counter))
+
+    const client = makeClient()
+    await client.isEnabled('typo', { userId: 'u1' })
+    await client.isEnabled('typo', { userId: 'u2' })
+    await client.isEnabled('typo', { userId: 'u3', plan: 'pro' })
+    expect(counter.calls).toBe(1)
+  })
+
+  it('asks again once the negative entry lapses, so a newly created flag is picked up', async () => {
+    vi.useFakeTimers()
+    let exists = false
+    let calls = 0
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/late`, () => {
+        calls += 1
+        return exists
+          ? HttpResponse.json({ name: 'late', enabled: true, reason: 'default' })
+          : HttpResponse.json(
+              { error: 'NotFound', message: 'Flag not found', statusCode: 404 },
+              { status: 404 },
+            )
+      }),
+    )
+
+    const client = makeClient()
+    await expect(client.isEnabled('late')).resolves.toBe(false)
+
+    exists = true
+    await expect(client.isEnabled('late')).resolves.toBe(false)
+    expect(calls).toBe(1)
+
+    vi.advanceTimersByTime(6_000)
+    await expect(client.isEnabled('late')).resolves.toBe(true)
+    expect(calls).toBe(2)
+    vi.useRealTimers()
+  })
+
+  it('is switched off along with everything else when ttl is 0', async () => {
+    const counter = { calls: 0 }
+    mswServer.use(missingHandler('uncached', counter))
+
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('uncached')
+    await client.isEnabled('uncached')
+    expect(counter.calls).toBe(2)
+  })
+
+  it('leaves flags that do exist untouched', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/real`, () =>
+        HttpResponse.json({ name: 'real', enabled: true, reason: 'default' }),
+      ),
+    )
+    const counter = { calls: 0 }
+    mswServer.use(missingHandler('fake', counter))
+
+    const client = makeClient()
+    await expect(client.isEnabled('fake')).resolves.toBe(false)
+    await expect(client.isEnabled('real')).resolves.toBe(true)
+    expect(counter.calls).toBe(1)
+  })
+})
+
 describe('stale-on-error', () => {
   it('serves the last known value when a refetch fails', async () => {
     vi.useFakeTimers()
