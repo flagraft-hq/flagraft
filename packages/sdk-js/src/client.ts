@@ -17,6 +17,31 @@ const DEFAULT_STALE_TTL_SECONDS = 300
  */
 const MISSING_TTL_SECONDS = 5
 const DEFAULT_TIMEOUT_MS = 2000
+const RATE_LIMIT_STATUS = 429
+/** Used when a 429 arrives with no usable Retry-After header. */
+const DEFAULT_BACKOFF_MS = 5_000
+/** Ceiling on how long one Retry-After may silence the client. */
+const MAX_BACKOFF_MS = 60_000
+
+/**
+ * Reads a Retry-After header, which HTTP allows to be either a number of
+ * seconds or an absolute date. Anything missing or unparseable falls back to
+ * a short pause, and every result is capped so one bad header cannot mute the
+ * client for hours.
+ */
+function parseRetryAfter(header: string | null): number {
+  const clamp = (ms: number) => Math.min(MAX_BACKOFF_MS, Math.max(0, ms))
+  const trimmed = header?.trim()
+  if (!trimmed) return DEFAULT_BACKOFF_MS
+
+  const seconds = Number(trimmed)
+  if (Number.isFinite(seconds)) return clamp(seconds * 1000)
+
+  const at = Date.parse(trimmed)
+  if (!Number.isNaN(at)) return clamp(at - Date.now())
+
+  return DEFAULT_BACKOFF_MS
+}
 
 export class FlagraftClient {
   private readonly baseUrl: string
@@ -32,6 +57,11 @@ export class FlagraftClient {
    * one entry covers every caller.
    */
   private readonly missingCache: TtlCache<true>
+  /**
+   * Epoch milliseconds until which no request may leave, set from the
+   * Retry-After of a 429. Zero means no backoff is in effect.
+   */
+  private rateLimitedUntil = 0
 
   constructor(options: FlagraftClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '')
@@ -97,9 +127,16 @@ export class FlagraftClient {
         return stale.value.enabled
       }
 
-      if (error instanceof FlagraftError) throw error
-      // eslint-disable-next-line no-console
-      console.warn(`[flagraft] flag evaluation failed, defaulting to ${defaultValue}`, error)
+      /**
+       * A 429 is the server asking us to slow down, not a bug to surface. It
+       * behaves like any other outage: stale value if we have one, otherwise
+       * the caller's default.
+       */
+      if (error instanceof FlagraftError && error.statusCode !== RATE_LIMIT_STATUS) throw error
+      if (!this.backingOff()) {
+        // eslint-disable-next-line no-console
+        console.warn(`[flagraft] flag evaluation failed, defaulting to ${defaultValue}`, error)
+      }
       return defaultValue
     }
   }
@@ -128,9 +165,11 @@ export class FlagraftClient {
         return stale.value
       }
 
-      if (error instanceof FlagraftError) throw error
-      // eslint-disable-next-line no-console
-      console.warn('[flagraft] bulk evaluation failed, returning empty list', error)
+      if (error instanceof FlagraftError && error.statusCode !== RATE_LIMIT_STATUS) throw error
+      if (!this.backingOff()) {
+        // eslint-disable-next-line no-console
+        console.warn('[flagraft] bulk evaluation failed, returning empty list', error)
+      }
       return []
     }
   }
@@ -169,14 +208,46 @@ export class FlagraftClient {
     return AbortSignal.timeout(this.timeoutMs)
   }
 
+  private backingOff(): boolean {
+    return Date.now() < this.rateLimitedUntil
+  }
+
+  /**
+   * Starts a quiet period after a 429. Logged once here rather than on every
+   * suppressed call, because a rate limit usually coincides with high traffic
+   * and a per-call warning would flood the log it is trying to inform.
+   */
+  private startBackoff(retryAfter: string | null): void {
+    const ms = parseRetryAfter(retryAfter)
+    this.rateLimitedUntil = Date.now() + ms
+    // eslint-disable-next-line no-console
+    console.warn(`[flagraft] rate limited, pausing requests for ${Math.round(ms / 1000)}s`)
+  }
+
   /** Issues an authenticated GET and parses the JSON body, or throws. */
   private async request<T>(url: string): Promise<T> {
+    /**
+     * While the server has asked us to back off, nothing goes out. Adding
+     * requests to a rate limiter only deepens the hole, and the caller is
+     * better served straight away by a stale value or their default.
+     */
+    if (this.backingOff()) {
+      throw new FlagraftError(
+        'Backing off after a rate limit',
+        RATE_LIMIT_STATUS,
+        'TooManyRequests',
+      )
+    }
+
     const response = await this.fetchImpl(url, {
       method: 'GET',
       headers: { authorization: this.apiKey },
       signal: this.timeoutSignal(),
     })
     if (!response.ok) {
+      if (response.status === RATE_LIMIT_STATUS) {
+        this.startBackoff(response.headers.get('retry-after'))
+      }
       await this.throwFromResponse(response)
     }
     return (await response.json()) as T

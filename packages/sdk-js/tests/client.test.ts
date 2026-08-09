@@ -153,6 +153,192 @@ describe('FlagraftClient.getFeatures', () => {
   })
 })
 
+describe('rate limiting', () => {
+  /** Answers 429 with the given Retry-After and counts every request. */
+  function limited(flagKey: string, counter: { calls: number }, retryAfter?: string) {
+    return http.get(`${BASE}/api/v1/client/features/${flagKey}`, () => {
+      counter.calls += 1
+      return HttpResponse.json(
+        { error: 'TooManyRequests', message: 'Rate limit exceeded', statusCode: 429 },
+        { status: 429, headers: retryAfter ? { 'retry-after': retryAfter } : {} },
+      )
+    })
+  }
+
+  it('falls back to the default instead of throwing', async () => {
+    const counter = { calls: 0 }
+    mswServer.use(limited('busy', counter, '1'))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ staleTtl: 0 })
+    await expect(client.isEnabled('busy')).resolves.toBe(false)
+    await expect(client.isEnabled('busy', {}, true)).resolves.toBe(true)
+    warn.mockRestore()
+  })
+
+  it('serves a stale value when one exists', async () => {
+    vi.useFakeTimers()
+    let limitHit = false
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/throttled`, () =>
+        limitHit
+          ? HttpResponse.json(
+              { error: 'TooManyRequests', message: 'Rate limit exceeded', statusCode: 429 },
+              { status: 429, headers: { 'retry-after': '1' } },
+            )
+          : HttpResponse.json({ name: 'throttled', enabled: true, reason: 'default' }),
+      ),
+    )
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale: () => {} })
+    await client.isEnabled('throttled')
+
+    limitHit = true
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('throttled')).resolves.toBe(true)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('stops sending requests for the Retry-After window', async () => {
+    vi.useFakeTimers()
+    const counter = { calls: 0 }
+    mswServer.use(limited('flood', counter, '30'))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('flood')
+    await client.isEnabled('flood')
+    await client.isEnabled('flood')
+    expect(counter.calls).toBe(1)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('resumes once the window passes', async () => {
+    vi.useFakeTimers()
+    const counter = { calls: 0 }
+    mswServer.use(limited('resume', counter, '30'))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('resume')
+    await client.isEnabled('resume')
+    expect(counter.calls).toBe(1)
+
+    vi.advanceTimersByTime(31_000)
+    await client.isEnabled('resume')
+    expect(counter.calls).toBe(2)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('backs off for a default window when Retry-After is missing', async () => {
+    vi.useFakeTimers()
+    const counter = { calls: 0 }
+    mswServer.use(limited('bare', counter))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('bare')
+
+    vi.advanceTimersByTime(4_000)
+    await client.isEnabled('bare')
+    expect(counter.calls).toBe(1)
+
+    vi.advanceTimersByTime(2_000)
+    await client.isEnabled('bare')
+    expect(counter.calls).toBe(2)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('accepts an HTTP-date Retry-After', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-09T00:00:00.000Z'))
+    const counter = { calls: 0 }
+    mswServer.use(limited('dated', counter, 'Sun, 09 Aug 2026 00:00:20 GMT'))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('dated')
+
+    vi.advanceTimersByTime(10_000)
+    await client.isEnabled('dated')
+    expect(counter.calls).toBe(1)
+
+    vi.advanceTimersByTime(11_000)
+    await client.isEnabled('dated')
+    expect(counter.calls).toBe(2)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('caps an absurd Retry-After rather than muting the client for hours', async () => {
+    vi.useFakeTimers()
+    const counter = { calls: 0 }
+    mswServer.use(limited('absurd', counter, '86400'))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('absurd')
+
+    vi.advanceTimersByTime(61_000)
+    await client.isEnabled('absurd')
+    expect(counter.calls).toBe(2)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('ignores an unparseable Retry-After and uses the default window', async () => {
+    vi.useFakeTimers()
+    const counter = { calls: 0 }
+    mswServer.use(limited('garbage', counter, 'soon-ish'))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('garbage')
+
+    vi.advanceTimersByTime(6_000)
+    await client.isEnabled('garbage')
+    expect(counter.calls).toBe(2)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('warns once per backoff window rather than once per call', async () => {
+    vi.useFakeTimers()
+    const counter = { calls: 0 }
+    mswServer.use(limited('noisy-limit', counter, '30'))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ ttl: 0 })
+    await client.isEnabled('noisy-limit')
+    await client.isEnabled('noisy-limit')
+    await client.isEnabled('noisy-limit')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('returns an empty list for a rate-limited bulk call', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, () =>
+        HttpResponse.json(
+          { error: 'TooManyRequests', message: 'Rate limit exceeded', statusCode: 429 },
+          { status: 429, headers: { 'retry-after': '1' } },
+        ),
+      ),
+    )
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ staleTtl: 0 })
+    await expect(client.getAllFeatures()).resolves.toEqual([])
+    warn.mockRestore()
+  })
+})
+
 describe('defaultValue', () => {
   it('is returned when the flag does not exist', async () => {
     mswServer.use(
