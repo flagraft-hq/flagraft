@@ -51,13 +51,24 @@ export class FlagraftClient {
     this.missingCache = new TtlCache<true>(missingTtl)
   }
 
-  async isEnabled(flagKey: string, context: EvaluationContext = {}): Promise<boolean> {
+  /**
+   * Evaluates one flag. `defaultValue` is what you get when the server cannot
+   * answer -- an unknown flag, an unreachable server, a timed-out request --
+   * and matters for any flag whose safe state is "on", such as a kill switch
+   * guarding the path you would fall back to anyway.
+   */
+  async isEnabled(
+    flagKey: string,
+    context: EvaluationContext = {},
+    defaultValue = false,
+  ): Promise<boolean> {
     /**
      * Checked before the per-context cache, since a flag that does not exist
      * is missing for every context and would otherwise be re-asked once per
-     * distinct caller.
+     * distinct caller. The cache records only that it is missing, so two
+     * callers with different defaults each still get their own.
      */
-    if (this.missingCache.get(flagKey)) return false
+    if (this.missingCache.get(flagKey)) return defaultValue
 
     const cacheKey = makeKey(flagKey, context)
     const cached = this.singleCache.get(cacheKey)
@@ -69,15 +80,17 @@ export class FlagraftClient {
       return result.enabled
     } catch (error) {
       /**
-       * An unknown flag is a real answer rather than an outage, so it stays
-       * false and is remembered briefly. Without that, a mistyped or not yet
-       * created flag key means an HTTP round trip on every single call.
+       * An unknown flag is a real answer rather than an outage, so it falls
+       * straight to the default and is remembered briefly. Without that, a
+       * mistyped or not yet created flag key means an HTTP round trip on
+       * every single call.
        */
       if (error instanceof FlagraftError && error.statusCode === 404) {
         this.missingCache.set(flagKey, true)
-        return false
+        return defaultValue
       }
 
+      /** A real value we fetched earlier always beats a static guess. */
       const stale = this.singleCache.getStale(cacheKey)
       if (stale) {
         this.reportStale(flagKey, stale.storedAt)
@@ -86,8 +99,8 @@ export class FlagraftClient {
 
       if (error instanceof FlagraftError) throw error
       // eslint-disable-next-line no-console
-      console.warn('[flagraft] flag evaluation failed, defaulting to false', error)
-      return false
+      console.warn(`[flagraft] flag evaluation failed, defaulting to ${defaultValue}`, error)
+      return defaultValue
     }
   }
 

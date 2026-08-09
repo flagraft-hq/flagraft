@@ -153,6 +153,115 @@ describe('FlagraftClient.getFeatures', () => {
   })
 })
 
+describe('defaultValue', () => {
+  it('is returned when the flag does not exist', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/absent`, () =>
+        HttpResponse.json(
+          { error: 'NotFound', message: 'Flag not found', statusCode: 404 },
+          { status: 404 },
+        ),
+      ),
+    )
+
+    const client = makeClient()
+    await expect(client.isEnabled('absent', {}, true)).resolves.toBe(true)
+  })
+
+  it('is returned when the request fails outright', async () => {
+    mswServer.use(http.get(`${BASE}/api/v1/client/features/down`, () => HttpResponse.error()))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ staleTtl: 0 })
+    await expect(client.isEnabled('down', {}, true)).resolves.toBe(true)
+    warn.mockRestore()
+  })
+
+  it('is returned when the request times out', async () => {
+    const hangingFetch = ((_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason as Error))
+      })) as unknown as typeof fetch
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ timeoutMs: 20, staleTtl: 0, fetch: hangingFetch })
+    await expect(client.isEnabled('slow', {}, true)).resolves.toBe(true)
+    warn.mockRestore()
+  })
+
+  it('never overrides a real answer from the server', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/really-off`, () =>
+        HttpResponse.json({ name: 'really-off', enabled: false, reason: 'disabled' }),
+      ),
+    )
+
+    const client = makeClient()
+    await expect(client.isEnabled('really-off', {}, true)).resolves.toBe(false)
+  })
+
+  it('loses to a stale value, which is a real reading rather than a guess', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/was-off`, () =>
+        up
+          ? HttpResponse.json({ name: 'was-off', enabled: false, reason: 'disabled' })
+          : HttpResponse.error(),
+      ),
+    )
+
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale: () => {} })
+    await client.isEnabled('was-off', {}, true)
+
+    up = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('was-off', {}, true)).resolves.toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('lets two callers hold different defaults for the same missing flag', async () => {
+    let calls = 0
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/shared`, () => {
+        calls += 1
+        return HttpResponse.json(
+          { error: 'NotFound', message: 'Flag not found', statusCode: 404 },
+          { status: 404 },
+        )
+      }),
+    )
+
+    const client = makeClient()
+    await expect(client.isEnabled('shared', {}, true)).resolves.toBe(true)
+    await expect(client.isEnabled('shared', {}, false)).resolves.toBe(false)
+    expect(calls).toBe(1)
+  })
+
+  it('still throws on a misconfiguration rather than hiding it behind the default', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/denied`, () =>
+        HttpResponse.json(
+          { error: 'Forbidden', message: 'Client key required', statusCode: 403 },
+          { status: 403 },
+        ),
+      ),
+    )
+
+    const client = makeClient({ staleTtl: 0 })
+    await expect(client.isEnabled('denied', {}, true)).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('defaults to false when the argument is omitted', async () => {
+    mswServer.use(http.get(`${BASE}/api/v1/client/features/legacy`, () => HttpResponse.error()))
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ staleTtl: 0 })
+    await expect(client.isEnabled('legacy')).resolves.toBe(false)
+    warn.mockRestore()
+  })
+})
+
 describe('caching unknown flags', () => {
   /** Counts requests and always answers 404, like a mistyped flag key. */
   function missingHandler(flagKey: string, counter: { calls: number }) {

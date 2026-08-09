@@ -8,7 +8,7 @@ The official TypeScript SDK for [Flagraft](../../README.md), a self-hosted featu
 
 ## Why use the SDK?
 
-- **Safe by default.** Network failures resolve to `false` so a flag check never crashes your request handler.
+- **Safe by default.** Failures resolve to a default you choose (`false` unless you say otherwise) so a flag check never crashes your request handler.
 - **Cached out of the box.** A small in-memory TTL cache keyed by `(flagKey, context)` removes redundant round trips during a request burst.
 - **Strongly typed.** `EvaluationContext`, `Feature`, `EvaluationResult`, and `FlagraftClientOptions` are exported types you can reuse in your own code.
 - **Zero runtime dependencies.** Uses native `fetch`. Bundles cleanly into Lambda, Cloudflare Workers, Vercel Edge, and any modern Node deployment.
@@ -97,7 +97,7 @@ The SDK sets the `Authorization` header to the raw key value. Do not prepend `Be
 
 ## API reference
 
-### `isEnabled(flagKey, context?) => Promise<boolean>`
+### `isEnabled(flagKey, context?, defaultValue?) => Promise<boolean>`
 
 Evaluate a single flag and get a boolean back. This is the workhorse method.
 
@@ -111,18 +111,47 @@ if (await flags.isEnabled('maintenance-mode')) {
 if (await flags.isEnabled('dark-mode', { userId: 'u_42' })) {
   // ...
 }
+
+// Kill switch whose safe state is "on"
+if (await flags.isEnabled('payments-enabled', {}, true)) {
+  // ...
+}
 ```
 
-The second argument is optional. See [`EvaluationContext`](#evaluationcontext) for details on targeting.
+Both trailing arguments are optional. See [`EvaluationContext`](#evaluationcontext) for targeting and [Default values](#default-values) for the third argument.
 
 **Behaviour:**
 
 - Returns `true` or `false` based on the server's evaluation, which considers whether the flag is enabled in the environment and whether any of its targeting strategies match the context.
-- Returns `false` if the flag does not exist (the server responds 404), and remembers that for 5 seconds. See [Unknown flags](#unknown-flags).
+- Returns `defaultValue` (default `false`) if the flag does not exist (the server responds 404), and remembers that for 5 seconds. See [Unknown flags](#unknown-flags).
 - Never waits longer than `timeoutMs` (default 2000ms) on the network. See [Timeouts](#timeouts).
 - On any other failure, returns the **last known value** for that flag and context if one is still inside the stale window, and notifies `onStale`. See [Stale-on-error](#stale-on-error).
-- With no stale value available: returns `false` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
-- With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration.
+- With no stale value available: returns `defaultValue` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
+- With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration. `defaultValue` does not suppress this.
+
+#### Default values
+
+The third argument is what you get when the server **cannot answer** — an unknown flag, an unreachable server, a timed-out request. It defaults to `false`, which is right for the common case: a flag gating a new code path should stay off if Flagraft is down.
+
+It is wrong for the opposite case. A kill switch like `payments-enabled` guards the path you would fall back to anyway, so failing it closed disables payments during an unrelated Flagraft outage:
+
+```ts
+// Wrong: a Flagraft blip stops payments
+if (await flags.isEnabled('payments-enabled')) { ... }
+
+// Right: a Flagraft blip changes nothing
+if (await flags.isEnabled('payments-enabled', {}, true)) { ... }
+```
+
+Rule of thumb: the default should be whatever the system did **before the flag existed**.
+
+Three things it deliberately does not do:
+
+- **It never overrides a real answer.** If the server says `false`, you get `false`, whatever the default.
+- **It loses to a stale value.** A reading you actually fetched, even a few minutes old, beats a static guess. See [Stale-on-error](#stale-on-error).
+- **It does not swallow HTTP errors.** A 403 or 500 with no stale value still throws, so a bad key stays loud instead of hiding behind a plausible-looking `true`.
+
+The default is per call, not per client, because different flags have different safe states. It is also not part of any cache key — the SDK caches the server's answer, so two call sites can pass different defaults for the same flag and each gets its own.
 
 ### `getFeatures(context?) => Promise<Record<string, boolean>>`
 
@@ -314,15 +343,15 @@ A fresh signal is created per request, since `AbortSignal.timeout` starts counti
 
 Any failure is first offered to the stale fallback. The table below describes what happens when **no stale value is available** — because the call is the first one, or the stale window has closed.
 
-| Condition                         | Behaviour                                                                                                         |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Server returns 200                | Result returned, cached for `ttl` seconds.                                                                        |
-| Request exceeds `timeoutMs`       | Aborted, then treated as a network failure (stale first, then the default).                                       |
-| Network failure / fetch rejects   | `isEnabled` returns `false`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.          |
-| Server returns 404 (`isEnabled`)  | Returns `false` and remembers it for 5 seconds. Never served stale — an unknown flag is an answer, not an outage. |
-| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                                |
-| Server returns 5xx                | Throws `FlagraftError`.                                                                                           |
-| Server returns 429 (rate limited) | Throws `FlagraftError` with `statusCode: 429`.                                                                    |
+| Condition                         | Behaviour                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Server returns 200                | Result returned, cached for `ttl` seconds.                                                                                     |
+| Request exceeds `timeoutMs`       | Aborted, then treated as a network failure (stale first, then the default).                                                    |
+| Network failure / fetch rejects   | `isEnabled` returns `defaultValue`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.                |
+| Server returns 404 (`isEnabled`)  | Returns `defaultValue` and remembers the miss for 5 seconds. Never served stale — an unknown flag is an answer, not an outage. |
+| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                                             |
+| Server returns 5xx                | Throws `FlagraftError`.                                                                                                        |
+| Server returns 429 (rate limited) | Throws `FlagraftError` with `statusCode: 429`.                                                                                 |
 
 The split between "swallow" (network) and "throw" (HTTP error) is deliberate: network blips are routine and a flag check should never wedge a request, but a 403 on a cold client means your key or scope is wrong and you want to know about it loudly.
 
