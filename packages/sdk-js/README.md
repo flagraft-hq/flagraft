@@ -8,7 +8,7 @@ The official TypeScript SDK for [Flagraft](../../README.md), a self-hosted featu
 
 ## Why use the SDK?
 
-- **Safe by default.** Network failures resolve to `false` so a flag check never crashes your request handler.
+- **Safe by default.** Failures resolve to a default you choose (`false` unless you say otherwise) so a flag check never crashes your request handler.
 - **Cached out of the box.** A small in-memory TTL cache keyed by `(flagKey, context)` removes redundant round trips during a request burst.
 - **Strongly typed.** `EvaluationContext`, `Feature`, `EvaluationResult`, and `FlagraftClientOptions` are exported types you can reuse in your own code.
 - **Zero runtime dependencies.** Uses native `fetch`. Bundles cleanly into Lambda, Cloudflare Workers, Vercel Edge, and any modern Node deployment.
@@ -97,7 +97,7 @@ The SDK sets the `Authorization` header to the raw key value. Do not prepend `Be
 
 ## API reference
 
-### `isEnabled(flagKey, context?) => Promise<boolean>`
+### `isEnabled(flagKey, context?, defaultValue?) => Promise<boolean>`
 
 Evaluate a single flag and get a boolean back. This is the workhorse method.
 
@@ -111,18 +111,49 @@ if (await flags.isEnabled('maintenance-mode')) {
 if (await flags.isEnabled('dark-mode', { userId: 'u_42' })) {
   // ...
 }
+
+// Kill switch whose safe state is "on"
+if (await flags.isEnabled('payments-enabled', {}, true)) {
+  // ...
+}
 ```
 
-The second argument is optional. See [`EvaluationContext`](#evaluationcontext) for details on targeting.
+Both trailing arguments are optional. See [`EvaluationContext`](#evaluationcontext) for targeting and [Default values](#default-values) for the third argument.
 
 **Behaviour:**
 
 - Returns `true` or `false` based on the server's evaluation, which considers whether the flag is enabled in the environment and whether any of its targeting strategies match the context.
-- Returns `false` if the flag does not exist (the server responds 404).
+- Returns `defaultValue` (default `false`) if the flag does not exist (the server responds 404), and remembers that for 5 seconds. See [Unknown flags](#unknown-flags).
 - Never waits longer than `timeoutMs` (default 2000ms) on the network. See [Timeouts](#timeouts).
+- Treats a `429` as an outage rather than an error, and pauses further requests for the server's `Retry-After`. See [Rate limiting](#rate-limiting).
+- Answers with no request at all when a `getFeatures` call has already fetched this context. See [Sharing between the two endpoints](#sharing-between-the-two-endpoints).
 - On any other failure, returns the **last known value** for that flag and context if one is still inside the stale window, and notifies `onStale`. See [Stale-on-error](#stale-on-error).
-- With no stale value available: returns `false` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
-- With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration.
+- With no stale value available: returns `defaultValue` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
+- With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration. `defaultValue` does not suppress this.
+
+#### Default values
+
+The third argument is what you get when the server **cannot answer** — an unknown flag, an unreachable server, a timed-out request. It defaults to `false`, which is right for the common case: a flag gating a new code path should stay off if Flagraft is down.
+
+It is wrong for the opposite case. A kill switch like `payments-enabled` guards the path you would fall back to anyway, so failing it closed disables payments during an unrelated Flagraft outage:
+
+```ts
+// Wrong: a Flagraft blip stops payments
+if (await flags.isEnabled('payments-enabled')) { ... }
+
+// Right: a Flagraft blip changes nothing
+if (await flags.isEnabled('payments-enabled', {}, true)) { ... }
+```
+
+Rule of thumb: the default should be whatever the system did **before the flag existed**.
+
+Three things it deliberately does not do:
+
+- **It never overrides a real answer.** If the server says `false`, you get `false`, whatever the default.
+- **It loses to a stale value.** A reading you actually fetched, even a few minutes old, beats a static guess. See [Stale-on-error](#stale-on-error).
+- **It does not swallow HTTP errors.** A 403 or 500 with no stale value still throws, so a bad key stays loud instead of hiding behind a plausible-looking `true`.
+
+The default is per call, not per client, because different flags have different safe states. It is also not part of any cache key — the SDK caches the server's answer, so two call sites can pass different defaults for the same flag and each gets its own.
 
 ### `getFeatures(context?) => Promise<Record<string, boolean>>`
 
@@ -247,9 +278,37 @@ const flags = new FlagraftClient({ baseUrl, apiKey, ttl: 0 })
 
 > **Note:** the SDK cache is per `FlagraftClient` instance. Reuse a single instance across your application for cache hits to actually happen. Creating a new client per request defeats the cache.
 
+### Sharing between the two endpoints
+
+`getFeatures`/`getAllFeatures` fetch every flag for a context in one request. When they have, `isEnabled` answers from that response rather than making its own:
+
+```ts
+const flags = new FlagraftClient({ baseUrl, apiKey })
+
+await flags.getFeatures({ userId: 'u_42' }) // 1 request — every flag, resolved
+await flags.isEnabled('checkout-v2', { userId: 'u_42' }) // from memory
+await flags.isEnabled('dark-mode', { userId: 'u_42' }) // from memory
+```
+
+Two conditions: the context must match exactly (the cache is keyed by it, so `{ userId: 'u_43' }` is a different entry), and the bulk response must still be within `ttl`. A stale bulk response is used the same way when a refetch fails, so a hydrated client rides out an outage consistently across both methods.
+
+A flag **absent** from the bulk list is treated as not existing, with no request at all. The server builds both endpoints from the same flag map, so a key missing from the list is exactly what the single endpoint would answer `404` for.
+
+> This helps an app that hydrates with `getFeatures` and then checks individual flags. It does **not** make a series of `isEnabled` calls cheaper on its own — each still fetches individually if nothing hydrated the bulk cache first. Having `isEnabled` fetch the whole catalogue itself would fix that, but it is a bad trade for per-user contexts, where it means pulling every flag once per user. Call `getFeatures` up front if you want the single-request behaviour.
+
 ### Size cap
 
 The cache holds at most **10,000 entries**. Because the cache key includes the whole evaluation context, an app that passes a per-user context creates one entry per user, so an uncapped cache would grow for the life of the process. Once the cap is reached, the oldest-written entry is dropped to make room. This is drop-oldest rather than true LRU, which is indistinguishable in practice at a 30-second TTL.
+
+### Unknown flags
+
+A flag the server does not have answers `404`, which `isEnabled` reports as `false`. That answer is cached too, keyed by flag key alone, for a fixed **5 seconds**.
+
+Without it, the one question guaranteed to repeat forever — a mistyped key, a flag deleted during cleanup, or code deployed before someone created the flag — would make an HTTP round trip on **every single call**, since only successful lookups were being remembered. On a endpoint serving 2 requests a second that is 120 requests a minute against a server whose default rate limit is 100 per minute per IP. Exhaust that budget and the server starts returning `429` to _every_ flag call from that host, so one typo takes down flags that were spelled correctly.
+
+The entry is keyed by flag key with **no context**, because whether a flag exists never depends on who is asking. One entry covers every caller, which matters precisely when the calling code passes a per-user context.
+
+Five seconds is much shorter than `ttl` on purpose, and it is not an option. The common cause of a 404 is code that shipped ahead of the flag being created, and you want the app to notice within seconds once it appears — that lag is the one cost of caching the miss, and no application needs a different number for it. Setting `ttl: 0` switches this cache off along with the others.
 
 ### Stale-on-error
 
@@ -282,6 +341,33 @@ const flags = new FlagraftClient({
 
 ---
 
+## Rate limiting
+
+The Flagraft server rate-limits the evaluation routes **per IP** (`RATE_LIMIT_MAX`, default 100 per minute), so every client in one process — indeed every process on one host — shares a single budget. When that budget runs out the server answers `429` with a `Retry-After` header.
+
+The SDK does two things with that.
+
+**It does not throw.** A 429 is the server asking you to slow down, not a bug in your code. It is treated like any other outage: stale value if one is available, otherwise your `defaultValue`. Previously this was the one routine server condition that could throw an exception into a caller's request path — and the cruel part was the timing, since a rate limit arrives exactly when traffic is heaviest.
+
+**It stops sending.** On a 429 the client reads `Retry-After` and sends nothing at all until that moment passes; calls during the quiet period resolve immediately from stale or default with no network at all. Retrying into a rate limiter is precisely what deepens the hole, so there are no retries here — only a pause.
+
+```
+request  -> 429, Retry-After: 30
+             backoff until +30s, warn logged once
+call     -> stale or default, no request sent
+call     -> stale or default, no request sent
+   ...30s later...
+call     -> request sent again
+```
+
+`Retry-After` is accepted in both forms HTTP allows, a number of seconds or an absolute date. A missing or unparseable header falls back to a **5 second** pause, and any value is capped at **60 seconds** so one bad header from a proxy cannot mute the client for hours. None of these are options — a correct backoff schedule is not something an application should have to tune.
+
+The warning is logged once when the backoff starts, not on every suppressed call. A rate limit coincides with peak traffic, and a per-call warning would flood the log it is meant to inform.
+
+> The most common cause of hitting the limit is not real load. It is a flag key that does not exist being checked in a hot path — see [Unknown flags](#unknown-flags), which caches that case specifically to stop it.
+
+---
+
 ## Timeouts
 
 Every request carries an `AbortSignal.timeout(timeoutMs)`, default **2000ms**. Without one, an unresponsive Flagraft server does not fail — it simply never answers, and the `await` in your request handler hangs for as long as the socket stays open. That is the one failure mode a "fail-safe" flag client must not have, because no amount of fallback logic runs if control never returns.
@@ -304,19 +390,19 @@ A fresh signal is created per request, since `AbortSignal.timeout` starts counti
 
 Any failure is first offered to the stale fallback. The table below describes what happens when **no stale value is available** — because the call is the first one, or the stale window has closed.
 
-| Condition                         | Behaviour                                                                                                       |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Server returns 200                | Result returned, cached for `ttl` seconds.                                                                      |
-| Request exceeds `timeoutMs`       | Aborted, then treated as a network failure (stale first, then the default).                                     |
-| Network failure / fetch rejects   | `isEnabled` returns `false`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.        |
-| Server returns 404 (`isEnabled`)  | Returns `false` (the flag is treated as off). Never served stale — an unknown flag is an answer, not an outage. |
-| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                              |
-| Server returns 5xx                | Throws `FlagraftError`.                                                                                         |
-| Server returns 429 (rate limited) | Throws `FlagraftError` with `statusCode: 429`.                                                                  |
+| Condition                         | Behaviour                                                                                                                             |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Server returns 200                | Result returned, cached for `ttl` seconds.                                                                                            |
+| Request exceeds `timeoutMs`       | Aborted, then treated as a network failure (stale first, then the default).                                                           |
+| Network failure / fetch rejects   | `isEnabled` returns `defaultValue`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.                       |
+| Server returns 404 (`isEnabled`)  | Returns `defaultValue` and remembers the miss for 5 seconds. Never served stale — an unknown flag is an answer, not an outage.        |
+| Server returns 429 (rate limited) | Treated as an outage: stale first, then `defaultValue`. **Never throws**, and starts a backoff — see [Rate limiting](#rate-limiting). |
+| Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                                                    |
+| Server returns 5xx                | Throws `FlagraftError`.                                                                                                               |
 
-The split between "swallow" (network) and "throw" (HTTP error) is deliberate: network blips are routine and a flag check should never wedge a request, but a 403 on a cold client means your key or scope is wrong and you want to know about it loudly.
+The split between "swallow" and "throw" is deliberate. Network blips, timeouts and rate limits are routine operational conditions, and a flag check should never wedge a request over one. A 403 on a cold client means your key or scope is wrong, and you want to know about that loudly.
 
-Note that a stale value can only exist after a successful call, so a misconfigured key still throws on the first request during integration. Once a client has warmed up, a later 403, 429 or 500 is treated as an outage and rides on the stale value until the window closes.
+Note that a stale value can only exist after a successful call, so a misconfigured key still throws on the first request during integration. Once a client has warmed up, a later 403 or 500 is treated as an outage and rides on the stale value until the window closes.
 
 ---
 
@@ -545,6 +631,10 @@ import { FlagraftClient, FlagraftError } from '@flagraft/sdk'
 
 **Flags look frozen at an old state during an incident**: that is `staleTtl` doing its job — the server is unreachable and the SDK is serving the last known-good values. Wire up `onStale` to see it happening, and lower `staleTtl` (or set it to `0`) if your app would rather fail to defaults.
 
+**A flag you just created still reads `false`**: the SDK cached the 404 from before it existed. It clears itself within 5 seconds. If it persists beyond that, the flag key or the key's environment scope does not match what you created.
+
+**`rate limited, pausing requests for Ns` in your logs**: the server's per-IP budget is exhausted and the SDK has stopped sending until it resets. Flags fall back to stale values or their defaults meanwhile. Check for a flag key checked in a hot path that does not exist, raise `RATE_LIMIT_MAX` on the server, or increase `ttl` so fewer calls reach the network.
+
 **Flag checks fail after ~2 seconds under load**: requests are hitting `timeoutMs`. Confirm the server is healthy and reachable, then raise `timeoutMs` if the latency is genuine rather than a stuck connection.
 
 **`TimeoutError: The operation was timed out`** in your logs: the abort fired. The SDK swallows it and falls back (stale, then the default), so this is a warning about server health, not a crash.
@@ -571,4 +661,4 @@ import { FlagraftClient, FlagraftError } from '@flagraft/sdk'
 
 ## License
 
-See the [root repository](../../README.md) for license information.
+[MIT](./LICENSE) — import it into a closed-source application freely. The rest of the [Flagraft repository](../../LICENSE) is MIT too.
