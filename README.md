@@ -88,11 +88,12 @@ Flagraft is a deliberately small, focused alternative to the well-known feature 
 | Per-seat pricing        | None                  | Yes          | None (OSS)    | None (OSS)    | Yes        |
 | Context-aware targeting | Built-in              | Built-in     | Built-in      | Built-in      | Built-in   |
 | Official TypeScript SDK | `@flagraft/sdk`       | Yes          | Yes           | Yes           | Yes        |
+| Admin UI                | Built in              | Yes          | Yes           | Yes           | Yes        |
 | OpenAPI / Swagger UI    | Yes, at `/docs`       | Partial      | Yes           | Yes           | Yes        |
 | External services       | Just Postgres         | SaaS         | Postgres + UI | Postgres + UI | SaaS       |
 | Lines of server code    | Small (auditable)     | Closed       | Large         | Large         | Closed     |
 
-Pick Flagraft when you want a minimal, auditable, self-hosted feature flag service you can drop next to your existing Node/Postgres stack. Pick a hosted vendor when you need turnkey analytics, percentage-based rollout strategies, or a polished admin UI today (the [Flagraft admin UI is on the roadmap](docs/ROADMAP.md)).
+Pick Flagraft when you want a minimal, auditable, self-hosted feature flag service you can drop next to your existing Node/Postgres stack. Pick a hosted vendor when you need turnkey analytics or percentage-based rollout strategies today — see the [roadmap](docs/ROADMAP.md) for what is planned here.
 
 ---
 
@@ -281,7 +282,7 @@ Run `pnpm db:migrate` before `pnpm admin:create-root-key`.
 Yes. Flagraft is open source and self-hosted. There is no SaaS tier, no per-seat fee, and no telemetry sent home.
 
 **Can I use Flagraft as a LaunchDarkly, Unleash, Flagsmith, or ConfigCat alternative?**
-Yes, for the core feature flag management workflow (toggle features per environment, target users via context, evaluate from server or client SDK). See [How Flagraft compares](#how-flagraft-compares) for a feature-by-feature table. Some advanced capabilities (percentage rollouts, real-time SSE push, audit log, admin UI) are on the [roadmap](docs/ROADMAP.md).
+Yes, for the core feature flag management workflow (toggle features per environment, target users via context, evaluate from server or client SDK). See [How Flagraft compares](#how-flagraft-compares) for a feature-by-feature table. Some advanced capabilities (percentage rollouts, real-time SSE push, audit log) are on the [roadmap](docs/ROADMAP.md).
 
 **Does Flagraft work for A/B testing and canary releases?**
 Yes. Use context-aware targeting strategies keyed by `userId`, `cohort`, `region`, `tenant`, or any custom context field to direct subsets of users to a variant or canary. The evaluation engine returns a deterministic on/off per (flag, context) pair.
@@ -296,7 +297,7 @@ Yes. The evaluation engine accepts a `Record<string, string>` context on every c
 Flag state is cached in-process on the server using BentoCache, keyed by `projectId + environmentId`, and invalidated on writes. The TypeScript SDK adds a second layer of in-process TTL caching on the consumer side, which means typical reads never touch the database.
 
 **Is there an admin UI for non-technical team members?**
-Not yet. The admin UI is planned for Phase 5 of the [roadmap](docs/ROADMAP.md). Today, flag, context-field, and strategy management is done via the HTTP API or Swagger UI at `/docs`.
+Yes. Flagraft ships a React admin UI ([`@flagraft/admin-ui`](packages/admin-ui)) covering projects, flags, environments, context fields, targeting strategies, API keys and user management with role-based access. Everything it does is also available over the HTTP API, or through the Swagger UI at `/docs`.
 
 **Can Flagraft run in an air-gapped or compliance-restricted environment?**
 Yes. Flagraft has no external runtime dependencies beyond Postgres, sends no telemetry, and can run fully behind your firewall.

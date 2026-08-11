@@ -4,6 +4,26 @@
   "license": "MIT",
   "description": "TypeScript SDK for Flagraft feature flags",
   "type": "module",
+  "keywords": [
+    "feature-flags",
+    "feature-toggles",
+    "feature-flag",
+    "flagraft",
+    "kill-switch",
+    "progressive-delivery",
+    "sdk",
+    "typescript"
+  ],
+  "homepage": "https://github.com/flagraft-hq/flagraft/tree/main/packages/sdk-js#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flagraft-hq/flagraft.git",
+    "directory": "packages/sdk-js"
+  },
+  "bugs": {
+    "url": "https://github.com/flagraft-hq/flagraft/issues"
+  },
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
