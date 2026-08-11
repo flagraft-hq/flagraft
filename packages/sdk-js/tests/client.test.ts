@@ -153,6 +153,104 @@ describe('FlagraftClient.getFeatures', () => {
   })
 })
 
+describe('answering isEnabled from a bulk response', () => {
+  /** Counts calls to each endpoint so we can prove which door was used. */
+  function endpoints(features: Array<{ name: string; enabled: boolean }>) {
+    const counts = { bulk: 0, single: 0 }
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, () => {
+        counts.bulk += 1
+        return HttpResponse.json({ features })
+      }),
+      http.get(`${BASE}/api/v1/client/features/:flagKey`, ({ params }) => {
+        counts.single += 1
+        const match = features.find((f) => f.name === params.flagKey)
+        return match
+          ? HttpResponse.json({ ...match, reason: 'default' })
+          : HttpResponse.json(
+              { error: 'NotFound', message: 'Flag not found', statusCode: 404 },
+              { status: 404 },
+            )
+      }),
+    )
+    return counts
+  }
+
+  it('reuses a hydrated bulk response instead of asking again', async () => {
+    const counts = endpoints([
+      { name: 'a', enabled: true },
+      { name: 'b', enabled: false },
+    ])
+
+    const client = makeClient()
+    await client.getFeatures({ userId: 'u1' })
+    await expect(client.isEnabled('a', { userId: 'u1' })).resolves.toBe(true)
+    await expect(client.isEnabled('b', { userId: 'u1' })).resolves.toBe(false)
+    expect(counts).toEqual({ bulk: 1, single: 0 })
+  })
+
+  it('treats a flag absent from the bulk list as missing, with no request', async () => {
+    const counts = endpoints([{ name: 'a', enabled: true }])
+
+    const client = makeClient()
+    await client.getFeatures()
+    await expect(client.isEnabled('ghost')).resolves.toBe(false)
+    await expect(client.isEnabled('ghost', {}, true)).resolves.toBe(true)
+    expect(counts.single).toBe(0)
+  })
+
+  it('does not reuse a bulk response fetched for a different context', async () => {
+    const counts = endpoints([{ name: 'a', enabled: true }])
+
+    const client = makeClient()
+    await client.getFeatures({ userId: 'u1' })
+    await client.isEnabled('a', { userId: 'u2' })
+    expect(counts.single).toBe(1)
+  })
+
+  it('falls through to the single endpoint when no bulk response is cached', async () => {
+    const counts = endpoints([{ name: 'a', enabled: true }])
+
+    const client = makeClient()
+    await expect(client.isEnabled('a')).resolves.toBe(true)
+    expect(counts).toEqual({ bulk: 0, single: 1 })
+  })
+
+  it('ignores the bulk cache when ttl is 0', async () => {
+    const counts = endpoints([{ name: 'a', enabled: true }])
+
+    const client = makeClient({ ttl: 0 })
+    await client.getFeatures()
+    await client.isEnabled('a')
+    expect(counts.single).toBe(1)
+  })
+
+  it('serves a stale bulk response when a refetch fails', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, () =>
+        up ? HttpResponse.json({ features: [{ name: 'a', enabled: true }] }) : HttpResponse.error(),
+      ),
+      http.get(`${BASE}/api/v1/client/features/a`, () =>
+        up
+          ? HttpResponse.json({ name: 'a', enabled: true, reason: 'default' })
+          : HttpResponse.error(),
+      ),
+    )
+
+    const onStale = vi.fn()
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale })
+    await client.getFeatures()
+
+    up = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('a')).resolves.toBe(true)
+    expect(onStale).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+})
+
 describe('rate limiting', () => {
   /** Answers 429 with the given Retry-After and counts every request. */
   function limited(flagKey: string, counter: { calls: number }, retryAfter?: string) {

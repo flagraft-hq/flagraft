@@ -126,6 +126,7 @@ Both trailing arguments are optional. See [`EvaluationContext`](#evaluationconte
 - Returns `defaultValue` (default `false`) if the flag does not exist (the server responds 404), and remembers that for 5 seconds. See [Unknown flags](#unknown-flags).
 - Never waits longer than `timeoutMs` (default 2000ms) on the network. See [Timeouts](#timeouts).
 - Treats a `429` as an outage rather than an error, and pauses further requests for the server's `Retry-After`. See [Rate limiting](#rate-limiting).
+- Answers with no request at all when a `getFeatures` call has already fetched this context. See [Sharing between the two endpoints](#sharing-between-the-two-endpoints).
 - On any other failure, returns the **last known value** for that flag and context if one is still inside the stale window, and notifies `onStale`. See [Stale-on-error](#stale-on-error).
 - With no stale value available: returns `defaultValue` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
 - With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration. `defaultValue` does not suppress this.
@@ -276,6 +277,24 @@ const flags = new FlagraftClient({ baseUrl, apiKey, ttl: 0 })
 **TTL guidance:** the SDK default of `30` matches the server's default. Increase it for read-heavy workloads where stale flags are tolerable, decrease it when you want changes to propagate quickly. There is no background refresh; entries expire lazily on read.
 
 > **Note:** the SDK cache is per `FlagraftClient` instance. Reuse a single instance across your application for cache hits to actually happen. Creating a new client per request defeats the cache.
+
+### Sharing between the two endpoints
+
+`getFeatures`/`getAllFeatures` fetch every flag for a context in one request. When they have, `isEnabled` answers from that response rather than making its own:
+
+```ts
+const flags = new FlagraftClient({ baseUrl, apiKey })
+
+await flags.getFeatures({ userId: 'u_42' }) // 1 request — every flag, resolved
+await flags.isEnabled('checkout-v2', { userId: 'u_42' }) // from memory
+await flags.isEnabled('dark-mode', { userId: 'u_42' }) // from memory
+```
+
+Two conditions: the context must match exactly (the cache is keyed by it, so `{ userId: 'u_43' }` is a different entry), and the bulk response must still be within `ttl`. A stale bulk response is used the same way when a refetch fails, so a hydrated client rides out an outage consistently across both methods.
+
+A flag **absent** from the bulk list is treated as not existing, with no request at all. The server builds both endpoints from the same flag map, so a key missing from the list is exactly what the single endpoint would answer `404` for.
+
+> This helps an app that hydrates with `getFeatures` and then checks individual flags. It does **not** make a series of `isEnabled` calls cheaper on its own — each still fetches individually if nothing hydrated the bulk cache first. Having `isEnabled` fetch the whole catalogue itself would fix that, but it is a bad trade for per-user contexts, where it means pulling every flag once per user. Call `getFeatures` up front if you want the single-request behaviour.
 
 ### Size cap
 

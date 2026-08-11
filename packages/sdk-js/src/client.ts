@@ -23,6 +23,17 @@ const DEFAULT_BACKOFF_MS = 5_000
 /** Ceiling on how long one Retry-After may silence the client. */
 const MAX_BACKOFF_MS = 60_000
 
+/** Stands in for the flag key when caching a whole-environment response. */
+const BULK_CACHE_KEY = '__all__'
+
+/**
+ * Finds one flag inside a cached bulk response. Undefined means the server
+ * did not list it, which is its way of saying the flag does not exist.
+ */
+function findInBulk(features: Feature[], flagKey: string): boolean | undefined {
+  return features.find((f) => f.name === flagKey)?.enabled
+}
+
 /**
  * Reads a Retry-After header, which HTTP allows to be either a number of
  * seconds or an absolute date. Anything missing or unparseable falls back to
@@ -104,6 +115,24 @@ export class FlagraftClient {
     const cached = this.singleCache.get(cacheKey)
     if (cached) return cached.enabled
 
+    /**
+     * A bulk response already holds every flag for this context, so if one is
+     * still fresh the answer is in memory and no request is needed.
+     */
+    const bulkKey = makeKey(BULK_CACHE_KEY, context)
+    const bulk = this.bulkCache.get(bulkKey)
+    if (bulk) {
+      const enabled = findInBulk(bulk, flagKey)
+      if (enabled !== undefined) return enabled
+      /**
+       * The server builds both endpoints from the same flag map, so a key
+       * absent from the bulk list is exactly what the single endpoint would
+       * answer 404 for. Recording it here saves that round trip entirely.
+       */
+      this.missingCache.set(flagKey, true)
+      return defaultValue
+    }
+
     try {
       const result = await this.fetchSingle(flagKey, context)
       this.singleCache.set(cacheKey, result)
@@ -125,6 +154,20 @@ export class FlagraftClient {
       if (stale) {
         this.reportStale(flagKey, stale.storedAt)
         return stale.value.enabled
+      }
+
+      /**
+       * An expired bulk response is just as real a reading, so it is used
+       * before falling back. Without this a caller that hydrates through
+       * getFeatures would see it ride out an outage while isEnabled did not.
+       */
+      const staleBulk = this.bulkCache.getStale(bulkKey)
+      if (staleBulk) {
+        const enabled = findInBulk(staleBulk.value, flagKey)
+        if (enabled !== undefined) {
+          this.reportStale(flagKey, staleBulk.storedAt)
+          return enabled
+        }
       }
 
       /**
@@ -150,7 +193,7 @@ export class FlagraftClient {
   }
 
   async getAllFeatures(context: EvaluationContext = {}): Promise<Feature[]> {
-    const cacheKey = makeKey('__all__', context)
+    const cacheKey = makeKey(BULK_CACHE_KEY, context)
     const cached = this.bulkCache.get(cacheKey)
     if (cached) return cached
 
