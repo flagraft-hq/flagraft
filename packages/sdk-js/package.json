@@ -1,6 +1,7 @@
 {
   "name": "@flagraft/sdk",
   "version": "0.0.1",
+  "license": "MIT",
   "description": "TypeScript SDK for Flagraft feature flags",
   "type": "module",
   "main": "./dist/index.cjs",

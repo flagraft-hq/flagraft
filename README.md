@@ -302,7 +302,7 @@ Not yet. The admin UI is planned for Phase 5 of the [roadmap](docs/ROADMAP.md). 
 Yes. Flagraft has no external runtime dependencies beyond Postgres, sends no telemetry, and can run fully behind your firewall.
 
 **What is the license?**
-MIT-style permissive license. Use it commercially, modify it, fork it.
+[MIT](./LICENSE), for the server, the admin UI and the SDK alike. Use it commercially, modify it, fork it, embed the SDK in closed-source applications. Your flag configuration is your data and is not covered by anything here.
 
 ---
 

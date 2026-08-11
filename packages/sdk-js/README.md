@@ -661,4 +661,4 @@ import { FlagraftClient, FlagraftError } from '@flagraft/sdk'
 
 ## License
 
-See the [root repository](../../README.md) for license information.
+[MIT](./LICENSE) — import it into a closed-source application freely. The rest of the [Flagraft repository](../../LICENSE) is MIT too.
