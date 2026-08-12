@@ -1,3 +1,4 @@
+import { MAX_CACHE_ENTRIES } from './constants.js'
 import type { ContextValue, EvaluationContext } from './types.js'
 
 export function makeKey(flagKey: string, context: EvaluationContext): string {
@@ -9,13 +10,6 @@ export function makeKey(flagKey: string, context: EvaluationContext): string {
     }, {})
   return `${flagKey}:${JSON.stringify(sorted)}`
 }
-
-/**
- * How many entries a cache may hold before the oldest one is dropped. The
- * cache key includes the whole evaluation context, so an app that passes a
- * per-user context would otherwise add one entry per user and never shrink.
- */
-const DEFAULT_MAX_ENTRIES = 10_000
 
 interface Entry<T> {
   value: T
@@ -34,10 +28,10 @@ export class TtlCache<T> {
   private readonly staleTtlMs: number
   private readonly maxEntries: number
 
-  constructor(ttlSeconds: number, staleTtlSeconds = 0, maxEntries = DEFAULT_MAX_ENTRIES) {
+  constructor(ttlSeconds: number, staleTtlSeconds = 0, maxEntries = MAX_CACHE_ENTRIES) {
     this.ttlMs = Math.max(0, ttlSeconds) * 1000
     this.staleTtlMs = Math.max(0, staleTtlSeconds) * 1000
-    this.maxEntries = Math.min(DEFAULT_MAX_ENTRIES, Math.max(1, maxEntries))
+    this.maxEntries = Math.min(MAX_CACHE_ENTRIES, Math.max(1, maxEntries))
   }
 
   /** Entries currently held. Exposed so tests can assert the cap holds. */

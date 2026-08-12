@@ -267,6 +267,93 @@ describeIfDb('client eval', () => {
     })
   })
 
+  describe('conditional requests on GET /api/v1/client/features', () => {
+    async function setup() {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+      const envs = await getEnvironments(app, adminKey, project.id)
+      const devEnv = envs.find((e) => e.slug === 'development')!
+      const clientKey = await createClientKey(app, adminKey, project.id, devEnv.id)
+      await createFlag(app, adminKey, project.id, 'alpha')
+      await enableFlag(app, adminKey, project.id, 'alpha', 'development')
+      return { app, adminKey, clientKey, projectId: project.id }
+    }
+
+    function get(
+      app: Awaited<ReturnType<typeof buildServer>>,
+      clientKey: string,
+      headers: Record<string, string> = {},
+      url = '/api/v1/client/features',
+    ) {
+      return app.inject({ method: 'GET', url, headers: { authorization: clientKey, ...headers } })
+    }
+
+    it('returns an ETag on the full response', async () => {
+      const { app, clientKey } = await setup()
+      const res = await get(app, clientKey)
+      expect(res.statusCode).toBe(200)
+      expect(res.headers.etag).toMatch(/^".+"$/)
+      await app.close()
+    })
+
+    it('answers 304 with an empty body when the tag still matches', async () => {
+      const { app, clientKey } = await setup()
+      const first = await get(app, clientKey)
+      const second = await get(app, clientKey, { 'if-none-match': first.headers.etag as string })
+
+      expect(second.statusCode).toBe(304)
+      expect(second.body).toBe('')
+      await app.close()
+    })
+
+    it('is stable across repeated requests when nothing changes', async () => {
+      const { app, clientKey } = await setup()
+      const a = await get(app, clientKey)
+      const b = await get(app, clientKey)
+      expect(a.headers.etag).toBe(b.headers.etag)
+      await app.close()
+    })
+
+    it('changes the tag when a flag is toggled', async () => {
+      const { app, adminKey, clientKey, projectId } = await setup()
+      const before = await get(app, clientKey)
+
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/projects/${projectId}/flags/alpha/environments/development/disable`,
+        headers: { authorization: adminKey },
+      })
+
+      const after = await get(app, clientKey, { 'if-none-match': before.headers.etag as string })
+      expect(after.statusCode).toBe(200)
+      expect(after.headers.etag).not.toBe(before.headers.etag)
+      await app.close()
+    })
+
+    it('gives different tags to different evaluation contexts', async () => {
+      const { app, clientKey } = await setup()
+      const a = await get(app, clientKey, {}, '/api/v1/client/features?plan=pro')
+      const b = await get(app, clientKey, {}, '/api/v1/client/features?plan=free')
+      expect(a.headers.etag).not.toBe(b.headers.etag)
+      await app.close()
+    })
+
+    it('ignores a tag belonging to another context', async () => {
+      const { app, clientKey } = await setup()
+      const pro = await get(app, clientKey, {}, '/api/v1/client/features?plan=pro')
+      const free = await get(
+        app,
+        clientKey,
+        { 'if-none-match': pro.headers.etag as string },
+        '/api/v1/client/features?plan=free',
+      )
+      expect(free.statusCode).toBe(200)
+      await app.close()
+    })
+  })
+
   describe('GET /api/v1/client/features/:flagKey', () => {
     it('returns enabled false with reason disabled for a disabled flag', async () => {
       const app = await buildServer({ db })

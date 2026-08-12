@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import { and, asc, eq } from 'drizzle-orm'
 
 import type { Db } from '../../db/index.js'
@@ -20,6 +22,40 @@ import { evaluateFlag } from './evaluate.js'
 export interface EnvState {
   flags: Record<string, FlagState>
   fieldTypes: FieldTypes
+  /**
+   * Fingerprint of everything above. Two servers loading the same rows produce
+   * the same value, so it works as an ETag behind a load balancer, and it
+   * changes whenever a flag, its strategies or a field type change.
+   */
+  version: string
+}
+
+/**
+ * Hashes the state with its keys sorted, because the database does not promise
+ * a row order and an unsorted hash would change for identical data.
+ */
+function fingerprint(flags: Record<string, FlagState>, fieldTypes: FieldTypes): string {
+  const canonical = JSON.stringify({
+    flags: Object.keys(flags)
+      .sort()
+      .map((key) => [key, flags[key]]),
+    fieldTypes: Object.keys(fieldTypes)
+      .sort()
+      .map((key) => [key, fieldTypes[key]]),
+  })
+  return createHash('sha1').update(canonical).digest('base64url')
+}
+
+/**
+ * Builds the ETag for one evaluation response. The body depends on the flag
+ * state and on the caller's context, so both go into the tag.
+ */
+export function etagFor(state: EnvState, context: EvalContext): string {
+  const canonicalContext = Object.keys(context)
+    .sort()
+    .map((key) => `${key}=${context[key]}`)
+    .join('&')
+  return `"${createHash('sha1').update(`${state.version}|${canonicalContext}`).digest('base64url')}"`
 }
 
 export interface EvaluatedFeature {
@@ -89,7 +125,7 @@ export async function loadEnvState(
     }
   }
 
-  return { flags, fieldTypes }
+  return { flags, fieldTypes, version: fingerprint(flags, fieldTypes) }
 }
 
 export function evaluateAll(

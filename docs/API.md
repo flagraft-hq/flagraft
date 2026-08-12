@@ -150,6 +150,19 @@ curl "http://localhost:3000/api/v1/client/features?userId=usr_123" \
 }
 ```
 
+This response carries an `ETag`. Send it back as `If-None-Match` and an unchanged
+result costs a `304` with no body instead of the full list:
+
+```bash
+curl -i "http://localhost:3000/api/v1/client/features?userId=usr_123" \
+  -H "Authorization: $CLIENT_KEY" \
+  -H 'If-None-Match: "kP3nQ8..."'
+# HTTP/1.1 304 Not Modified
+```
+
+The tag covers the flag state and the query context together, so it changes as soon
+as either does. The official SDK does this automatically.
+
 Get one flag with reason:
 
 ```bash
@@ -200,34 +213,34 @@ Now `?tenant=phyg` returns `enabled: true, reason: strategy-match`, while any ot
 
 ## All Endpoints at a Glance
 
-| Method   | Path                                                                     | Auth   | What it does                                  |
-| -------- | ------------------------------------------------------------------------ | ------ | --------------------------------------------- |
-| `POST`   | `/api/v1/admin/projects`                                                 | root   | Create project (auto-creates 2 envs)          |
-| `GET`    | `/api/v1/admin/projects`                                                 | admin  | List projects                                 |
-| `GET`    | `/api/v1/admin/projects/:id`                                             | admin  | Get project                                   |
-| `PATCH`  | `/api/v1/admin/projects/:id`                                             | admin  | Update name / slug / description              |
-| `DELETE` | `/api/v1/admin/projects/:id`                                             | root   | Delete project and all children               |
-| `POST`   | `/api/v1/admin/projects/:id/environments`                                | admin  | Create environment                            |
-| `GET`    | `/api/v1/admin/projects/:id/environments`                                | admin  | List environments                             |
-| `DELETE` | `/api/v1/admin/projects/:id/environments/:envId`                         | admin  | Delete environment                            |
-| `POST`   | `/api/v1/admin/projects/:id/flags`                                       | admin  | Create flag (auto-creates flag_environments)  |
-| `GET`    | `/api/v1/admin/projects/:id/flags`                                       | admin  | List flags                                    |
-| `GET`    | `/api/v1/admin/projects/:id/flags/:key`                                  | admin  | Get flag                                      |
-| `PATCH`  | `/api/v1/admin/projects/:id/flags/:key`                                  | admin  | Update name / description                     |
-| `DELETE` | `/api/v1/admin/projects/:id/flags/:key`                                  | admin  | Delete flag                                   |
-| `POST`   | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/enable`     | admin  | Enable flag in environment                    |
-| `POST`   | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/disable`    | admin  | Disable flag in environment                   |
-| `GET`    | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/strategies` | admin  | List targeting strategies                     |
-| `PUT`    | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/strategies` | admin  | Replace targeting strategies (ordered list)   |
-| `GET`    | `/api/v1/admin/projects/:id/context-fields`                              | admin  | List context fields                           |
-| `POST`   | `/api/v1/admin/projects/:id/context-fields`                              | admin  | Create context field                          |
-| `PATCH`  | `/api/v1/admin/projects/:id/context-fields/:fieldId`                     | admin  | Update context field (key is immutable)       |
-| `DELETE` | `/api/v1/admin/projects/:id/context-fields/:fieldId`                     | admin  | Delete context field                          |
-| `POST`   | `/api/v1/admin/projects/:id/keys`                                        | admin  | Create API key (plaintext returned once)      |
-| `GET`    | `/api/v1/admin/projects/:id/keys`                                        | admin  | List keys (prefix only, no plaintext)         |
-| `DELETE` | `/api/v1/admin/projects/:id/keys/:keyId`                                 | admin  | Revoke key                                    |
-| `GET`    | `/api/v1/client/features`                                                | client | Evaluate all flags for the scoped environment |
-| `GET`    | `/api/v1/client/features/:flagKey`                                       | client | Evaluate one flag with reason                 |
+| Method   | Path                                                                     | Auth   | What it does                                 |
+| -------- | ------------------------------------------------------------------------ | ------ | -------------------------------------------- |
+| `POST`   | `/api/v1/admin/projects`                                                 | root   | Create project (auto-creates 2 envs)         |
+| `GET`    | `/api/v1/admin/projects`                                                 | admin  | List projects                                |
+| `GET`    | `/api/v1/admin/projects/:id`                                             | admin  | Get project                                  |
+| `PATCH`  | `/api/v1/admin/projects/:id`                                             | admin  | Update name / slug / description             |
+| `DELETE` | `/api/v1/admin/projects/:id`                                             | root   | Delete project and all children              |
+| `POST`   | `/api/v1/admin/projects/:id/environments`                                | admin  | Create environment                           |
+| `GET`    | `/api/v1/admin/projects/:id/environments`                                | admin  | List environments                            |
+| `DELETE` | `/api/v1/admin/projects/:id/environments/:envId`                         | admin  | Delete environment                           |
+| `POST`   | `/api/v1/admin/projects/:id/flags`                                       | admin  | Create flag (auto-creates flag_environments) |
+| `GET`    | `/api/v1/admin/projects/:id/flags`                                       | admin  | List flags                                   |
+| `GET`    | `/api/v1/admin/projects/:id/flags/:key`                                  | admin  | Get flag                                     |
+| `PATCH`  | `/api/v1/admin/projects/:id/flags/:key`                                  | admin  | Update name / description                    |
+| `DELETE` | `/api/v1/admin/projects/:id/flags/:key`                                  | admin  | Delete flag                                  |
+| `POST`   | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/enable`     | admin  | Enable flag in environment                   |
+| `POST`   | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/disable`    | admin  | Disable flag in environment                  |
+| `GET`    | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/strategies` | admin  | List targeting strategies                    |
+| `PUT`    | `/api/v1/admin/projects/:id/flags/:key/environments/:envSlug/strategies` | admin  | Replace targeting strategies (ordered list)  |
+| `GET`    | `/api/v1/admin/projects/:id/context-fields`                              | admin  | List context fields                          |
+| `POST`   | `/api/v1/admin/projects/:id/context-fields`                              | admin  | Create context field                         |
+| `PATCH`  | `/api/v1/admin/projects/:id/context-fields/:fieldId`                     | admin  | Update context field (key is immutable)      |
+| `DELETE` | `/api/v1/admin/projects/:id/context-fields/:fieldId`                     | admin  | Delete context field                         |
+| `POST`   | `/api/v1/admin/projects/:id/keys`                                        | admin  | Create API key (plaintext returned once)     |
+| `GET`    | `/api/v1/admin/projects/:id/keys`                                        | admin  | List keys (prefix only, no plaintext)        |
+| `DELETE` | `/api/v1/admin/projects/:id/keys/:keyId`                                 | admin  | Revoke key                                   |
+| `GET`    | `/api/v1/client/features`                                                | client | Evaluate all flags (ETag / `If-None-Match`)  |
+| `GET`    | `/api/v1/client/features/:flagKey`                                       | client | Evaluate one flag with reason                |
 
 ---
 

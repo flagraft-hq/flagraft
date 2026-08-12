@@ -278,6 +278,22 @@ const flags = new FlagraftClient({ baseUrl, apiKey, ttl: 0 })
 
 > **Note:** the SDK cache is per `FlagraftClient` instance. Reuse a single instance across your application for cache hits to actually happen. Creating a new client per request defeats the cache.
 
+### Conditional requests
+
+When a bulk response expires, the SDK does not blindly re-download it. It sends the `ETag` the server gave it last time as `If-None-Match`; if nothing has changed the server answers `304 Not Modified` with **no body**, and the cached list is reused with its TTL restarted.
+
+```
+first poll   GET /client/features                 -> 200 + body + ETag: "a3f9"
+later poll   GET /client/features
+             If-None-Match: "a3f9"                -> 304, no body
+```
+
+Flags change rarely and TTLs expire constantly, so in a steady state almost every poll is a 304. The request count is unchanged — this saves payload, not round trips.
+
+Nothing to configure, and it degrades quietly: a server that sends no `ETag` simply gets ordinary requests. The tag is stored **with** the cached body, so once an entry falls outside `ttl + staleTtl` and is dropped, the SDK stops revalidating rather than risk a 304 it has no body for.
+
+The server's tag covers both the flag state and your evaluation context, so a change to either produces a new tag. Only `getFeatures`/`getAllFeatures` use this; the single-flag endpoint's payload is too small to be worth it.
+
 ### Sharing between the two endpoints
 
 `getFeatures`/`getAllFeatures` fetch every flag for a context in one request. When they have, `isEnabled` answers from that response rather than making its own:

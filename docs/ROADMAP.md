@@ -18,6 +18,8 @@ commitment. Items move only when they are actually done.
 - **TypeScript SDK** — [`@flagraft/sdk`](../packages/sdk-js), with TTL caching, a cache size
   cap, stale-on-error fallback, request timeouts, negative caching for unknown flags,
   rate-limit backoff and per-call default values.
+- **Conditional requests** — `ETag` / `If-None-Match` on the bulk evaluation endpoint, so an
+  unchanged flag list costs a 304 with no body. Handled automatically by the SDK.
 - **OpenAPI / Swagger UI** at `/docs`.
 
 ## Planned
@@ -34,8 +36,6 @@ commitment. Items move only when they are actually done.
 
 - **SSE push invalidation** — replace TTL polling so flag changes reach SDKs immediately.
   Today, freshness is bounded by the server cache TTL plus the SDK TTL.
-- **Conditional requests** — `ETag` / `If-None-Match` on the bulk evaluation endpoint so
-  unchanged flag state costs a 304 rather than a full payload.
 
 ### Operations
 

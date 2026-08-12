@@ -153,6 +153,139 @@ describe('FlagraftClient.getFeatures', () => {
   })
 })
 
+describe('conditional requests', () => {
+  /**
+   * Stands in for the server: answers 304 when the client sends back a
+   * matching ETag, and counts how many full bodies it had to serialise.
+   */
+  function conditionalBulk(etag: string) {
+    const counts = { requests: 0, bodies: 0 }
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, ({ request }) => {
+        counts.requests += 1
+        if (request.headers.get('if-none-match') === etag) {
+          return new HttpResponse(null, { status: 304, headers: { etag } })
+        }
+        counts.bodies += 1
+        return HttpResponse.json(
+          { features: [{ name: 'a', enabled: true }] },
+          { headers: { etag } },
+        )
+      }),
+    )
+    return counts
+  }
+
+  it('sends the stored ETag when revalidating', async () => {
+    vi.useFakeTimers()
+    let seen: string | null = null
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, ({ request }) => {
+        seen = request.headers.get('if-none-match')
+        return HttpResponse.json({ features: [] }, { headers: { etag: '"v1"' } })
+      }),
+    )
+
+    const client = makeClient({ ttl: 30 })
+    await client.getAllFeatures()
+    expect(seen).toBeNull()
+
+    vi.advanceTimersByTime(31_000)
+    await client.getAllFeatures()
+    expect(seen).toBe('"v1"')
+    vi.useRealTimers()
+  })
+
+  it('keeps the cached body when the server answers 304', async () => {
+    vi.useFakeTimers()
+    const counts = conditionalBulk('"v1"')
+
+    const client = makeClient({ ttl: 30 })
+    await expect(client.getAllFeatures()).resolves.toEqual([{ name: 'a', enabled: true }])
+
+    vi.advanceTimersByTime(31_000)
+    await expect(client.getAllFeatures()).resolves.toEqual([{ name: 'a', enabled: true }])
+    expect(counts).toEqual({ requests: 2, bodies: 1 })
+    vi.useRealTimers()
+  })
+
+  it('gives the revalidated entry a fresh TTL', async () => {
+    vi.useFakeTimers()
+    const counts = conditionalBulk('"v1"')
+
+    const client = makeClient({ ttl: 30 })
+    await client.getAllFeatures()
+
+    vi.advanceTimersByTime(31_000)
+    await client.getAllFeatures() // 304, TTL restarts here
+
+    vi.advanceTimersByTime(10_000)
+    await client.getAllFeatures() // still fresh, no request at all
+    expect(counts.requests).toBe(2)
+    vi.useRealTimers()
+  })
+
+  it('takes the new body when the flags actually changed', async () => {
+    vi.useFakeTimers()
+    let version = 1
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, ({ request }) => {
+        const etag = `"v${version}"`
+        if (request.headers.get('if-none-match') === etag) {
+          return new HttpResponse(null, { status: 304, headers: { etag } })
+        }
+        return HttpResponse.json(
+          { features: [{ name: 'a', enabled: version === 1 }] },
+          { headers: { etag } },
+        )
+      }),
+    )
+
+    const client = makeClient({ ttl: 30 })
+    await expect(client.getFeatures()).resolves.toEqual({ a: true })
+
+    version = 2
+    vi.advanceTimersByTime(31_000)
+    await expect(client.getFeatures()).resolves.toEqual({ a: false })
+    vi.useRealTimers()
+  })
+
+  it('does not revalidate once the body has been dropped entirely', async () => {
+    vi.useFakeTimers()
+    let seen: string | null = 'unset'
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, ({ request }) => {
+        seen = request.headers.get('if-none-match')
+        return HttpResponse.json({ features: [] }, { headers: { etag: '"v1"' } })
+      }),
+    )
+
+    const client = makeClient({ ttl: 30, staleTtl: 60 })
+    await client.getAllFeatures()
+
+    /** Past ttl + staleTtl the entry is gone, so revalidating would be unsafe. */
+    vi.advanceTimersByTime(95_000)
+    await client.getAllFeatures()
+    expect(seen).toBeNull()
+    vi.useRealTimers()
+  })
+
+  it('works against a server that sends no ETag at all', async () => {
+    vi.useFakeTimers()
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, () =>
+        HttpResponse.json({ features: [{ name: 'a', enabled: true }] }),
+      ),
+    )
+
+    const client = makeClient({ ttl: 30 })
+    await expect(client.getAllFeatures()).resolves.toEqual([{ name: 'a', enabled: true }])
+    vi.advanceTimersByTime(31_000)
+    await expect(client.getAllFeatures()).resolves.toEqual([{ name: 'a', enabled: true }])
+    vi.useRealTimers()
+  })
+})
+
 describe('answering isEnabled from a bulk response', () => {
   /** Counts calls to each endpoint so we can prove which door was used. */
   function endpoints(features: Array<{ name: string; enabled: boolean }>) {

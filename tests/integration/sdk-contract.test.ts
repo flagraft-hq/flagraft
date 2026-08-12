@@ -260,6 +260,32 @@ describeIfDb('SDK <-> server contract', () => {
     })
   })
 
+  describe('conditional requests end to end', () => {
+    it('revalidates with the real ETag and gets a 304 the SDK understands', async () => {
+      const first = await fetch(`${baseUrl}/api/v1/client/features`, {
+        headers: { authorization: clientKey },
+      })
+      const etag = first.headers.get('etag')
+      expect(etag).toMatch(/^".+"$/)
+
+      const second = await fetch(`${baseUrl}/api/v1/client/features`, {
+        headers: { authorization: clientKey, 'if-none-match': etag! },
+      })
+      expect(second.status).toBe(304)
+      expect(await second.text()).toBe('')
+    })
+
+    it('returns the same features through the SDK across a revalidation', async () => {
+      /** ttl 1s so the second call revalidates rather than reading the cache. */
+      const client = new FlagraftClient({ baseUrl, apiKey: clientKey, ttl: 1, staleTtl: 60 })
+      const before = await client.getFeatures({ plan: 'pro' })
+      await new Promise((resolve) => setTimeout(resolve, 1_100))
+      const after = await client.getFeatures({ plan: 'pro' })
+      expect(after).toEqual(before)
+      expect(Object.keys(after).length).toBeGreaterThan(0)
+    })
+  })
+
   describe('caching against a live server', () => {
     it('does not re-request within the TTL, then reflects a change after it lapses', async () => {
       const client = sdk(60)

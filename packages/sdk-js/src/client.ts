@@ -1,4 +1,15 @@
 import { TtlCache, makeKey } from './cache.js'
+import {
+  BULK_CACHE_KEY,
+  DEFAULT_BACKOFF_MS,
+  DEFAULT_STALE_TTL_SECONDS,
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_TTL_SECONDS,
+  MAX_BACKOFF_MS,
+  MISSING_TTL_SECONDS,
+  NOT_MODIFIED_STATUS,
+  RATE_LIMIT_STATUS,
+} from './constants.js'
 import { FlagraftError, type ServerErrorBody } from './errors.js'
 import type {
   EvaluationContext,
@@ -8,23 +19,14 @@ import type {
   StaleEvent,
 } from './types.js'
 
-const DEFAULT_TTL_SECONDS = 30
-const DEFAULT_STALE_TTL_SECONDS = 300
 /**
- * How long a "this flag does not exist" answer is remembered. Deliberately
- * not an option: the usual cause is code that shipped before someone created
- * the flag, and a few seconds is short enough that nobody needs to tune it.
+ * A cached bulk response plus the ETag the server gave it, kept together so
+ * we never revalidate against a tag whose body we have already dropped.
  */
-const MISSING_TTL_SECONDS = 5
-const DEFAULT_TIMEOUT_MS = 2000
-const RATE_LIMIT_STATUS = 429
-/** Used when a 429 arrives with no usable Retry-After header. */
-const DEFAULT_BACKOFF_MS = 5_000
-/** Ceiling on how long one Retry-After may silence the client. */
-const MAX_BACKOFF_MS = 60_000
-
-/** Stands in for the flag key when caching a whole-environment response. */
-const BULK_CACHE_KEY = '__all__'
+interface BulkEntry {
+  features: Feature[]
+  etag: string | null
+}
 
 /**
  * Finds one flag inside a cached bulk response. Undefined means the server
@@ -61,7 +63,7 @@ export class FlagraftClient {
   private readonly timeoutMs: number
   private readonly onStale?: (event: StaleEvent) => void
   private readonly singleCache: TtlCache<EvaluationResult>
-  private readonly bulkCache: TtlCache<Feature[]>
+  private readonly bulkCache: TtlCache<BulkEntry>
   /**
    * Flags the server said it does not have. Keyed by flag key alone, with no
    * context, because whether a flag exists never depends on who is asking --
@@ -88,7 +90,7 @@ export class FlagraftClient {
      */
     const missingTtl = ttl === 0 ? 0 : MISSING_TTL_SECONDS
     this.singleCache = new TtlCache<EvaluationResult>(ttl, staleTtl)
-    this.bulkCache = new TtlCache<Feature[]>(ttl, staleTtl)
+    this.bulkCache = new TtlCache<BulkEntry>(ttl, staleTtl)
     this.missingCache = new TtlCache<true>(missingTtl)
   }
 
@@ -122,7 +124,7 @@ export class FlagraftClient {
     const bulkKey = makeKey(BULK_CACHE_KEY, context)
     const bulk = this.bulkCache.get(bulkKey)
     if (bulk) {
-      const enabled = findInBulk(bulk, flagKey)
+      const enabled = findInBulk(bulk.features, flagKey)
       if (enabled !== undefined) return enabled
       /**
        * The server builds both endpoints from the same flag map, so a key
@@ -163,7 +165,7 @@ export class FlagraftClient {
        */
       const staleBulk = this.bulkCache.getStale(bulkKey)
       if (staleBulk) {
-        const enabled = findInBulk(staleBulk.value, flagKey)
+        const enabled = findInBulk(staleBulk.value.features, flagKey)
         if (enabled !== undefined) {
           this.reportStale(flagKey, staleBulk.storedAt)
           return enabled
@@ -195,17 +197,28 @@ export class FlagraftClient {
   async getAllFeatures(context: EvaluationContext = {}): Promise<Feature[]> {
     const cacheKey = makeKey(BULK_CACHE_KEY, context)
     const cached = this.bulkCache.get(cacheKey)
-    if (cached) return cached
+    if (cached) return cached.features
+
+    /**
+     * An expired entry still holds a usable body, so its ETag goes out with
+     * the refetch. If nothing has changed the server answers 304 and we keep
+     * what we have instead of re-downloading an identical list.
+     */
+    const previous = this.bulkCache.getStale(cacheKey)
 
     try {
-      const features = await this.fetchAll(context)
-      this.bulkCache.set(cacheKey, features)
-      return features
+      const result = await this.fetchAll(context, previous?.value.etag ?? undefined)
+      const entry: BulkEntry =
+        result.features === null && previous
+          ? { features: previous.value.features, etag: result.etag ?? previous.value.etag }
+          : { features: result.features ?? [], etag: result.etag }
+      this.bulkCache.set(cacheKey, entry)
+      return entry.features
     } catch (error) {
       const stale = this.bulkCache.getStale(cacheKey)
       if (stale) {
         this.reportStale(null, stale.storedAt)
-        return stale.value
+        return stale.value.features
       }
 
       if (error instanceof FlagraftError && error.statusCode !== RATE_LIMIT_STATUS) throw error
@@ -267,8 +280,12 @@ export class FlagraftClient {
     console.warn(`[flagraft] rate limited, pausing requests for ${Math.round(ms / 1000)}s`)
   }
 
-  /** Issues an authenticated GET and parses the JSON body, or throws. */
-  private async request<T>(url: string): Promise<T> {
+  /**
+   * The shared transport: backoff gate, timeout, auth and error mapping.
+   * Returns the raw response so callers that care about status or headers,
+   * such as a conditional request, can inspect it.
+   */
+  private async send(url: string, ifNoneMatch?: string): Promise<Response> {
     /**
      * While the server has asked us to back off, nothing goes out. Adding
      * requests to a rate limiter only deepens the hole, and the caller is
@@ -282,17 +299,27 @@ export class FlagraftClient {
       )
     }
 
+    const headers: Record<string, string> = { authorization: this.apiKey }
+    if (ifNoneMatch) headers['if-none-match'] = ifNoneMatch
+
     const response = await this.fetchImpl(url, {
       method: 'GET',
-      headers: { authorization: this.apiKey },
+      headers,
       signal: this.timeoutSignal(),
     })
-    if (!response.ok) {
+    /** 304 is a success for our purposes, but fetch reports it as not ok. */
+    if (!response.ok && response.status !== NOT_MODIFIED_STATUS) {
       if (response.status === RATE_LIMIT_STATUS) {
         this.startBackoff(response.headers.get('retry-after'))
       }
       await this.throwFromResponse(response)
     }
+    return response
+  }
+
+  /** Issues an authenticated GET and parses the JSON body, or throws. */
+  private async request<T>(url: string): Promise<T> {
+    const response = await this.send(url)
     return (await response.json()) as T
   }
 
@@ -304,10 +331,23 @@ export class FlagraftClient {
     return this.request<EvaluationResult>(url)
   }
 
-  private async fetchAll(context: EvaluationContext): Promise<Feature[]> {
+  /**
+   * Fetches the whole feature list, revalidating with the previous ETag when
+   * we still hold the matching body. A null `features` means the server
+   * answered 304 and the caller should keep what it already had.
+   */
+  private async fetchAll(
+    context: EvaluationContext,
+    ifNoneMatch?: string,
+  ): Promise<{ features: Feature[] | null; etag: string | null }> {
     const url = `${this.baseUrl}/api/v1/client/features${this.queryString(context)}`
-    const body = await this.request<{ features: Feature[] }>(url)
-    return body.features
+    const response = await this.send(url, ifNoneMatch)
+    const etag = response.headers.get('etag')
+    if (response.status === NOT_MODIFIED_STATUS) {
+      return { features: null, etag }
+    }
+    const body = (await response.json()) as { features: Feature[] }
+    return { features: body.features, etag }
   }
 
   private queryString(context: EvaluationContext): string {
