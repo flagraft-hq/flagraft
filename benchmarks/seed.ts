@@ -30,13 +30,51 @@ async function api<T>(path: string, key: string, body?: unknown): Promise<T> {
     headers: { authorization: key, 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+  if (res.status === 401) {
+    throw new Error(
+      `${path} -> 401. The root key was written to DATABASE_URL, so the server at ` +
+        `${BASE_URL} is reading a different database.`,
+    )
+  }
+  if (res.status === 409) {
+    throw new Error(
+      `Project "${SLUG}" already exists -- this flag count has been seeded before. ` +
+        'Delete it, or pick another count with BENCH_FLAGS.',
+    )
+  }
   if (!res.ok) throw new Error(`${path} -> ${res.status} ${await res.text()}`)
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T)
+}
+
+/**
+ * Confirms a Flagraft server is answering before anything is written. The
+ * probe asks the admin API for projects without credentials and expects to be
+ * turned away: a 401 proves the route exists and is guarded. Health endpoints
+ * are no good for this -- /health and /ready are conventional paths that
+ * other frameworks answer with the same {"status":"ok"} body, so an unrelated
+ * app on the port would pass.
+ */
+async function assertServerIsUp() {
+  let status: number
+  try {
+    status = (await fetch(`${BASE_URL}/api/v1/admin/projects`)).status
+  } catch {
+    throw new Error(`No server responding at ${BASE_URL}. Start it, or set BENCH_BASE_URL.`)
+  }
+
+  if (status !== 401) {
+    throw new Error(
+      `${BASE_URL} answered the admin API with ${status} instead of 401, so it is not a ` +
+        'Flagraft server. Check what is on that port and set BENCH_BASE_URL.',
+    )
+  }
 }
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL
   if (!databaseUrl) throw new Error('DATABASE_URL is required')
+
+  await assertServerIsUp()
 
   const db = createDb(databaseUrl)
   const root = generateKey()

@@ -49,6 +49,14 @@ BENCH_FLAGS=500 pnpm bench:sdk   # bulk payload size drives the scan cost
 
 Reports ops/sec for cache hits (bulk and single) and for the cache-disabled path, which is where request building and JSON parsing show up.
 
+Before comparing runs across machines, check the clock:
+
+```bash
+cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+```
+
+Every cache read calls `Date.now()` once to age-check the entry. On `tsc` that costs ~25ns; on `hpet` or `acpi_pm` it costs ~1200ns, which is a large share of a cache-hit lookup. A host on `hpet` will report SDK numbers several times worse than the same code on `tsc` — the difference is the clock, not the SDK.
+
 ## Not covered
 
 No CI regression gate and no cross-vendor comparison. Add those once there is a number worth defending.

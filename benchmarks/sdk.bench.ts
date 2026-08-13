@@ -23,7 +23,9 @@ const stubFetch: typeof fetch = async (input) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
   return new Response(
     JSON.stringify(
-      url.includes('/features/') ? { name: TARGET, enabled: true, reason: 'default' } : { features },
+      url.includes('/features/')
+        ? { name: TARGET, enabled: true, reason: 'default' }
+        : { features },
     ),
     { status: 200, headers: { 'content-type': 'application/json' } },
   )
