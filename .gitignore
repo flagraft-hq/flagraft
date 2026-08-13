@@ -8,3 +8,4 @@ packages/*/node_modules
 packages/admin-ui/.vite
 packages/*/tsconfig.tsbuildinfo
 packages/*/*.tsbuildinfo
+benchmarks/.bench.json

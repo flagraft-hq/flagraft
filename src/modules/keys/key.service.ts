@@ -151,4 +151,7 @@ export async function deleteKey(db: Db, projectId: string, keyId: string) {
   if (!row) {
     throw new AppError('Key not found', 404, 'NotFound')
   }
+
+  /** Returned so the caller can evict the key from the auth cache. */
+  return row
 }

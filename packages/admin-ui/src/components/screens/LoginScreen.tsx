@@ -156,10 +156,12 @@ export function LoginScreen() {
                   </button>
                 </div>
                 {showForgotHint ? (
-                  <span className="hint">
-                    <Icon name="info" size={11} /> There's no self-service reset — a workspace admin
-                    can reset it for you.
-                  </span>
+                  <div className="auth-info-msg">
+                    <Icon name="info" size={14} />
+                    <span>
+                      There's no self-service reset, a workspace admin can reset it for you.
+                    </span>
+                  </div>
                 ) : null}
                 {capsOn ? (
                   <span className="hint" style={{ color: 'var(--acc-fg)' }}>

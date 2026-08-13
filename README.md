@@ -52,6 +52,9 @@ Flag state is cached per `projectId + environmentId` using BentoCache. Any write
 **Rate limiting**
 Client evaluation routes (`/api/v1/client/*`) are rate-limited per IP. The limit and window are configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`. Breaches return a `429` with the standard error envelope.
 
+**Logging**
+Only the requests worth reading are logged: any `5xx`, and anything slower than 500ms. Successful and `4xx` responses are silent, because the client evaluation endpoint is polled on a timer by every SDK instance -- a line per request is thousands a second describing nothing wrong, and it buries the events an operator needs. Set `REQUEST_LOG=true` to log every request while debugging. `5xx` errors are always logged with their stack, whatever the setting.
+
 **Health and readiness endpoints**
 `GET /health` returns server uptime. `GET /ready` checks database connectivity and returns `503` if the DB is unreachable. Both endpoints skip auth.
 
@@ -185,6 +188,7 @@ All config is read from environment variables. See `.env.example` for the full l
 | `PORT`                 | `3000`        | Port the server listens on                                                                                           |
 | `NODE_ENV`             | `development` | Set to `production` in deployments                                                                                   |
 | `LOG_LEVEL`            | `info`        | Pino log level                                                                                                       |
+| `REQUEST_LOG`          | `false`       | Log a line for every request. Off by default: `5xx` and slow requests are logged either way.                         |
 | `CACHE_TTL_SECONDS`    | `30`          | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
 | `RATE_LIMIT_MAX`       | `100`         | Maximum requests per window per IP on client evaluation routes.                                                      |
 | `RATE_LIMIT_WINDOW_MS` | `60000`       | Rate limit sliding window duration in milliseconds.                                                                  |

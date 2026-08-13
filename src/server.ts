@@ -26,6 +26,7 @@ import dbPlugin from './plugins/db.js'
 import errorHandlerPlugin from './plugins/errorHandler.js'
 import healthPlugin from './plugins/health.js'
 import requestIdPlugin from './plugins/requestId.js'
+import requestLogPlugin from './plugins/requestLog.js'
 import swaggerPlugin from './plugins/swagger.js'
 
 declare module 'fastify' {
@@ -57,6 +58,8 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   const config = loadConfig()
   const fastify = Fastify({
     logger: { level: config.LOG_LEVEL },
+    /** See requestLog plugin: the per-request firehose is opt-in. */
+    disableRequestLogging: !config.REQUEST_LOG,
   })
   fastify.decorate('config', config)
 
@@ -73,6 +76,7 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(cachePlugin, { cache: opts.cache, ttlSeconds: config.CACHE_TTL_SECONDS })
   await fastify.register(errorHandlerPlugin)
   await fastify.register(requestIdPlugin)
+  if (!config.REQUEST_LOG) await fastify.register(requestLogPlugin)
   await fastify.register(cookie)
   await fastify.register(jwt, { secret: config.JWT_SECRET })
   await fastify.register(authPlugin)

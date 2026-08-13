@@ -349,6 +349,21 @@ describeIfDb('api keys', () => {
 
       /** The stamp is fire-and-forget, so give it a moment to land. */
       await vi.waitFor(async () => expect((await read()).lastUsedAt).not.toBeNull())
+
+      /**
+       * Every request used to write this column, and since all traffic for one
+       * key hits one row those writes queued and capped server throughput. The
+       * stamp is now recorded at most once a minute per key, so a second call
+       * straight after must leave it alone.
+       */
+      const stamped = (await read()).lastUsedAt
+      await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+      })
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      expect((await read()).lastUsedAt).toBe(stamped)
       await app.close()
     })
 
@@ -527,6 +542,45 @@ describeIfDb('api keys', () => {
       })
 
       expect(afterDelete.statusCode).toBe(401)
+      await app.close()
+    })
+
+    it('rejects a revoked key that had already authenticated a request', async () => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const project = await createProject(app, rootKey)
+      const adminKey = await createAdminKey(app, rootKey, project.id)
+
+      /** Using the key first puts it in the auth cache. */
+      const before = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+      })
+      expect(before.statusCode).toBe(200)
+
+      const keys = (
+        await app.inject({
+          method: 'GET',
+          url: `/api/v1/admin/projects/${project.id}/keys`,
+          headers: { authorization: rootKey },
+        })
+      ).json<{ data: Array<{ id: string; type: string }> }>().data
+      const target = keys.find((k) => k.type === 'admin')!
+
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/admin/projects/${project.id}/keys/${target.id}`,
+        headers: { authorization: rootKey },
+      })
+
+      /** Revocation has to evict the cached key, not wait out its TTL. */
+      const after = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/projects/${project.id}/flags`,
+        headers: { authorization: adminKey },
+      })
+      expect(after.statusCode).toBe(401)
       await app.close()
     })
 
