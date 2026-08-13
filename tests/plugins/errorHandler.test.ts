@@ -54,4 +54,62 @@ describe('errorHandlerPlugin', () => {
     })
     expect(response.body).not.toContain('boom')
   })
+
+  /**
+   * The 500 body deliberately says nothing, so the log line is the only place
+   * the real cause survives.
+   */
+  it('logs the cause of a 500 that the response hides', async () => {
+    const lines: Array<{ level: number; msg: string; err?: { message: string; stack: string } }> =
+      []
+    const fastify = Fastify({
+      logger: {
+        level: 'debug',
+        stream: {
+          write(chunk: string) {
+            lines.push(JSON.parse(chunk) as (typeof lines)[number])
+          },
+        },
+      },
+      disableRequestLogging: true,
+    })
+    await fastify.register(errorHandlerPlugin)
+    fastify.get('/boom', async () => {
+      throw new Error('the real cause')
+    })
+
+    await fastify.inject('/boom')
+
+    const logged = lines.find((l) => l.msg === 'the real cause')
+    expect(logged).toBeDefined()
+    /** pino's error level. */
+    expect(logged!.level).toBe(50)
+    expect(logged!.err?.stack).toContain('the real cause')
+  })
+
+  it('keeps a caller mistake at debug level', async () => {
+    const lines: Array<{ level: number; msg: string }> = []
+    const fastify = Fastify({
+      logger: {
+        level: 'debug',
+        stream: {
+          write(chunk: string) {
+            lines.push(JSON.parse(chunk) as (typeof lines)[number])
+          },
+        },
+      },
+      disableRequestLogging: true,
+    })
+    await fastify.register(errorHandlerPlugin)
+    fastify.get('/nope', async () => {
+      throw new AppError('not found', 404, 'NotFound')
+    })
+
+    await fastify.inject('/nope')
+
+    const logged = lines.find((l) => l.msg === 'not found')
+    expect(logged).toBeDefined()
+    /** pino's debug level -- not error, so a 404 never pages anyone. */
+    expect(logged!.level).toBe(20)
+  })
 })

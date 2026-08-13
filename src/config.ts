@@ -6,6 +6,18 @@ const configSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.string().default('info'),
+  /**
+   * Logs a line for every request when true. Off by default: the client
+   * evaluation endpoint is polled on a timer by every SDK instance, so a line
+   * per request buries the events an operator actually needs and fills the
+   * disk of whoever is self-hosting. Failed and slow requests are logged
+   * either way. Parsed explicitly because z.coerce.boolean treats any
+   * non-empty string as true.
+   */
+  REQUEST_LOG: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true'),
   CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(30),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
