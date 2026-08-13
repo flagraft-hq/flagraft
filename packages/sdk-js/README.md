@@ -129,7 +129,7 @@ Both trailing arguments are optional. See [`EvaluationContext`](#evaluationconte
 - Answers with no request at all when a `getFeatures` call has already fetched this context. See [Sharing between the two endpoints](#sharing-between-the-two-endpoints).
 - On any other failure, returns the **last known value** for that flag and context if one is still inside the stale window, and notifies `onStale`. See [Stale-on-error](#stale-on-error).
 - With no stale value available: returns `defaultValue` and logs a warning to `console.warn` if the request failed entirely (network down, DNS error, server unreachable, abort).
-- With no stale value available: throws `FlagraftError` on any other 4xx or 5xx response, so misconfiguration (bad key, scope mismatch, server bug) surfaces loudly during integration. `defaultValue` does not suppress this.
+- With no stale value available: throws `FlagraftError` on a 4xx other than 404 and 429, so misconfiguration (bad key, scope mismatch) surfaces loudly during integration. `defaultValue` does not suppress this. A 5xx never throws — see [Error model](#error-model).
 
 #### Default values
 
@@ -413,12 +413,14 @@ Any failure is first offered to the stale fallback. The table below describes wh
 | Network failure / fetch rejects   | `isEnabled` returns `defaultValue`, logs `console.warn`. `getFeatures` and `getAllFeatures` return `{}` / `[]`.                       |
 | Server returns 404 (`isEnabled`)  | Returns `defaultValue` and remembers the miss for 5 seconds. Never served stale — an unknown flag is an answer, not an outage.        |
 | Server returns 429 (rate limited) | Treated as an outage: stale first, then `defaultValue`. **Never throws**, and starts a backoff — see [Rate limiting](#rate-limiting). |
+| Server returns 5xx                | Treated as an outage: stale first, then `defaultValue`. **Never throws** — a broken server is not the caller's bug.                   |
 | Server returns 4xx (other)        | Throws `FlagraftError` with status, code, message.                                                                                    |
-| Server returns 5xx                | Throws `FlagraftError`.                                                                                                               |
 
-The split between "swallow" and "throw" is deliberate. Network blips, timeouts and rate limits are routine operational conditions, and a flag check should never wedge a request over one. A 403 on a cold client means your key or scope is wrong, and you want to know about that loudly.
+The rule is a single line: **4xx is yours to fix, everything else is an outage.**
 
-Note that a stale value can only exist after a successful call, so a misconfigured key still throws on the first request during integration. Once a client has warmed up, a later 403 or 500 is treated as an outage and rides on the stale value until the window closes.
+A `401` or `403` means your key or scope is wrong, and you want to hear about that loudly during integration. A network failure, a timeout, a `429` or a `500` all mean the server is unhealthy — none of them are something your code can do anything about, and a feature flag lookup must never be able to take down the application around it. Those resolve to a stale value if one exists, otherwise to your `defaultValue`, with a warning logged.
+
+Note that a stale value can only exist after a successful call, so a misconfigured key still throws on the first request. Once a client has warmed up, even a `403` rides on the stale value until that window closes.
 
 ---
 

@@ -34,8 +34,29 @@ commitment. Items move only when they are actually done.
 
 ### Delivery and freshness
 
-- **SSE push invalidation** — replace TTL polling so flag changes reach SDKs immediately.
-  Today, freshness is bounded by the server cache TTL plus the SDK TTL.
+- **SSE push invalidation** — let a flag change reach running SDKs immediately instead of on
+  the next poll. The server already clears its own cache on every write, so the delay today is
+  the SDK's `ttl` alone: up to 30 seconds by default. That is fine for a gradual rollout and
+  poor for a kill switch, which is the case this is for.
+
+  Design settled, not yet built:
+  - `GET /api/v1/client/stream`, authenticated with the client key. That key is already scoped
+    to one project and environment, so the key is the subscription — no subscribe protocol.
+  - The event carries **invalidation, not data** (`{ environmentId, version }`). The server
+    cannot push evaluated results because evaluation depends on each caller's context. The SDK
+    drops the affected cache entries and refetches, and that refetch is a conditional request,
+    so ETag support is what keeps it cheap.
+  - The seven existing mutation sites that call `cache.delete`/`deleteByPrefix` collapse into
+    one `flagsChanged(projectId, environmentId?)` decorator that clears and publishes together.
+  - Opt-in in the SDK (`stream: true`), with reconnect backoff and a fall back to TTL polling
+    whenever the stream is down. It must be an optimisation over today's behaviour, never a
+    replacement for it.
+  - Needs `LISTEN/NOTIFY` (below) to work on more than one server instance.
+  - Not usable on Lambda, and awkward on Cloudflare Workers, since it needs a long-lived
+    connection. The SDK compatibility table will need a note.
+
+- **Cross-instance cache invalidation via Postgres `LISTEN/NOTIFY`** — see Known limitations.
+  Required before SSE can work behind a load balancer, and worth doing on its own merits.
 
 ### Operations
 
@@ -49,8 +70,24 @@ commitment. Items move only when they are actually done.
   add the same caching and fail-safe behaviour as the TypeScript client.
 - **npm release pipeline** for `@flagraft/sdk`.
 
+## Known limitations
+
+- **Cache invalidation does not cross server instances.** The flag-state cache is in-process
+  (`bentostore().useL1Layer(memoryDriver())`), with no shared layer and no bus. Every write
+  clears the cache on the instance that handled it, so a single-server deployment is always
+  consistent. Run two or more behind a load balancer and the other instances keep serving the
+  previous state until their own entries expire — up to `CACHE_TTL_SECONDS`, 30 by default.
+
+  Workaround today: run one instance, or lower `CACHE_TTL_SECONDS`. The fix is Postgres
+  `LISTEN/NOTIFY`, which needs no new infrastructure since Postgres is already required.
+
 ## Not planned
 
 - **Hosted SaaS.** Flagraft is self-hosted by design.
 - **Experimentation and analytics.** Flag evaluation is the scope; measuring outcomes belongs
   in your analytics stack.
+- **Automatic bulk fetching inside `isEnabled`.** Considered and rejected. Having a single flag
+  check pull the whole catalogue helps an app with few distinct contexts and hurts one that
+  passes per-user context, where every user would download every flag to answer one question.
+  Calling `getFeatures(context)` once already gives the same benefit — later `isEnabled` calls
+  with that context are answered from the cached bulk response with no request.

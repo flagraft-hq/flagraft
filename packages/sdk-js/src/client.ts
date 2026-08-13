@@ -37,6 +37,17 @@ function findInBulk(features: Feature[], flagKey: string): boolean | undefined {
 }
 
 /**
+ * True when the failure is the caller's to fix -- a bad key, a wrong scope --
+ * and so worth surfacing loudly. Everything else (5xx, and 429, which arrives
+ * with its own backoff) means the server is unhealthy, which is an outage the
+ * caller should ride out on a stale value or their default rather than crash
+ * on. A flag lookup must never be able to take down the app around it.
+ */
+function isCallerError(statusCode: number): boolean {
+  return statusCode >= 400 && statusCode < 500 && statusCode !== RATE_LIMIT_STATUS
+}
+
+/**
  * Reads a Retry-After header, which HTTP allows to be either a number of
  * seconds or an absolute date. Anything missing or unparseable falls back to
  * a short pause, and every result is capped so one bad header cannot mute the
@@ -172,12 +183,7 @@ export class FlagraftClient {
         }
       }
 
-      /**
-       * A 429 is the server asking us to slow down, not a bug to surface. It
-       * behaves like any other outage: stale value if we have one, otherwise
-       * the caller's default.
-       */
-      if (error instanceof FlagraftError && error.statusCode !== RATE_LIMIT_STATUS) throw error
+      if (error instanceof FlagraftError && isCallerError(error.statusCode)) throw error
       if (!this.backingOff()) {
         // eslint-disable-next-line no-console
         console.warn(`[flagraft] flag evaluation failed, defaulting to ${defaultValue}`, error)
@@ -221,7 +227,7 @@ export class FlagraftClient {
         return stale.value.features
       }
 
-      if (error instanceof FlagraftError && error.statusCode !== RATE_LIMIT_STATUS) throw error
+      if (error instanceof FlagraftError && isCallerError(error.statusCode)) throw error
       if (!this.backingOff()) {
         // eslint-disable-next-line no-console
         console.warn('[flagraft] bulk evaluation failed, returning empty list', error)

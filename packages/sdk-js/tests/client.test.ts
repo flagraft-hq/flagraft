@@ -384,6 +384,77 @@ describe('answering isEnabled from a bulk response', () => {
   })
 })
 
+describe('server errors versus caller errors', () => {
+  function respond(flagKey: string, status: number, error: string) {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/${flagKey}`, () =>
+        HttpResponse.json({ error, message: 'boom', statusCode: status }, { status }),
+      ),
+    )
+  }
+
+  it.each([500, 502, 503, 504])(
+    'falls back to the default on %i rather than throwing',
+    async (status) => {
+      respond(`broken-${status}`, status, 'InternalServerError')
+
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const client = makeClient({ staleTtl: 0 })
+      await expect(client.isEnabled(`broken-${status}`)).resolves.toBe(false)
+      await expect(client.isEnabled(`broken-${status}`, {}, true)).resolves.toBe(true)
+      warn.mockRestore()
+    },
+  )
+
+  it.each([400, 401, 403])('still throws on %i, which is the caller to fix', async (status) => {
+    respond(`refused-${status}`, status, 'Forbidden')
+
+    const client = makeClient({ staleTtl: 0 })
+    await expect(client.isEnabled(`refused-${status}`)).rejects.toMatchObject({
+      statusCode: status,
+    })
+  })
+
+  it('returns an empty list for a bulk call that hits a 500', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, () =>
+        HttpResponse.json(
+          { error: 'InternalServerError', message: 'boom', statusCode: 500 },
+          { status: 500 },
+        ),
+      ),
+    )
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = makeClient({ staleTtl: 0 })
+    await expect(client.getAllFeatures()).resolves.toEqual([])
+    warn.mockRestore()
+  })
+
+  it('still prefers a stale value over the default on a 500', async () => {
+    vi.useFakeTimers()
+    let up = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/wobbly`, () =>
+        up
+          ? HttpResponse.json({ name: 'wobbly', enabled: true, reason: 'default' })
+          : HttpResponse.json(
+              { error: 'InternalServerError', message: 'boom', statusCode: 500 },
+              { status: 500 },
+            ),
+      ),
+    )
+
+    const client = makeClient({ ttl: 30, staleTtl: 300, onStale: () => {} })
+    await client.isEnabled('wobbly')
+
+    up = false
+    vi.advanceTimersByTime(31_000)
+    await expect(client.isEnabled('wobbly', {}, false)).resolves.toBe(true)
+    vi.useRealTimers()
+  })
+})
+
 describe('rate limiting', () => {
   /** Answers 429 with the given Retry-After and counts every request. */
   function limited(flagKey: string, counter: { calls: number }, retryAfter?: string) {
