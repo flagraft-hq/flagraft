@@ -13,6 +13,7 @@ import {
   WORKSPACE_ADMIN_ROLES,
   type ApiKeyType,
 } from '../auth/constants.js'
+import { cacheKeys } from '../cache/keys.js'
 import type { Db } from '../db/index.js'
 import { apiKeys, environments, userProjects, users } from '../db/schema.js'
 import { AppError } from './errorHandler.js'
@@ -131,6 +132,51 @@ export async function resolveActorLabel(
   }
 }
 
+/**
+ * The fields of an API key the request path actually needs. Only primitives
+ * are kept because the cache may store the value serialized, which would turn
+ * a Date back into a string -- expiresAt is held as epoch milliseconds so it
+ * survives that either way.
+ */
+interface CachedApiKey {
+  id: string
+  projectId: string | null
+  environmentId: string | null
+  type: ApiKeyType
+  expiresAt: number | null
+}
+
+async function loadApiKey(db: Db, keyHash: string): Promise<CachedApiKey | null> {
+  const [key] = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1)
+  if (!key) return null
+  return {
+    id: key.id,
+    projectId: key.projectId,
+    environmentId: key.environmentId,
+    type: key.type as ApiKeyType,
+    expiresAt: key.expiresAt?.getTime() ?? null,
+  }
+}
+
+/**
+ * When each key last had its lastUsedAt column written, in epoch milliseconds.
+ * Every request used to write it, and because all traffic for one key targets
+ * one row, those writes queued behind each other and capped the whole server's
+ * throughput. Recording it at most once a minute per key is all the column is
+ * read at anyway.
+ */
+const lastUsedWrites = new Map<string, number>()
+const LAST_USED_WRITE_INTERVAL_MS = 60_000
+
+function shouldRecordUsage(keyId: string): boolean {
+  const now = Date.now()
+  const previous = lastUsedWrites.get(keyId)
+  if (previous !== undefined && now - previous < LAST_USED_WRITE_INTERVAL_MS) return false
+  /** ponytail: grows with the number of API keys, not with traffic. */
+  lastUsedWrites.set(keyId, now)
+  return true
+}
+
 async function authPlugin(fastify: FastifyInstance) {
   fastify.addHook('preHandler', async (request) => {
     if (request.routeOptions.config?.skipAuth) return
@@ -184,17 +230,16 @@ async function authPlugin(fastify: FastifyInstance) {
       throw new AppError('Missing authorization header', 401, 'Unauthorized')
     }
 
-    const [key] = await fastify.db
-      .select()
-      .from(apiKeys)
-      .where(eq(apiKeys.keyHash, hashKey(authorization)))
-      .limit(1)
+    const keyHash = hashKey(authorization)
+    const key = await fastify.cache.getOrSet(cacheKeys.apiKey(keyHash), () =>
+      loadApiKey(fastify.db, keyHash),
+    )
 
     if (!key) {
       throw new AppError('Invalid authorization key', 401, 'Unauthorized')
     }
 
-    if (key.expiresAt && key.expiresAt.getTime() <= Date.now()) {
+    if (key.expiresAt !== null && key.expiresAt <= Date.now()) {
       throw new AppError('API key expired', 401, 'Unauthorized')
     }
 
@@ -202,15 +247,17 @@ async function authPlugin(fastify: FastifyInstance) {
       keyId: key.id,
       projectId: key.projectId,
       environmentId: key.environmentId,
-      type: key.type as ApiKeyType,
+      type: key.type,
       isRoot: key.projectId === null,
     }
 
-    void fastify.db
-      .update(apiKeys)
-      .set({ lastUsedAt: new Date() })
-      .where(and(eq(apiKeys.id, key.id), eq(apiKeys.keyHash, key.keyHash)))
-      .catch((error: unknown) => request.log.warn({ error }, 'Failed to update key usage'))
+    if (shouldRecordUsage(key.id)) {
+      void fastify.db
+        .update(apiKeys)
+        .set({ lastUsedAt: new Date() })
+        .where(and(eq(apiKeys.id, key.id), eq(apiKeys.keyHash, keyHash)))
+        .catch((error: unknown) => request.log.warn({ error }, 'Failed to update key usage'))
+    }
   })
 
   /**

@@ -14,4 +14,10 @@ export const cacheKeys = {
    * Used for invalidation when a mutation affects every environment (e.g. flag create/delete).
    */
   flagStatePrefix: (projectId: string) => `flags:${projectId}:`,
+
+  /**
+   * Key for a looked-up API key, addressed by its stored hash so the plaintext
+   * key never becomes a cache key. Invalidated when the key is revoked.
+   */
+  apiKey: (keyHash: string) => `apikey:${keyHash}`,
 }

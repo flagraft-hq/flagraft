@@ -7,6 +7,7 @@ import {
   listKeysQuerySchema,
 } from './key.schema.js'
 import * as service from './key.service.js'
+import { cacheKeys } from '../../cache/keys.js'
 import { MAX_PAGE_SIZE } from '../../limits.js'
 
 export async function keyRoutes(fastify: FastifyInstance) {
@@ -87,7 +88,9 @@ export async function keyRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const params = keyParamsSchema.parse(request.params)
-      await service.deleteKey(fastify.db, params.projectId, params.keyId)
+      const revoked = await service.deleteKey(fastify.db, params.projectId, params.keyId)
+      /** Authentication reads keys from cache, so a revoked one must be evicted. */
+      await fastify.cache.delete(cacheKeys.apiKey(revoked.keyHash))
       return reply.status(204).send()
     },
   )
