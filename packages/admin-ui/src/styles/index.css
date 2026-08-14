@@ -1,6 +1,5 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import 'tailwindcss';
+@import './theme.css'; /* Tailwind's theme, mapped onto the design tokens */
 
 /**
  * Styles are split by domain and imported in cascade order.

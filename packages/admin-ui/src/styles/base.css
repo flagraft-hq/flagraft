@@ -171,6 +171,25 @@ body {
   font-size: 0.8125rem;
 }
 
+/**
+ * Two defaults Tailwind's reset used to provide and stopped providing in v4.
+ *
+ * Buttons no longer get a pointer cursor, and 19 buttons here carry no class
+ * of their own, so without this they show a text caret instead. Placeholders
+ * no longer get a fixed grey and fall back to the input's own colour at half
+ * opacity, which reads far too dark; --text-4 is the token that matches what
+ * the old reset painted, and unlike the old fixed grey it follows the theme.
+ */
+button:not(:disabled),
+[role='button']:not(:disabled) {
+  cursor: pointer;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-4);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

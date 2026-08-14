@@ -1,0 +1,113 @@
+/**
+ * Tailwind's theme, expressed against the design tokens in base.css.
+ *
+ * This replaces the old tailwind.config.ts: Tailwind v4 reads its theme from
+ * CSS rather than a JS config. Every colour is a `var(--…)` reference to the
+ * same custom property the hand-written CSS uses, so a utility class and a
+ * stylesheet rule always resolve to the same value, and both follow the
+ * light/dark switch automatically because those variables are redefined under
+ * .theme-dark.
+ *
+ * `--color-*: initial` clears Tailwind's built-in palette first, matching what
+ * the old config did by setting `theme.colors` outright. It means `bg-gray-100`
+ * and friends do not exist -- only the tokens below. Drop that line to get the
+ * default palette back alongside these.
+ */
+@theme {
+  --color-*: initial;
+
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Brand / neutral ramps (fixed, not theme-dependent) */
+  --color-teal-50: var(--teal-50);
+  --color-teal-100: var(--teal-100);
+  --color-teal-200: var(--teal-200);
+  --color-teal-300: var(--teal-300);
+  --color-teal-400: var(--teal-400);
+  --color-teal-500: var(--teal-500);
+  --color-teal-600: var(--teal-600);
+  --color-teal-700: var(--teal-700);
+  --color-teal-800: var(--teal-800);
+  --color-teal-900: var(--teal-900);
+
+  --color-amber-50: var(--amber-50);
+  --color-amber-100: var(--amber-100);
+  --color-amber-200: var(--amber-200);
+  --color-amber-300: var(--amber-300);
+  --color-amber-400: var(--amber-400);
+  --color-amber-500: var(--amber-500);
+  --color-amber-600: var(--amber-600);
+  --color-amber-700: var(--amber-700);
+
+  --color-red-50: var(--red-50);
+  --color-red-100: var(--red-100);
+  --color-red-300: var(--red-300);
+  --color-red-500: var(--red-500);
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
+
+  --color-ink-0: var(--ink-0);
+  --color-ink-50: var(--ink-50);
+  --color-ink-100: var(--ink-100);
+  --color-ink-200: var(--ink-200);
+  --color-ink-300: var(--ink-300);
+  --color-ink-400: var(--ink-400);
+  --color-ink-500: var(--ink-500);
+  --color-ink-600: var(--ink-600);
+  --color-ink-700: var(--ink-700);
+  --color-ink-800: var(--ink-800);
+  --color-ink-900: var(--ink-900);
+  --color-ink-950: var(--ink-950);
+
+  /* Semantic, theme-aware tokens */
+  --color-pri: var(--pri);
+  --color-pri-hover: var(--pri-hover);
+  --color-pri-soft: var(--pri-soft);
+  --color-pri-soft-border: var(--pri-soft-border);
+  --color-pri-fg: var(--pri-fg);
+
+  --color-acc: var(--acc);
+  --color-acc-soft: var(--acc-soft);
+  --color-acc-soft-border: var(--acc-soft-border);
+  --color-acc-fg: var(--acc-fg);
+
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-border: var(--danger-soft-border);
+  --color-danger-fg: var(--danger-fg);
+
+  --color-surface: var(--bg-elev);
+  --color-surface-app: var(--bg-app);
+  --color-surface-subtle: var(--bg-subtle);
+  --color-surface-muted: var(--bg-muted);
+  --color-surface-hover: var(--bg-hover);
+  --color-surface-active: var(--bg-active);
+
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-text-4: var(--text-4);
+  --color-text-inv: var(--inv-text);
+
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--r-sm);
+  --radius: var(--r-md);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+
+  --shadow: var(--shadow-2);
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-focus: var(--focus);
+}
