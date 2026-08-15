@@ -160,7 +160,7 @@
 }
 .topbar-search input:focus {
   border-color: var(--pri);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 .topbar-search input::placeholder {
   color: var(--text-4);
@@ -332,7 +332,7 @@
 }
 
 .nav-item:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 .sidenav-footer {

@@ -8,14 +8,13 @@
  * light/dark switch automatically because those variables are redefined under
  * .theme-dark.
  *
- * `--color-*: initial` clears Tailwind's built-in palette first, matching what
- * the old config did by setting `theme.colors` outright. It means `bg-gray-100`
- * and friends do not exist -- only the tokens below. Drop that line to get the
- * default palette back alongside these.
+ * Tailwind's built-in palette is deliberately left in place. An earlier version
+ * of this file cleared it with `--color-*: initial`, but HeroUI's stylesheets
+ * are written against those default colours, so clearing them would leave
+ * HeroUI components with no colour at all. `bg-gray-100` and friends therefore
+ * exist alongside the tokens below.
  */
 @theme {
-  --color-*: initial;
-
   --color-transparent: transparent;
   --color-current: currentColor;
   --color-white: #ffffff;
@@ -109,5 +108,57 @@
   --shadow-1: var(--shadow-1);
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
-  --shadow-focus: var(--focus);
+  --shadow-focus: var(--focus-ring);
+}
+
+/**
+ * HeroUI palette bridge.
+ *
+ * HeroUI reads its colours from a small set of plain custom properties on the
+ * root element. Pointing each one at the token our own stylesheets already use
+ * keeps HeroUI components looking like the rest of the product.
+ *
+ * Only light values are listed. The tokens on the right are themselves
+ * redefined under `.theme-dark` in base.css, so dark mode follows for free and
+ * so does the accent picker, which rewrites `--teal-*` at runtime.
+ *
+ * This block is deliberately outside `@layer`. HeroUI declares its own values
+ * inside `@layer base`, and unlayered rules beat layered ones no matter what
+ * order they load in.
+ */
+:root {
+  --background: var(--bg-app);
+  --foreground: var(--text-1);
+
+  --surface: var(--bg-elev);
+  --surface-foreground: var(--text-1);
+  --surface-secondary: var(--bg-subtle);
+  --surface-secondary-foreground: var(--text-1);
+  --surface-tertiary: var(--bg-active);
+  --surface-tertiary-foreground: var(--text-1);
+
+  --overlay: var(--bg-elev);
+  --overlay-foreground: var(--text-1);
+
+  /* `--border` and `--danger` are not listed: base.css already defines both
+     under these exact names, and it is unlayered too, so ours already win. */
+  --muted: var(--text-3);
+  --separator: var(--border);
+
+  --default: var(--bg-subtle);
+  --default-foreground: var(--text-1);
+
+  --accent: var(--pri);
+  --accent-foreground: var(--inv-text);
+
+  --field-background: var(--bg-elev);
+  --field-foreground: var(--text-1);
+  --field-placeholder: var(--text-4);
+  --field-border: var(--border);
+
+  --warning: var(--acc);
+
+  /* A colour, not the box-shadow our own `--focus-ring` holds. */
+  --focus: var(--pri);
+  --link: var(--pri);
 }

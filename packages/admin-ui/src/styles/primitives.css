@@ -107,7 +107,7 @@
 }
 
 .modal-close:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
   border-radius: var(--r-sm);
 }
 
@@ -162,7 +162,7 @@
 .text-field-input:focus {
   outline: none;
   border-color: var(--pri);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 .text-field-input:disabled {
@@ -238,7 +238,7 @@
 .select-input:focus {
   outline: none;
   border-color: var(--pri);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 .select:disabled,
@@ -287,7 +287,7 @@
 }
 
 .checkbox:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
   border-radius: var(--r-sm);
 }
 
@@ -574,7 +574,7 @@
   color: var(--text-1);
 }
 .pagination-btn:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 .pagination-btn:disabled {
   opacity: 0.4;

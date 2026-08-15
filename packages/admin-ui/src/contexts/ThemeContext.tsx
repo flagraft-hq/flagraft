@@ -27,9 +27,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [density, setDensity] = useState<Density>('comfortable')
   const [accent, setAccent] = useState<Accent>('teal')
 
+  /**
+   * Our stylesheets key off `theme-light` / `theme-dark`. HeroUI keys off a
+   * plain `dark` class. Both are applied so the two styling systems agree on
+   * which theme is active. The `dark` class goes away once the last
+   * hand-written stylesheet does.
+   */
   useEffect(() => {
-    document.documentElement.classList.remove('theme-light', 'theme-dark')
-    document.documentElement.classList.add(`theme-${theme}`)
+    const root = document.documentElement
+    root.classList.remove('theme-light', 'theme-dark')
+    root.classList.add(`theme-${theme}`)
+    root.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
   useEffect(() => {

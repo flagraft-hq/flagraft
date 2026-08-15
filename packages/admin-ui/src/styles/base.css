@@ -108,7 +108,7 @@
   --kbd-border: #d8dde6;
   --kbd-shadow: 0 1px 0 #cfd6e0;
 
-  --focus: 0 0 0 3px rgba(45, 212, 191, 0.35);
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.35);
 }
 
 .theme-dark {
@@ -144,7 +144,7 @@
   --kbd-border: #2a3855;
   --kbd-shadow: 0 1px 0 #0b1220;
 
-  --focus: 0 0 0 3px rgba(45, 212, 191, 0.45);
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.45);
 }
 
 /**
@@ -222,7 +222,7 @@ textarea::placeholder {
 }
 
 .btn:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 .btn[disabled] {
@@ -315,7 +315,7 @@ textarea::placeholder {
 }
 
 .toggle:focus-visible .toggle-track {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 /**
@@ -473,7 +473,7 @@ textarea::placeholder {
 }
 
 .checkbox:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
   border-radius: var(--r-sm);
 }
 

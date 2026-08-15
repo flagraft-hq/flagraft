@@ -469,7 +469,7 @@
 }
 .search-input .filter-search:focus {
   border-color: var(--pri);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 .search-input .kbd-hint {
   position: absolute;

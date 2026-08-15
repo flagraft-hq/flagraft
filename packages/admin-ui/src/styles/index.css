@@ -1,4 +1,25 @@
+@layer theme, base, components, utilities;
+
 @import 'tailwindcss';
+
+/**
+ * HeroUI ships plain CSS rather than a Tailwind plugin, so it is wired in by
+ * import rather than by plugin.
+ *
+ * Its `@heroui/styles` entry point pulls in every component's CSS at once --
+ * around 36 KB gzipped of rules for components this app does not render. The
+ * pieces below are the ones needed no matter which components are used. Each
+ * component's own stylesheet is imported next to the component that uses it,
+ * so the cost arrives with the component and not before.
+ *
+ * Everything here sits inside `@layer`, which is why the hand-written files
+ * further down still win wherever the two overlap.
+ */
+@import '@heroui/styles/base' layer(base);
+@import '@heroui/styles/themes/default';
+@import '@heroui/styles/utilities';
+@import '@heroui/styles/variants';
+
 @import './theme.css'; /* Tailwind's theme, mapped onto the design tokens */
 
 /**

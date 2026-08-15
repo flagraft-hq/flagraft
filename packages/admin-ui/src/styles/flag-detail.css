@@ -466,7 +466,7 @@
 
 .token-input:focus-within {
   border-color: var(--pri);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
   outline: none;
 }
 

@@ -85,6 +85,32 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.classList.contains('theme-dark')).toBe(true)
   })
 
+  /**
+   * HeroUI styles its dark variants off a plain `dark` class, while the
+   * hand-written stylesheets use `theme-dark`. Both have to move together or
+   * HeroUI components render light inside a dark app.
+   */
+  it('applies HeroUI\'s "dark" class alongside "theme-dark", and drops it again', () => {
+    render(
+      <ThemeProvider>
+        <ThemeConsumer />
+      </ThemeProvider>,
+    )
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
+
+    act(() => {
+      fireEvent.click(screen.getByText('set dark'))
+    })
+    expect(document.documentElement.classList.contains('theme-dark')).toBe(true)
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
+
+    act(() => {
+      fireEvent.click(screen.getByText('set light'))
+    })
+    expect(document.documentElement.classList.contains('theme-light')).toBe(true)
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
+  })
+
   it('useTheme throws when called outside ThemeProvider', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     function BareConsumer() {

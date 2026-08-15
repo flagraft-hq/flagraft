@@ -61,7 +61,7 @@ export function Icon({ name, size = 16, className = '', ...rest }: IconProps) {
     ...rest,
   }
 
-  const icons: Record<IconName, JSX.Element> = {
+  const icons: Record<IconName, React.JSX.Element> = {
     flag: (
       <>
         <path d="M5 21V4" />

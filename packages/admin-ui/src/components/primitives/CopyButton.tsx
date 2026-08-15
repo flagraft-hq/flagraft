@@ -46,7 +46,7 @@ export function CopyButton({
   className = '',
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   /** Clear any pending revert timer if the button unmounts mid-feedback. */
   useEffect(() => () => clearTimeout(timer.current), [])

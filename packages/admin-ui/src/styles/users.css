@@ -125,7 +125,7 @@
 .users-search input:focus {
   outline: none;
   background: var(--bg-elev);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
   border-color: var(--pri);
 }
 .users-search-clear {
