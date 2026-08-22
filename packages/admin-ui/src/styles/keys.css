@@ -1,208 +1,757 @@
 /**
- * API keys screen: the key table, the security note, the issue dialog, and the
- * one-time plaintext reveal. Reuses shared tokens, .page-header, .icon-btn.
+ * API keys screen, drawn to the HeroUI design comp.
+ *
+ * The comp uses a zinc neutral ramp and a pink-red danger, where the rest of
+ * the app still uses slate and a brick red. Rather than fork a second set of
+ * names, the block below re-points the app's own tokens at the comp's values
+ * and scopes that to this screen. When the other screens are converted the
+ * same block moves to `:root` / `.theme-dark` in base.css and everything
+ * follows at once -- nothing here has to change.
+ *
+ * `.keys-dialog` is listed alongside `.keys-screen` because modals render in a
+ * portal at the end of <body>, outside the screen element.
  */
+.keys-screen,
+.keys-dialog {
+  /* The app's own token names, used by the rules further down this file. */
+  --bg-app: #f4f4f5;
+  --bg-elev: #ffffff;
+  --bg-subtle: #fafafa;
+  --bg-hover: #fafafa;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text-1: #18181b;
+  --text-2: #52525b;
+  --text-3: #a1a1aa;
+  --text-4: #a1a1aa;
+  --danger: #f31260;
+  --acc: #f5a524;
+
+  /**
+   * HeroUI's own token names, restated with literal values rather than
+   * `var(--bg-elev)` and friends.
+   *
+   * This is not duplication for its own sake. theme.css bridges these at
+   * `:root` as `--surface: var(--bg-elev)`, and a custom property is
+   * substituted where it is DECLARED, not where it is used -- so `:root`
+   * resolves `--surface` to the slate value once and every descendant inherits
+   * that answer. Re-pointing `--bg-elev` further down the tree cannot reach it.
+   * Restating the values here is what makes a scoped theme work at all.
+   */
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --surface: #ffffff;
+  --surface-foreground: #18181b;
+  --surface-secondary: #fafafa;
+  --surface-secondary-foreground: #18181b;
+  --surface-tertiary: #f4f4f5;
+  --surface-tertiary-foreground: #18181b;
+  --overlay: #ffffff;
+  --overlay-foreground: #18181b;
+  --muted: #a1a1aa;
+  --separator: #e4e4e7;
+  --default: #fafafa;
+  --default-foreground: #18181b;
+  --accent-foreground: #ffffff;
+  --field-background: #fafafa;
+  --field-foreground: #18181b;
+  --field-placeholder: #a1a1aa;
+  --field-border: #e4e4e7;
+  --warning: #f5a524;
+  --focus: var(--pri);
+  --link: var(--pri);
+
+  /* The comp's own radii and shadows, which our scale has no equivalent for. */
+  --dc-r: 12px;
+  --dc-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --dc-shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.22);
+}
+
+.theme-dark .keys-screen,
+.theme-dark .keys-dialog {
+  --bg-app: #09090b;
+  --bg-elev: #18181b;
+  --bg-subtle: #1f1f23;
+  --bg-hover: #1f1f23;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --text-1: #fafafa;
+  --text-2: #a1a1aa;
+  --text-3: #71717a;
+  --text-4: #71717a;
+
+  --background: #09090b;
+  --foreground: #fafafa;
+  --surface: #18181b;
+  --surface-foreground: #fafafa;
+  --surface-secondary: #1f1f23;
+  --surface-secondary-foreground: #fafafa;
+  --surface-tertiary: #27272a;
+  --surface-tertiary-foreground: #fafafa;
+  --overlay: #18181b;
+  --overlay-foreground: #fafafa;
+  --muted: #71717a;
+  --separator: #27272a;
+  --default: #1f1f23;
+  --default-foreground: #fafafa;
+  --field-background: #1f1f23;
+  --field-foreground: #fafafa;
+  --field-placeholder: #71717a;
+  --field-border: #27272a;
+
+  --dc-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --dc-shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
 
 .keys-screen {
   padding: var(--s-6);
+  color: var(--text-1);
 }
 
 .keys-empty-project,
 .keys-loading {
   padding: var(--s-6);
   color: var(--text-3);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
-/* Table */
-/* Search + scope/environment filters above the keys table */
+/* ── Page header ─────────────────────────────────────────────────────────── */
+
+.keys-screen .page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.keys-screen .page-header-text {
+  flex: 1;
+}
+.keys-screen .page-header h1 {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+.keys-screen .page-header-sub {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+/**
+ * The comp's three button shapes. Applied over HeroUI's `.button`, which is
+ * layered, so these win without `!important`.
+ */
+.keys-screen .button,
+.keys-dialog .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 17px;
+  border: none;
+  border-radius: var(--dc-r);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+}
+.keys-screen .button--primary,
+.keys-dialog .button--primary {
+  background: var(--pri);
+  color: #ffffff;
+  box-shadow: var(--dc-shadow);
+}
+.keys-screen .button--primary:hover,
+.keys-dialog .button--primary:hover {
+  filter: brightness(1.1);
+  background: var(--pri);
+}
+.keys-screen .button--ghost,
+.keys-dialog .button--ghost {
+  padding: 0 15px;
+  background: transparent;
+  color: var(--text-2);
+}
+.keys-screen .button--ghost:hover,
+.keys-dialog .button--ghost:hover {
+  background: color-mix(in srgb, var(--text-3) 14%, transparent);
+  color: var(--text-1);
+}
+.keys-dialog .button--danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+.keys-dialog .button--danger:hover {
+  filter: brightness(1.1);
+  background: var(--danger);
+}
+.keys-screen .button[disabled],
+.keys-dialog .button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* ── Toolbar: search + scope/environment filters ─────────────────────────── */
+
+/**
+ * The comp has no toolbar on this screen, so its filter row from the flags
+ * screen is reused: bare controls above the card, no surrounding panel.
+ */
 .keys-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem 0.75rem;
-  margin-bottom: 0.75rem;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-1);
+  gap: 10px;
+  margin-bottom: 16px;
 }
-.keys-toolbar .search-input {
+
+.keys-toolbar .search-field {
+  width: 280px;
+}
+.keys-toolbar .search-field__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-elev);
+  box-shadow: none;
+}
+.keys-toolbar .search-field__search-icon {
+  position: static;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  color: var(--text-3);
+}
+.keys-toolbar .search-field__input {
   flex: 1;
-  max-width: 22.5rem;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  box-shadow: none;
+}
+
+/**
+ * `.select` is a name collision, not a HeroUI style: primitives.css dresses our
+ * own native-<select> primitive with that class, HeroUI uses it for the wrapper
+ * div around its trigger, and our file is unlayered so it wins. Left alone it
+ * paints a second bordered box around every HeroUI select, complete with the
+ * background-image dropdown arrow. Stripped back to nothing here.
+ */
+.keys-screen .select,
+.keys-dialog .select {
+  display: block;
+  appearance: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  background-image: none;
+  box-shadow: none;
+  gap: 0;
+}
+.keys-toolbar .select__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-elev);
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: none;
+}
+.keys-toolbar .select__trigger:hover {
+  background: var(--bg-subtle);
+}
+.keys-toolbar .select__value {
+  flex: 0 1 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.8125rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+/* HeroUI pins the chevron absolutely to the trigger's edge; the comp has it
+   sitting in the flow after the label, like the search icon. */
+.keys-toolbar .select__indicator,
+.keys-dialog .select__indicator {
+  position: static;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  inset: auto;
+  color: var(--text-3);
+}
+
+/* The listbox renders in a portal, so it carries `.keys-popover` of its own. */
+.keys-popover.popover,
+.keys-popover .popover__dialog {
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-elev);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  padding: 4px;
+}
+.keys-popover .list-box-item {
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.8125rem;
+  color: var(--text-1);
+}
+.keys-popover .list-box-item[data-focused],
+.keys-popover .list-box-item[data-hovered] {
+  background: var(--bg-subtle);
+}
+
+/* ── The table ───────────────────────────────────────────────────────────── */
+
+/**
+ * The comp draws these rows as a CSS grid. This stays a real table so HeroUI's
+ * grid semantics and keyboard navigation survive; `table-layout: fixed` plus
+ * the widths below reproduce the comp's `1.4fr .7fr 1.1fr .8fr .8fr .9fr 80px`
+ * track sizing.
+ */
+.keys-card {
+  background: var(--bg-elev);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 4px);
+  box-shadow: var(--dc-shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.keys-card .table-root {
+  display: block;
+  overflow: visible;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.keys-card .table__content {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.keys-card .table__column:nth-child(1) {
+  width: 22.7%;
+}
+.keys-card .table__column:nth-child(2) {
+  width: 11.4%;
+}
+.keys-card .table__column:nth-child(3) {
+  width: 17.8%;
+}
+.keys-card .table__column:nth-child(4) {
+  width: 13%;
+}
+.keys-card .table__column:nth-child(5) {
+  width: 13%;
+}
+.keys-card .table__column:nth-child(6) {
+  width: 14.5%;
+}
+.keys-card .table__column:nth-child(7) {
+  width: 7.6%;
+}
+
+.keys-card .table__header .table__column {
+  height: 42px;
+  padding: 0 0 0 18px;
+  text-align: left;
+  vertical-align: middle;
+  background: var(--bg-subtle);
+  border-bottom: 2px solid var(--border);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.keys-card .table__header .table__column:last-child {
+  padding-right: 18px;
+}
+/* HeroUI draws a short vertical rule after each header cell. The comp doesn't. */
+.keys-card .table__column::after {
+  content: none;
+}
+
+.keys-card .table__cell {
+  height: 54px;
+  padding: 8px 0 8px 18px;
+  vertical-align: middle;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+  color: var(--text-1);
+  font-size: 0.8125rem;
+}
+.keys-card .table__cell:last-child {
+  padding-right: 18px;
+}
+.keys-card .table__row:hover .table__cell,
+.keys-card .table__row[data-hovered='true'] .table__cell {
+  background: var(--bg-subtle);
+}
+
+.keys-label {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--text-1);
+}
+.keys-label-sub {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+.keys-card .table__cell .keys-prefix {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-1);
+}
+.keys-prefix .muted {
+  color: var(--text-3);
+}
+
+.keys-card .table__cell.keys-date {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.keys-card .table__cell.keys-date--soft {
+  color: var(--text-3);
+}
+.keys-card .table__cell.keys-date--expired {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/**
+ * Scope pill. HeroUI's Chip supplies the element and wraps its children in
+ * `.chip__label`, which is why the dot is aligned on that inner span.
+ */
+.keys-card .keys-scope {
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.keys-scope .chip__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+.keys-scope-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.keys-card .keys-scope--admin {
+  background: color-mix(in srgb, var(--pri) 12%, transparent);
+  color: var(--pri);
+}
+.keys-card .keys-scope--client {
+  background: color-mix(in srgb, var(--text-2) 12%, transparent);
+  color: var(--text-2);
+}
+
+/* Row actions: 28px ghost squares, red on hover for the destructive one. */
+.keys-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.keys-card .keys-actions .icon-btn,
+.keys-card .keys-actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  box-shadow: none;
+}
+.keys-card .keys-actions .icon-btn:hover {
+  background: var(--border);
+  color: var(--text-1);
+}
+.keys-card .keys-actions .button:hover:not([disabled]) {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  filter: none;
 }
 
 .keys-table-foot {
   display: flex;
   align-items: center;
-  padding: 0.625rem 0.875rem;
+  padding: 10px 18px;
   background: var(--bg-subtle);
-  border-top: 1px solid var(--border);
-}
-
-.keys-card {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-1);
-  overflow: hidden;
-}
-.keys-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
-.keys-table th {
-  text-align: left;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-4);
-  padding: 0.625rem 1rem;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border);
-}
-.keys-table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-.keys-table tbody tr:last-child td {
-  border-bottom: none;
-}
-.keys-label {
-  font-weight: 600;
-  color: var(--text-1);
-}
-.keys-label-sub {
+  border-top: 2px solid var(--border);
   font-size: 0.75rem;
   color: var(--text-3);
-  margin-top: 0.125rem;
-}
-.keys-prefix {
-  font-size: 0.7812rem;
-}
-.keys-date {
-  color: var(--text-2);
-  font-size: 0.7812rem;
-  white-space: nowrap;
-}
-.keys-date.muted {
-  color: var(--text-3);
-}
-.keys-actions {
-  display: flex;
-  gap: 0.25rem;
-  justify-content: flex-end;
 }
 
 .keys-empty {
-  padding: var(--s-6);
+  padding: 40px var(--s-6);
   text-align: center;
   color: var(--text-3);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-1);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 4px);
+  box-shadow: var(--dc-shadow);
+  margin-bottom: 16px;
 }
 
-/* Security note */
+/* ── Security note ───────────────────────────────────────────────────────── */
+
 .keys-security-note {
-  margin-top: var(--s-4);
-  padding: 0.875rem;
-  background: var(--acc-soft);
-  border: 1px solid var(--acc-soft-border);
-  border-radius: var(--r-md);
-  display: grid;
-  grid-template-columns: 1.5rem 1fr;
-  gap: 0.75rem;
-  align-items: start;
-  font-size: 0.7812rem;
-  color: var(--acc-fg);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--acc) 9%, var(--bg-elev));
+  border: 2px solid color-mix(in srgb, var(--acc) 35%, transparent);
+  border-radius: calc(var(--dc-r) + 2px);
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+.keys-security-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--acc) 18%, transparent);
+  color: var(--acc);
+  flex-shrink: 0;
 }
 .keys-security-note strong {
-  color: var(--acc-fg);
+  color: var(--text-1);
 }
 
-/* Issue dialog form */
+/* ── Dialogs ─────────────────────────────────────────────────────────────── */
+
+.keys-backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+}
+.keys-dialog.modal__dialog {
+  width: 480px;
+  max-width: calc(100vw - 48px);
+  background: var(--bg-elev);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 6px);
+  box-shadow: var(--dc-shadow-modal);
+  color: var(--text-1);
+}
+.keys-dialog .modal__header {
+  display: block;
+  padding: 20px 22px 4px;
+  border: none;
+}
+.keys-dialog .modal__heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.keys-dialog .modal__header .description {
+  display: block;
+  margin: 5px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+.keys-dialog .modal__body {
+  padding: 16px 22px 20px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+.keys-dialog .modal__body strong {
+  color: var(--text-1);
+}
+.keys-dialog .modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-top: 2px solid var(--border);
+  background: var(--bg-subtle);
+  border-radius: 0 0 calc(var(--dc-r) + 6px) calc(var(--dc-r) + 6px);
+}
+.keys-dialog .modal__footer .button {
+  height: 36px;
+  font-size: 0.8125rem;
+}
+.keys-dialog .spacer {
+  flex: 1;
+}
+
+/* ── Issue dialog form ───────────────────────────────────────────────────── */
+
 .keys-form {
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
+  gap: 14px;
 }
 .keys-form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 6px;
 }
-.keys-form-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-2);
-}
-.keys-form-hint {
+.keys-form-label,
+.keys-dialog .label {
   font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.keys-dialog .textfield {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.keys-dialog .input {
+  height: 38px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-subtle);
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+  box-shadow: none;
+}
+.keys-dialog .description,
+.keys-form-hint {
+  font-size: 0.71875rem;
+  color: var(--text-3);
 }
 .keys-scope-seg {
   display: flex;
-  gap: 0.375rem;
+  gap: 8px;
+}
+.keys-dialog .keys-scope-seg .button {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 0.8125rem;
+}
+.keys-dialog .keys-scope-seg .button--secondary {
+  background: var(--bg-subtle);
+  border: 2px solid var(--border);
+  color: var(--text-2);
+}
+.keys-dialog .keys-scope-seg .button--secondary:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+.keys-dialog .keys-form-field .select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-subtle);
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  box-shadow: none;
 }
 
-/* One-time reveal */
+/* ── One-time reveal ─────────────────────────────────────────────────────── */
+
 .keys-reveal {
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
+  gap: 14px;
 }
 .keys-reveal-code {
-  background: #0b1220;
-  color: #e4f7f3;
-  padding: 0.875rem;
-  border-radius: var(--r-md);
-  border: 1px solid #1f2a40;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  word-break: break-all;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--dc-r);
+  background: #09090b;
+  border: 2px solid #27272a;
+  color: #e4f7f3;
   font-size: 0.8125rem;
+  word-break: break-all;
 }
 .keys-reveal-code .mono {
   flex: 1;
+  font-family: var(--font-mono);
 }
-/* Make the copy button legible on the dark reveal block */
-.btn.keys-reveal-copy {
-  background: #172238;
+.keys-dialog .btn.keys-reveal-copy {
+  background: #1f1f23;
   color: #e4f7f3;
-  border: 1px solid #2a3855;
+  border: 2px solid #3f3f46;
   flex-shrink: 0;
 }
-.btn.keys-reveal-copy:hover {
-  background: #1d2942;
+.keys-dialog .btn.keys-reveal-copy:hover {
+  background: #27272a;
 }
-.btn.keys-reveal-copy.is-copied {
+.keys-dialog .btn.keys-reveal-copy.is-copied {
   color: #5eead4;
 }
 .keys-reveal-usage {
   background: var(--bg-subtle);
-  border-radius: var(--r-md);
-  padding: 0.75rem;
+  border-radius: var(--dc-r);
+  padding: 12px;
 }
 .keys-reveal-usage-head {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.7812rem;
+  gap: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 0.375rem;
+  color: var(--text-1);
+  margin-bottom: 6px;
 }
 .keys-reveal-curl {
   background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 0.625rem 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   white-space: pre-wrap;
   word-break: break-all;
@@ -210,5 +759,6 @@
   color: var(--text-2);
 }
 .keys-reveal-foot {
-  font-size: 0.75rem;
+  font-size: 0.71875rem;
+  color: var(--text-3);
 }

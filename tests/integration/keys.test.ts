@@ -76,7 +76,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: API_KEY_TYPES.ADMIN },
+        payload: { type: API_KEY_TYPES.ADMIN, description: 'Test key' },
       })
 
       expect(res.statusCode).toBe(201)
@@ -94,7 +94,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: API_KEY_TYPES.ADMIN },
+        payload: { type: API_KEY_TYPES.ADMIN, description: 'Test key' },
       })
 
       expect(res.statusCode).toBe(201)
@@ -136,7 +136,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: API_KEY_TYPES.CLIENT },
+        payload: { type: API_KEY_TYPES.CLIENT, description: 'Test key' },
       })
 
       expect(res.statusCode).toBe(400)
@@ -158,7 +158,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: API_KEY_TYPES.ADMIN, environmentId: productionId },
+        payload: { type: API_KEY_TYPES.ADMIN, environmentId: productionId, description: 'Test key' },
       })
 
       expect(res.statusCode).toBe(400)
@@ -182,6 +182,7 @@ describeIfDb('api keys', () => {
         payload: {
           type: API_KEY_TYPES.CLIENT,
           environmentId: '00000000-0000-0000-0000-000000000000',
+          description: 'Test key',
         },
       })
 
@@ -202,7 +203,7 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: 'superadmin' },
+        payload: { type: 'superadmin', description: 'Test key' },
       })
 
       expect(res.statusCode).toBe(400)

@@ -1,4 +1,18 @@
 import { useState, useEffect } from 'react'
+import {
+  Button,
+  Chip,
+  Description,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  SearchField,
+  Select,
+  Table,
+  TextField,
+  Tooltip,
+} from '@heroui/react'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useApiKeys } from '../../hooks/useApiKeys'
@@ -7,14 +21,8 @@ import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { usePermissions } from '../../hooks/usePermissions'
 import { keysApi } from '../../lib/api'
 import type { ApiKey, ApiKeyType, Env } from '../../lib/types'
-import { Button } from '../primitives/Button'
-import { Badge } from '../primitives/Badge'
 import { Denied } from '../primitives/Denied'
-import { Modal } from '../primitives/Modal'
-import { Select } from '../primitives/Select'
-import { TextField } from '../primitives/TextField'
 import { Icon } from '../primitives/Icon'
-import { Tip } from '../primitives/Tip'
 import { CopyButton } from '../primitives/CopyButton'
 import { FormError } from '../primitives/FormError'
 import { ErrorState } from '../primitives/ErrorState'
@@ -23,16 +31,99 @@ import { Pagination } from '../primitives/Pagination'
 /** Rows per page before the user picks a different size. */
 const DEFAULT_PAGE_SIZE = 25
 
-/** Absolute date for a key's expiry -- a future/past distinction matters more than "in 3 months". */
-function formatExpiry(expiresAt: string | null): string {
-  if (!expiresAt) return 'Never'
+/**
+ * Absolute date for a key's expiry -- a future/past distinction matters more
+ * than "in 3 months". Already-expired keys are called out in red, so the
+ * caller gets the flag rather than having to re-parse the string.
+ */
+function formatExpiry(expiresAt: string | null): { label: string; expired: boolean } {
+  if (!expiresAt) return { label: 'Never', expired: false }
   const date = new Date(expiresAt)
   const formatted = date.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
-  return date.getTime() < Date.now() ? `Expired ${formatted}` : formatted
+  const expired = date.getTime() < Date.now()
+  return { label: expired ? `Expired ${formatted}` : formatted, expired }
+}
+
+/**
+ * A modal that is driven by our own state rather than by a trigger element.
+ *
+ * HeroUI's `Modal` expects a `Modal.Trigger` child to open itself. Our modals
+ * open from all sorts of places -- a toolbar button, a row action, the result
+ * of a request finishing -- so the backdrop is controlled directly instead.
+ * React Aria still returns focus to whatever was focused before it opened.
+ */
+function Dialog({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+}: {
+  open: boolean
+  onClose: () => void
+  title: string
+  subtitle?: string
+  children: React.ReactNode
+  footer: React.ReactNode
+}) {
+  return (
+    <Modal.Backdrop
+      className="keys-backdrop"
+      isOpen={open}
+      onOpenChange={(next) => !next && onClose()}
+    >
+      <Modal.Container>
+        <Modal.Dialog className="keys-dialog">
+          <Modal.Header>
+            <Modal.Heading>{title}</Modal.Heading>
+            {subtitle && <Description>{subtitle}</Description>}
+          </Modal.Header>
+          <Modal.Body>{children}</Modal.Body>
+          <Modal.Footer>{footer}</Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
+  )
+}
+
+/** A HeroUI select over a fixed list of options, driven by a plain string value. */
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (next: string) => void
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <Select
+      aria-label={label}
+      selectedKey={value}
+      onSelectionChange={(key) => onChange(String(key))}
+    >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover className="keys-popover">
+        <ListBox>
+          {options.map((o) => (
+            <ListBox.Item key={o.value} id={o.value}>
+              {o.label}
+            </ListBox.Item>
+          ))}
+        </ListBox>
+      </Select.Popover>
+    </Select>
+  )
 }
 
 export function KeysScreen() {
@@ -121,10 +212,10 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
           <Denied when={!canProjectAdmin} reason="Only owners and admins can issue keys">
             <Button
               variant="primary"
-              leftIcon="plus"
-              disabled={!canProjectAdmin}
+              isDisabled={!canProjectAdmin}
               onClick={() => setShowNew(true)}
             >
+              <Icon name="plus" size={14} />
               Issue key
             </Button>
           </Denied>
@@ -132,19 +223,14 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
       </div>
 
       <div className="keys-toolbar">
-        <div className="search-input">
-          <Icon name="search" size={14} className="search-ico" />
-          <input
-            className="filter-search"
-            placeholder="Search by label or prefix…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <Select
-          className="select-sm"
-          aria-label="Scope filter"
-          placeholder=""
+        <SearchField aria-label="Search keys" value={search} onChange={setSearch}>
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="Search by label or prefix…" />
+          </SearchField.Group>
+        </SearchField>
+        <FilterSelect
+          label="Scope filter"
           value={typeFilter}
           onChange={setTypeFilter}
           options={[
@@ -153,10 +239,8 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
             { value: 'client', label: 'client' },
           ]}
         />
-        <Select
-          className="select-sm"
-          aria-label="Environment filter"
-          placeholder=""
+        <FilterSelect
+          label="Environment filter"
           value={envFilter}
           onChange={setEnvFilter}
           options={[
@@ -172,29 +256,32 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
         <div className="keys-empty">No keys match your filters.</div>
       ) : (
         <div className="keys-card">
-          <table className="keys-table">
-            <thead>
-              <tr>
-                <th>Label</th>
-                <th>Scope</th>
-                <th>Prefix</th>
-                <th>Last used</th>
-                <th>Created</th>
-                <th>Expires</th>
-                <th aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {keys.map((k) => (
-                <KeyRow
-                  key={k.id}
-                  apiKey={k}
-                  envName={envName(k.environmentId)}
-                  onRevoke={() => setRevokeTarget(k)}
-                />
-              ))}
-            </tbody>
-          </table>
+          <Table>
+            <Table.Content aria-label="API keys">
+              <Table.Header>
+                <Table.Column isRowHeader id="label">
+                  Label
+                </Table.Column>
+                <Table.Column id="scope">Scope</Table.Column>
+                <Table.Column id="prefix">Prefix</Table.Column>
+                <Table.Column id="lastUsed">Last used</Table.Column>
+                <Table.Column id="created">Created</Table.Column>
+                <Table.Column id="expires">Expires</Table.Column>
+                <Table.Column id="actions" aria-label="Actions">
+                  {''}
+                </Table.Column>
+              </Table.Header>
+              <Table.Body items={keys}>
+                {(k: ApiKey) => (
+                  <KeyRow
+                    apiKey={k}
+                    envName={envName(k.environmentId)}
+                    onRevoke={() => setRevokeTarget(k)}
+                  />
+                )}
+              </Table.Body>
+            </Table.Content>
+          </Table>
           <div className="keys-table-foot">
             <Pagination
               total={total}
@@ -213,10 +300,12 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
       )}
 
       <div className="keys-security-note">
-        <Icon name="shield" size={18} />
+        <span className="keys-security-icon">
+          <Icon name="shield" size={14} />
+        </span>
         <div>
           <strong>Keys are shown once.</strong> Flagraft only stores a hash, so the plaintext can't
-          be recovered. Rotate immediately if a key leaks revoke the old one and issue a new one.
+          be recovered. If a key leaks, revoke the old one and issue a new one immediately.
         </div>
       </div>
 
@@ -238,23 +327,26 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
         onClose={() => setRevealKey(null)}
       />
 
-      <Modal open={revokeTarget !== null} onClose={() => setRevokeTarget(null)}>
-        <Modal.Header>Revoke API key</Modal.Header>
-        <Modal.Body>
-          <p>
-            Revoke the key starting <strong className="mono">{revokeTarget?.prefix}</strong>? Any
-            caller using it will immediately get 401s. This cannot be undone.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="ghost" onClick={() => setRevokeTarget(null)} disabled={revoking}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={() => void handleRevoke()} disabled={revoking}>
-            {revoking ? 'Revoking...' : 'Revoke key'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <Dialog
+        open={revokeTarget !== null}
+        onClose={() => setRevokeTarget(null)}
+        title="Revoke API key"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRevokeTarget(null)} isDisabled={revoking}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={() => void handleRevoke()} isDisabled={revoking}>
+              {revoking ? 'Revoking...' : 'Revoke key'}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Revoke the key starting <strong className="mono">{revokeTarget?.prefix}</strong>? Any
+          caller using it will immediately get 401s. This cannot be undone.
+        </p>
+      </Dialog>
     </div>
   )
 }
@@ -271,49 +363,52 @@ function KeyRow({
   const created = useRelativeDate(apiKey.createdAt)
   const lastUsed = useRelativeDate(apiKey.lastUsedAt ?? undefined)
   const { canProjectAdmin } = usePermissions()
+  const expiry = formatExpiry(apiKey.expiresAt)
 
   return (
-    <tr>
-      <td>
+    <Table.Row id={apiKey.id}>
+      <Table.Cell>
         <div className="keys-label">{apiKey.description || <span className="muted">—</span>}</div>
         {envName && <div className="keys-label-sub mono">{envName}</div>}
-      </td>
-      <td>
-        {apiKey.type === 'admin' ? (
-          <Badge variant="primary" dot>
-            admin
-          </Badge>
-        ) : (
-          <Badge variant="default" dot>
-            client
-          </Badge>
-        )}
-      </td>
-      <td>
+      </Table.Cell>
+      <Table.Cell>
+        <Chip className={`keys-scope keys-scope--${apiKey.type}`} size="sm">
+          <span className="keys-scope-dot" aria-hidden="true" />
+          {apiKey.type}
+        </Chip>
+      </Table.Cell>
+      <Table.Cell>
         <span className="mono keys-prefix">
           {apiKey.prefix}
           <span className="muted">…••••••••</span>
         </span>
-      </td>
-      <td className="keys-date">{apiKey.lastUsedAt ? lastUsed : 'Never'}</td>
-      <td className="keys-date muted">{created}</td>
-      <td className="keys-date">{formatExpiry(apiKey.expiresAt)}</td>
-      <td>
+      </Table.Cell>
+      <Table.Cell className="keys-date">{apiKey.lastUsedAt ? lastUsed : 'Never'}</Table.Cell>
+      <Table.Cell className="keys-date keys-date--soft">{created}</Table.Cell>
+      <Table.Cell className={`keys-date${expiry.expired ? ' keys-date--expired' : ''}`}>
+        {expiry.label}
+      </Table.Cell>
+      <Table.Cell>
         <div className="keys-actions">
           <CopyButton value={apiKey.prefix} iconOnly tip="Copy prefix" />
-          <Tip tip={canProjectAdmin ? 'Revoke' : 'Only owners and admins can revoke keys'}>
-            <button
+          <Tooltip>
+            <Button
               className="icon-btn"
+              variant="ghost"
+              isIconOnly
               aria-label="Revoke key"
-              disabled={!canProjectAdmin}
+              isDisabled={!canProjectAdmin}
               onClick={onRevoke}
             >
               <Icon name="trash" size={14} />
-            </button>
-          </Tip>
+            </Button>
+            <Tooltip.Content>
+              {canProjectAdmin ? 'Revoke' : 'Only owners and admins can revoke keys'}
+            </Tooltip.Content>
+          </Tooltip>
         </div>
-      </td>
-    </tr>
+      </Table.Cell>
+    </Table.Row>
   )
 }
 
@@ -344,7 +439,7 @@ function IssueKeyModal({ open, projectId, environments, onClose, onIssued }: Iss
   }, [open, environments])
 
   const needsEnv = type === 'client'
-  const disabled = saving || (needsEnv && !environmentId)
+  const disabled = saving || !description.trim() || (needsEnv && !environmentId)
 
   async function handleSubmit() {
     if (disabled) return
@@ -353,7 +448,7 @@ function IssueKeyModal({ open, projectId, environments, onClose, onIssued }: Iss
     try {
       const created = await keysApi.create(projectId, {
         type,
-        description: description.trim() || undefined,
+        description: description.trim(),
         environmentId: needsEnv ? environmentId : undefined,
       })
       toast.push({ title: 'Key issued', variant: 'success' })
@@ -368,65 +463,72 @@ function IssueKeyModal({ open, projectId, environments, onClose, onIssued }: Iss
   }
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Modal.Header subtitle="The plaintext key is shown only once after creation.">
-        Issue API key
-      </Modal.Header>
-      <Modal.Body>
-        <div className="keys-form">
-          <FormError message={submitError} />
-          <TextField
-            label="Label"
-            value={description}
-            onChange={setDescription}
-            placeholder="e.g. CI / e2e tests"
-            hint="A human-readable name to recognise this key later."
-          />
-          <div className="keys-form-field">
-            <span className="keys-form-label">Scope</span>
-            <div className="keys-scope-seg" role="group" aria-label="Key scope">
-              <Button
-                variant={type === 'admin' ? 'primary' : 'default'}
-                size="sm"
-                onClick={() => setType('admin')}
-              >
-                admin
-              </Button>
-              <Button
-                variant={type === 'client' ? 'primary' : 'default'}
-                size="sm"
-                onClick={() => setType('client')}
-              >
-                client
-              </Button>
-            </div>
-            <span className="keys-form-hint muted">
-              {type === 'admin'
-                ? 'Admin keys can read and write flags across all environments.'
-                : 'Client keys only evaluate flags in a single environment.'}
-            </span>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Issue API key"
+      subtitle="The plaintext key is shown only once after creation."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} isDisabled={saving}>
+            Cancel
+          </Button>
+          <span className="spacer" />
+          <Button variant="primary" onClick={() => void handleSubmit()} isDisabled={disabled} isPending={saving}>
+            Generate key
+          </Button>
+        </>
+      }
+    >
+      <div className="keys-form">
+        <FormError message={submitError} />
+        <TextField value={description} onChange={setDescription}>
+          <Label>Label</Label>
+          <Input placeholder="e.g. CI / e2e tests" />
+          <Description>A human-readable name to recognise this key later.</Description>
+        </TextField>
+        <div className="keys-form-field">
+          <span className="keys-form-label">Scope</span>
+          <div className="keys-scope-seg" role="group" aria-label="Key scope">
+            <Button
+              variant={type === 'admin' ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setType('admin')}
+            >
+              admin
+            </Button>
+            <Button
+              variant={type === 'client' ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setType('client')}
+            >
+              client
+            </Button>
           </div>
-          {needsEnv && (
-            <Select
-              label="Environment"
-              value={environmentId}
-              onChange={setEnvironmentId}
-              options={environments.map((e) => ({ value: e.id, label: e.name }))}
-              error={environments.length === 0 ? 'Create an environment first.' : undefined}
-            />
-          )}
+          <span className="keys-form-hint muted">
+            {type === 'admin'
+              ? 'Admin keys can read and write flags across all environments.'
+              : 'Client keys only evaluate flags in a single environment.'}
+          </span>
         </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="ghost" onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <span className="spacer" />
-        <Button variant="primary" onClick={() => void handleSubmit()} disabled={disabled}>
-          {saving ? 'Generating...' : 'Generate key'}
-        </Button>
-      </Modal.Footer>
-    </Modal>
+        {needsEnv &&
+          (environments.length === 0 ? (
+            <FormError message="Create an environment first." />
+          ) : (
+            <div className="keys-form-field">
+              <span className="keys-form-label" id="issue-env-label">
+                Environment
+              </span>
+              <FilterSelect
+                label="Environment"
+                value={environmentId}
+                onChange={setEnvironmentId}
+                options={environments.map((e) => ({ value: e.id, label: e.name }))}
+              />
+            </div>
+          ))}
+      </div>
+    </Dialog>
   )
 }
 
@@ -443,31 +545,33 @@ function RevealKeyModal({
   -H "Authorization: ${plaintext ?? ''}"`
 
   return (
-    <Modal open={plaintext !== null} onClose={onClose}>
-      <Modal.Header subtitle="You won't be able to see it again. Store it somewhere safe now.">
-        Save this key now
-      </Modal.Header>
-      <Modal.Body>
-        <div className="keys-reveal">
-          <div className="keys-reveal-code">
-            <span className="mono">{plaintext}</span>
-            <CopyButton value={plaintext ?? ''} label="Copy" className="keys-reveal-copy" />
-          </div>
-          <div className="keys-reveal-usage">
-            <div className="keys-reveal-usage-head">
-              <Icon name="info" size={13} /> Use it like this
-            </div>
-            <pre className="keys-reveal-curl mono">{curl}</pre>
-          </div>
+    <Dialog
+      open={plaintext !== null}
+      onClose={onClose}
+      title="Save this key now"
+      subtitle="You won't be able to see it again. Store it somewhere safe now."
+      footer={
+        <>
+          <span className="muted keys-reveal-foot">Stored as a SHA-256 hash, not recoverable.</span>
+          <span className="spacer" />
+          <Button variant="primary" onClick={onClose}>
+            I&apos;ve saved it
+          </Button>
+        </>
+      }
+    >
+      <div className="keys-reveal">
+        <div className="keys-reveal-code">
+          <span className="mono">{plaintext}</span>
+          <CopyButton value={plaintext ?? ''} label="Copy" className="keys-reveal-copy" />
         </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <span className="muted keys-reveal-foot">Stored as a SHA-256 hash, not recoverable.</span>
-        <span className="spacer" />
-        <Button variant="primary" onClick={onClose}>
-          I&apos;ve saved it
-        </Button>
-      </Modal.Footer>
-    </Modal>
+        <div className="keys-reveal-usage">
+          <div className="keys-reveal-usage-head">
+            <Icon name="info" size={13} /> Use it like this
+          </div>
+          <pre className="keys-reveal-curl mono">{curl}</pre>
+        </div>
+      </div>
+    </Dialog>
   )
 }

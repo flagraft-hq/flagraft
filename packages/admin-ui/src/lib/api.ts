@@ -174,7 +174,7 @@ export const keysApi = {
   /** Returns the plaintext key once; the backend only ever stores its hash. */
   create: (
     projectId: string,
-    data: { type: ApiKeyType; environmentId?: string; description?: string },
+    data: { type: ApiKeyType; environmentId?: string; description: string },
   ) => http.post<CreatedApiKey>(`/api/v1/admin/projects/${projectId}/keys`, data),
 
   delete: (projectId: string, keyId: string) =>
