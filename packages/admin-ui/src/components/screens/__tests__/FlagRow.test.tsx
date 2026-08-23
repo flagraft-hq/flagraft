@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Table } from '@heroui/react'
+import type { ReactNode } from 'react'
 import { FlagRow } from '../FlagRow'
 import type { Flag } from '../../../lib/types'
 
@@ -38,10 +40,34 @@ const defaultProps = {
   environments: [],
   refetchEnvironments: vi.fn(),
   envNames: ['development', 'staging', 'production'],
-  selected: false,
-  onSelect: vi.fn(),
   onToggle: vi.fn(),
   onClick: vi.fn(),
+}
+
+/**
+ * A row only renders inside a table -- React Aria reads the collection from
+ * `Table.Body`, so a bare `<FlagRow />` has nowhere to attach. This is the
+ * smallest table that makes one row real, including the selection wiring the
+ * row's checkbox reaches for through its `selection` slot.
+ */
+function renderRow(children: ReactNode, selectedKeys: string[] = []) {
+  return render(
+    <Table>
+      <Table.Content aria-label="Flags" selectionMode="multiple" defaultSelectedKeys={selectedKeys}>
+        <Table.Header>
+          <Table.Column id="select">{''}</Table.Column>
+          <Table.Column id="name" isRowHeader>
+            Flag
+          </Table.Column>
+          <Table.Column id="development">development</Table.Column>
+          <Table.Column id="staging">staging</Table.Column>
+          <Table.Column id="production">production</Table.Column>
+          <Table.Column id="updated">Last edited</Table.Column>
+        </Table.Header>
+        <Table.Body>{children}</Table.Body>
+      </Table.Content>
+    </Table>,
+  )
 }
 
 describe('FlagRow', () => {
@@ -50,19 +76,19 @@ describe('FlagRow', () => {
   })
 
   it('renders flag name and key', () => {
-    render(<FlagRow {...defaultProps} />)
+    renderRow(<FlagRow {...defaultProps} />)
     expect(screen.getByText('My Feature')).toBeTruthy()
     expect(screen.getByText('my-feature')).toBeTruthy()
   })
 
   it('renders a StatePill for each env in envNames', () => {
-    const { container } = render(<FlagRow {...defaultProps} />)
+    const { container } = renderRow(<FlagRow {...defaultProps} />)
     const pills = container.querySelectorAll('.state-pill')
     expect(pills.length).toBe(3)
   })
 
   it('renders a Toggle for each env in envNames', () => {
-    const { container } = render(<FlagRow {...defaultProps} />)
+    const { container } = renderRow(<FlagRow {...defaultProps} />)
     const toggles = container.querySelectorAll('[role="switch"]')
     expect(toggles.length).toBe(3)
   })
@@ -70,7 +96,7 @@ describe('FlagRow', () => {
   it('clicking the Toggle for an env calls onToggle with correct (key, env, enabled) args', async () => {
     const user = userEvent.setup()
     const onToggle = vi.fn()
-    const { container } = render(<FlagRow {...defaultProps} onToggle={onToggle} />)
+    const { container } = renderRow(<FlagRow {...defaultProps} onToggle={onToggle} />)
     const toggles = container.querySelectorAll('[role="switch"]')
     // development toggle (index 0): current state is on=true, clicking turns it off
     await user.click(toggles[0])
@@ -80,7 +106,7 @@ describe('FlagRow', () => {
   it('clicking the Toggle for staging calls onToggle with correct args', async () => {
     const user = userEvent.setup()
     const onToggle = vi.fn()
-    const { container } = render(<FlagRow {...defaultProps} onToggle={onToggle} />)
+    const { container } = renderRow(<FlagRow {...defaultProps} onToggle={onToggle} />)
     const toggles = container.querySelectorAll('[role="switch"]')
     // staging toggle (index 1): current state is on=false, clicking turns it on
     await user.click(toggles[1])
@@ -88,7 +114,7 @@ describe('FlagRow', () => {
   })
 
   it('active env cell has class cell-env-active', () => {
-    const { container } = render(<FlagRow {...defaultProps} activeEnv="development" />)
+    const { container } = renderRow(<FlagRow {...defaultProps} activeEnv="development" />)
     const envCells = container.querySelectorAll('.cell-env')
     expect(envCells.length).toBe(3)
     expect(envCells[0].classList.contains('cell-env-active')).toBe(true)
@@ -97,7 +123,7 @@ describe('FlagRow', () => {
   })
 
   it('changes active env highlight when activeEnv is staging', () => {
-    const { container } = render(<FlagRow {...defaultProps} activeEnv="staging" />)
+    const { container } = renderRow(<FlagRow {...defaultProps} activeEnv="staging" />)
     const envCells = container.querySelectorAll('.cell-env')
     expect(envCells[0].classList.contains('cell-env-active')).toBe(false)
     expect(envCells[1].classList.contains('cell-env-active')).toBe(true)
@@ -105,13 +131,13 @@ describe('FlagRow', () => {
   })
 
   it('marks the production env cell with cell-env-prod', () => {
-    const { container } = render(<FlagRow {...defaultProps} />)
+    const { container } = renderRow(<FlagRow {...defaultProps} />)
     const envCells = container.querySelectorAll('.cell-env')
     expect(envCells[2].classList.contains('cell-env-prod')).toBe(true)
   })
 
   it('renders correct on/off state per env in StatePills', () => {
-    render(<FlagRow {...defaultProps} />)
+    renderRow(<FlagRow {...defaultProps} />)
     const onPills = screen.getAllByText('on')
     const offPills = screen.getAllByText('off')
     // development is on, staging and production are off
@@ -119,59 +145,55 @@ describe('FlagRow', () => {
     expect(offPills.length).toBe(2)
   })
 
-  it('renders checkbox in unchecked state when selected=false', () => {
-    const { container } = render(<FlagRow {...defaultProps} selected={false} />)
-    const checkbox = container.querySelector('[role="checkbox"]')
-    expect(checkbox).toBeTruthy()
-    expect(checkbox?.getAttribute('aria-checked')).toBe('false')
+  it('renders an unselected row with an unchecked selection checkbox', () => {
+    renderRow(<FlagRow {...defaultProps} />)
+    expect(screen.getByRole('checkbox', { name: /^Select My Feature/ })).not.toBeChecked()
+    expect(screen.getByRole('row', { name: /my feature/i })).not.toHaveAttribute('data-selected')
   })
 
-  it('renders checkbox in checked state when selected=true', () => {
-    const { container } = render(<FlagRow {...defaultProps} selected={true} />)
-    const checkbox = container.querySelector('[role="checkbox"]')
-    expect(checkbox?.getAttribute('aria-checked')).toBe('true')
+  it('renders a selected row with a checked selection checkbox', () => {
+    renderRow(<FlagRow {...defaultProps} />, ['my-feature'])
+    expect(screen.getByRole('checkbox', { name: /^Select My Feature/ })).toBeChecked()
   })
 
-  it('clicking checkbox calls onSelect with flag key and toggled value', async () => {
+  it('clicking the checkbox selects the row', async () => {
     const user = userEvent.setup()
-    const onSelect = vi.fn()
-    const { container } = render(<FlagRow {...defaultProps} selected={false} onSelect={onSelect} />)
-    const checkbox = container.querySelector('[role="checkbox"]') as HTMLElement
-    await user.click(checkbox)
-    expect(onSelect).toHaveBeenCalledWith('my-feature', true)
+    renderRow(<FlagRow {...defaultProps} />)
+    await user.click(screen.getByRole('checkbox', { name: /^Select My Feature/ }))
+    expect(screen.getByRole('row', { name: /my feature/i })).toHaveAttribute(
+      'data-selected',
+      'true',
+    )
   })
 
-  it('clicking checkbox when selected=true calls onSelect with false', async () => {
+  it('clicking the checkbox again deselects the row', async () => {
     const user = userEvent.setup()
-    const onSelect = vi.fn()
-    const { container } = render(<FlagRow {...defaultProps} selected={true} onSelect={onSelect} />)
-    const checkbox = container.querySelector('[role="checkbox"]') as HTMLElement
-    await user.click(checkbox)
-    expect(onSelect).toHaveBeenCalledWith('my-feature', false)
+    renderRow(<FlagRow {...defaultProps} />, ['my-feature'])
+    await user.click(screen.getByRole('checkbox', { name: /^Select My Feature/ }))
+    expect(screen.getByRole('row', { name: /my feature/i })).not.toHaveAttribute('data-selected')
   })
 
   it('clicking the name area calls onClick with the flag key', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()
-    render(<FlagRow {...defaultProps} onClick={onClick} />)
+    renderRow(<FlagRow {...defaultProps} onClick={onClick} />)
     await user.click(screen.getByText('My Feature'))
     expect(onClick).toHaveBeenCalledWith('my-feature')
   })
 
   it('shows relative date for updated field', () => {
-    render(<FlagRow {...defaultProps} />)
+    renderRow(<FlagRow {...defaultProps} />)
     expect(screen.getByText('2 days ago')).toBeTruthy()
   })
 
   it('renders row with correct role', () => {
-    const { container } = render(<FlagRow {...defaultProps} />)
-    expect(container.querySelector('[role="row"]')).toBeTruthy()
-    expect(container.querySelector('.flags-row')).toBeTruthy()
+    const { container } = renderRow(<FlagRow {...defaultProps} />)
+    expect(container.querySelector('.flags-row[role="row"]')).toBeTruthy()
   })
 
   it('renders without tag chips and does not crash when flag has no tags', () => {
     const flag = { ...baseFlag, tags: [] }
-    render(<FlagRow {...defaultProps} flag={flag} />)
+    renderRow(<FlagRow {...defaultProps} flag={flag} />)
     expect(screen.queryByText('tag-a')).toBeNull()
     expect(screen.queryByText('tag-b')).toBeNull()
     // Row itself must still render
@@ -180,7 +202,7 @@ describe('FlagRow', () => {
 
   it('renders with envs missing from flag state gracefully', () => {
     const flag = { ...baseFlag, state: {} }
-    const { container } = render(<FlagRow {...defaultProps} flag={flag} />)
+    const { container } = renderRow(<FlagRow {...defaultProps} flag={flag} />)
     const pills = container.querySelectorAll('.state-pill')
     // Still renders 3 pills (all off) even with missing state
     expect(pills.length).toBe(3)
@@ -192,7 +214,7 @@ describe('FlagRow', () => {
     it('shows confirmation modal when enabling a production env toggle instead of calling onToggle immediately', async () => {
       const user = userEvent.setup()
       const onToggle = vi.fn()
-      const { container } = render(<FlagRow {...defaultProps} onToggle={onToggle} />)
+      const { container } = renderRow(<FlagRow {...defaultProps} onToggle={onToggle} />)
       const toggles = container.querySelectorAll('[role="switch"]')
       // production toggle (index 2): current state is on=false, clicking would enable it
       await user.click(toggles[2])
@@ -205,7 +227,7 @@ describe('FlagRow', () => {
 
     it('modal shows flag name and env in confirmation message', async () => {
       const user = userEvent.setup()
-      const { container } = render(<FlagRow {...defaultProps} />)
+      const { container } = renderRow(<FlagRow {...defaultProps} />)
       const toggles = container.querySelectorAll('[role="switch"]')
       await user.click(toggles[2])
       const dialog = screen.getByRole('dialog')
@@ -217,7 +239,7 @@ describe('FlagRow', () => {
     it('confirming the modal calls onToggle with enabled=true and closes modal', async () => {
       const user = userEvent.setup()
       const onToggle = vi.fn()
-      const { container } = render(<FlagRow {...defaultProps} onToggle={onToggle} />)
+      const { container } = renderRow(<FlagRow {...defaultProps} onToggle={onToggle} />)
       const toggles = container.querySelectorAll('[role="switch"]')
       await user.click(toggles[2])
       // Click the Enable button
@@ -230,7 +252,7 @@ describe('FlagRow', () => {
     it('canceling the modal does NOT call onToggle and closes the modal', async () => {
       const user = userEvent.setup()
       const onToggle = vi.fn()
-      const { container } = render(<FlagRow {...defaultProps} onToggle={onToggle} />)
+      const { container } = renderRow(<FlagRow {...defaultProps} onToggle={onToggle} />)
       const toggles = container.querySelectorAll('[role="switch"]')
       await user.click(toggles[2])
       // Click the Cancel button
@@ -251,7 +273,7 @@ describe('FlagRow', () => {
           production: { on: true },
         },
       }
-      const { container } = render(<FlagRow {...defaultProps} flag={flag} onToggle={onToggle} />)
+      const { container } = renderRow(<FlagRow {...defaultProps} flag={flag} onToggle={onToggle} />)
       const toggles = container.querySelectorAll('[role="switch"]')
       await user.click(toggles[2])
       // onToggle should not be called yet

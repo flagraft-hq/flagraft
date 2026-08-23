@@ -6,7 +6,6 @@ import {
   Input,
   Label,
   ListBox,
-  Modal,
   SearchField,
   Select,
   Table,
@@ -22,6 +21,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { keysApi } from '../../lib/api'
 import type { ApiKey, ApiKeyType, Env } from '../../lib/types'
 import { Denied } from '../primitives/Denied'
+import { Dialog } from '../primitives/Dialog'
 import { Icon } from '../primitives/Icon'
 import { CopyButton } from '../primitives/CopyButton'
 import { FormError } from '../primitives/FormError'
@@ -48,72 +48,32 @@ function formatExpiry(expiresAt: string | null): { label: string; expired: boole
   return { label: expired ? `Expired ${formatted}` : formatted, expired }
 }
 
-/**
- * A modal that is driven by our own state rather than by a trigger element.
- *
- * HeroUI's `Modal` expects a `Modal.Trigger` child to open itself. Our modals
- * open from all sorts of places -- a toolbar button, a row action, the result
- * of a request finishing -- so the backdrop is controlled directly instead.
- * React Aria still returns focus to whatever was focused before it opened.
- */
-function Dialog({
-  open,
-  onClose,
-  title,
-  subtitle,
-  children,
-  footer,
-}: {
-  open: boolean
-  onClose: () => void
-  title: string
-  subtitle?: string
-  children: React.ReactNode
-  footer: React.ReactNode
-}) {
-  return (
-    <Modal.Backdrop
-      className="keys-backdrop"
-      isOpen={open}
-      onOpenChange={(next) => !next && onClose()}
-    >
-      <Modal.Container>
-        <Modal.Dialog className="keys-dialog">
-          <Modal.Header>
-            <Modal.Heading>{title}</Modal.Heading>
-            {subtitle && <Description>{subtitle}</Description>}
-          </Modal.Header>
-          <Modal.Body>{children}</Modal.Body>
-          <Modal.Footer>{footer}</Modal.Footer>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
-  )
-}
-
 /** A HeroUI select over a fixed list of options, driven by a plain string value. */
 function FilterSelect({
   label,
   value,
   onChange,
   options,
+  isDisabled,
 }: {
   label: string
   value: string
   onChange: (next: string) => void
   options: { value: string; label: string }[]
+  isDisabled?: boolean
 }) {
   return (
     <Select
       aria-label={label}
       selectedKey={value}
       onSelectionChange={(key) => onChange(String(key))}
+      isDisabled={isDisabled}
     >
       <Select.Trigger>
         <Select.Value />
         <Select.Indicator />
       </Select.Trigger>
-      <Select.Popover className="keys-popover">
+      <Select.Popover className="dc-popover">
         <ListBox>
           {options.map((o) => (
             <ListBox.Item key={o.value} id={o.value}>
@@ -199,7 +159,7 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
   }
 
   return (
-    <div className="keys-screen">
+    <div className="keys-screen dc">
       <div className="page-header">
         <div className="page-header-text">
           <h1>API keys</h1>
@@ -222,7 +182,7 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
         </div>
       </div>
 
-      <div className="keys-toolbar">
+      <div className="dc-toolbar">
         <SearchField aria-label="Search keys" value={search} onChange={setSearch}>
           <SearchField.Group>
             <SearchField.SearchIcon />
@@ -251,11 +211,11 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
       </div>
 
       {total === 0 && !anyFilters ? (
-        <div className="keys-empty">No API keys yet. Issue one to start calling the API.</div>
+        <div className="dc-empty">No API keys yet. Issue one to start calling the API.</div>
       ) : total === 0 ? (
-        <div className="keys-empty">No keys match your filters.</div>
+        <div className="dc-empty">No keys match your filters.</div>
       ) : (
-        <div className="keys-card">
+        <div className="keys-card dc-card">
           <Table>
             <Table.Content aria-label="API keys">
               <Table.Header>
@@ -282,7 +242,7 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
               </Table.Body>
             </Table.Content>
           </Table>
-          <div className="keys-table-foot">
+          <div className="dc-table-foot">
             <Pagination
               total={total}
               limit={limit}
@@ -328,6 +288,7 @@ function KeysScreenInner({ projectId, projectSlug }: { projectId: string; projec
       />
 
       <Dialog
+        className="keys-dialog"
         open={revokeTarget !== null}
         onClose={() => setRevokeTarget(null)}
         title="Revoke API key"
@@ -464,6 +425,8 @@ function IssueKeyModal({ open, projectId, environments, onClose, onIssued }: Iss
 
   return (
     <Dialog
+      className="keys-dialog"
+      size="lg"
       open={open}
       onClose={onClose}
       title="Issue API key"
@@ -474,21 +437,26 @@ function IssueKeyModal({ open, projectId, environments, onClose, onIssued }: Iss
             Cancel
           </Button>
           <span className="spacer" />
-          <Button variant="primary" onClick={() => void handleSubmit()} isDisabled={disabled} isPending={saving}>
+          <Button
+            variant="primary"
+            onClick={() => void handleSubmit()}
+            isDisabled={disabled}
+            isPending={saving}
+          >
             Generate key
           </Button>
         </>
       }
     >
-      <div className="keys-form">
+      <div className="dc-form">
         <FormError message={submitError} />
         <TextField value={description} onChange={setDescription}>
           <Label>Label</Label>
           <Input placeholder="e.g. CI / e2e tests" />
           <Description>A human-readable name to recognise this key later.</Description>
         </TextField>
-        <div className="keys-form-field">
-          <span className="keys-form-label">Scope</span>
+        <div className="dc-form-field">
+          <span className="dc-form-label">Scope</span>
           <div className="keys-scope-seg" role="group" aria-label="Key scope">
             <Button
               variant={type === 'admin' ? 'primary' : 'secondary'}
@@ -505,28 +473,27 @@ function IssueKeyModal({ open, projectId, environments, onClose, onIssued }: Iss
               client
             </Button>
           </div>
-          <span className="keys-form-hint muted">
+          <span className="dc-form-hint muted">
             {type === 'admin'
               ? 'Admin keys can read and write flags across all environments.'
               : 'Client keys only evaluate flags in a single environment.'}
           </span>
         </div>
-        {needsEnv &&
-          (environments.length === 0 ? (
+        <div className="dc-form-field" style={!needsEnv ? { opacity: 0.6 } : undefined}>
+          <span className="dc-form-label" id="issue-env-label">
+            Environment
+          </span>
+          <FilterSelect
+            label="Environment"
+            value={environmentId}
+            onChange={setEnvironmentId}
+            options={environments.length ? environments.map((e) => ({ value: e.id, label: e.name })) : [{ value: '', label: 'No environments' }]}
+            isDisabled={!needsEnv || environments.length === 0}
+          />
+          {needsEnv && environments.length === 0 && (
             <FormError message="Create an environment first." />
-          ) : (
-            <div className="keys-form-field">
-              <span className="keys-form-label" id="issue-env-label">
-                Environment
-              </span>
-              <FilterSelect
-                label="Environment"
-                value={environmentId}
-                onChange={setEnvironmentId}
-                options={environments.map((e) => ({ value: e.id, label: e.name }))}
-              />
-            </div>
-          ))}
+          )}
+        </div>
       </div>
     </Dialog>
   )
@@ -546,6 +513,7 @@ function RevealKeyModal({
 
   return (
     <Dialog
+      className="keys-dialog"
       open={plaintext !== null}
       onClose={onClose}
       title="Save this key now"

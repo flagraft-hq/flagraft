@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Button, Checkbox, Table } from '@heroui/react'
+import type { Selection, SortDescriptor } from 'react-aria-components'
 import { useProject } from '../../contexts/ProjectContext'
 import { useFlags } from '../../hooks/useFlags'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import type { SortField, SortDir } from '../../hooks/useFlags'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useToast } from '../../hooks/useToast'
-import { Button } from '../primitives/Button'
-import { Checkbox } from '../primitives/Checkbox'
 import { Denied } from '../primitives/Denied'
 import { ErrorState } from '../primitives/ErrorState'
 import { Pagination } from '../primitives/Pagination'
@@ -18,45 +18,15 @@ import { FlagBulkActionBar } from './FlagBulkActionBar'
 import { CreateFlagModal } from './CreateFlagModal'
 import { flagsApi } from '../../lib/api'
 import { isFlagStale } from '../../lib/stale'
-import type { StateFilter } from '../../lib/types'
+import type { Flag, StateFilter } from '../../lib/types'
 
 const ENV_NAMES = ['development', 'production']
 
 /** Rows per page before the user picks a different size. */
 const DEFAULT_PAGE_SIZE = 25
 
-/** A sortable column header used in the flags list head row. */
-function SortHead({
-  label,
-  col,
-  sortField,
-  sortDir,
-  onSort,
-  align,
-}: {
-  label: string
-  col: SortField
-  sortField: SortField
-  sortDir: SortDir
-  onSort: (col: SortField) => void
-  align?: 'right'
-}) {
-  const active = sortField === col
-  return (
-    <button
-      className={`sort-head${align === 'right' ? ' sort-head-right' : ''}${active ? ' active' : ''}`}
-      onClick={() => onSort(col)}
-      aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-    >
-      <span>{label}</span>
-      <Icon
-        name="chevronDown"
-        size={12}
-        className={`sort-arrow${active && sortDir === 'asc' ? ' sort-arrow-up' : ''}`}
-      />
-    </button>
-  )
-}
+/** The columns the table lets you sort by, keyed to the API's sort fields. */
+const SORTABLE: Record<string, SortField> = { name: 'name', updated: 'updated' }
 
 export function FlagsScreen() {
   const { activeProject } = useProject()
@@ -130,31 +100,31 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   }
 
   const anyFilters = search !== '' || stateFilter !== null
-  const allSelected = flags.length > 0 && flags.every((f) => selectedKeys.includes(f.key))
-  const someSelected = selectedKeys.length > 0 && !allSelected
+
+  /**
+   * Sorting is done by the API, so the descriptor only reflects what was asked
+   * for -- the table must not reorder the page it was handed.
+   */
+  const sortDescriptor: SortDescriptor = {
+    column: sortField,
+    direction: sortDir === 'asc' ? 'ascending' : 'descending',
+  }
 
   function clearFilters() {
     setSearch('')
     setStateFilter(null)
   }
 
-  function handleSelect(key: string, selected: boolean) {
-    setSelectedKeys((prev) =>
-      selected ? (prev.includes(key) ? prev : [...prev, key]) : prev.filter((k) => k !== key),
-    )
+  /** "Select all" arrives as the string `all` rather than a set of keys. */
+  function handleSelectionChange(keys: Selection) {
+    setSelectedKeys(keys === 'all' ? flags.map((f) => f.key) : Array.from(keys, String))
   }
 
-  function handleSelectAll(checked: boolean) {
-    setSelectedKeys(checked ? flags.map((f) => f.key) : [])
-  }
-
-  function handleSortCol(col: SortField) {
-    if (sortField === col) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortField(col)
-      setSortDir(col === 'updated' ? 'desc' : 'asc')
-    }
+  function handleSortChange(descriptor: SortDescriptor) {
+    const next = SORTABLE[String(descriptor.column)]
+    if (!next) return
+    setSortField(next)
+    setSortDir(descriptor.direction === 'ascending' ? 'asc' : 'desc')
   }
 
   async function handleToggle(key: string, env: string, enabled: boolean) {
@@ -173,7 +143,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="flags-screen">
+    <div className="flags-screen dc">
       <div className="page-header">
         <div className="page-header-text">
           <h1>Feature flags</h1>
@@ -182,16 +152,13 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           </p>
         </div>
         <div className="page-header-actions">
-          <Button variant="ghost" leftIcon="refresh" onClick={refetch}>
+          <Button variant="ghost" onClick={refetch}>
+            <Icon name="refresh" size={14} />
             Refresh
           </Button>
           <Denied when={!canWrite} reason="Your role is read-only">
-            <Button
-              variant="primary"
-              leftIcon="plus"
-              disabled={!canWrite}
-              onClick={() => setShowCreate(true)}
-            >
+            <Button variant="primary" isDisabled={!canWrite} onClick={() => setShowCreate(true)}>
+              <Icon name="plus" size={14} />
               New flag
             </Button>
           </Denied>
@@ -228,13 +195,13 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
       )}
 
       {total === 0 && !anyFilters ? (
-        <div className="flags-empty">
+        <div className="flags-empty dc-empty">
           <Icon name="flag" size={48} className="flags-empty-icon" />
           <h2 className="flags-empty-title">No flags yet</h2>
           <p className="flags-empty-message">Create your first feature flag to get started.</p>
         </div>
       ) : total === 0 ? (
-        <div className="flags-empty">
+        <div className="flags-empty dc-empty">
           <Icon name="search" size={48} className="flags-empty-icon" />
           <h2 className="flags-empty-title">No flags match your filters</h2>
           <p className="flags-empty-message">Try adjusting your search or filters.</p>
@@ -243,57 +210,66 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           </Button>
         </div>
       ) : (
-        <div className="flags-list">
-          <div className="flags-row flags-head">
-            <div className="cell-check">
-              <Checkbox
-                checked={allSelected}
-                indeterminate={someSelected}
-                onChange={handleSelectAll}
-                ariaLabel="Select all flags"
-              />
-            </div>
-            <SortHead
-              label="Flag"
-              col="name"
-              sortField={sortField}
-              sortDir={sortDir}
-              onSort={handleSortCol}
-            />
-            <div className="cell-env">
-              <span className="env-label">{nameFor('development')}</span>
-            </div>
-            <div className="cell-env cell-env-prod">
-              <span className="env-label">
-                {nameFor('production')}
-                <span className="live-dot" aria-hidden="true" />
-              </span>
-            </div>
-            <SortHead
-              label="Last edited"
-              col="updated"
-              sortField={sortField}
-              sortDir={sortDir}
-              onSort={handleSortCol}
-              align="right"
-            />
-          </div>
-          {flags.map((flag) => (
-            <FlagRow
-              key={flag.key}
-              flag={flag}
-              activeEnv={activeEnv}
-              envNames={ENV_NAMES}
-              selected={selectedKeys.includes(flag.key)}
-              stale={isFlagStale(flag.updated, staleFlagDays)}
-              onSelect={handleSelect}
-              onToggle={(key, env, enabled) => {
-                void handleToggle(key, env, enabled)
-              }}
-              onClick={(key) => navigate(`/flags/${key}`)}
-            />
-          ))}
-          <div className="flags-list-foot">
+        <div className="flags-list dc-card">
+          <Table>
+            <Table.Content
+              aria-label="Feature flags"
+              selectionMode="multiple"
+              selectedKeys={selectedKeys}
+              onSelectionChange={handleSelectionChange}
+              sortDescriptor={sortDescriptor}
+              onSortChange={handleSortChange}
+            >
+              <Table.Header>
+                <Table.Column id="select" className="cell-check">
+                  <Checkbox slot="selection" aria-label="Select all flags">
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox.Content>
+                  </Checkbox>
+                </Table.Column>
+                <Table.Column id="name" isRowHeader allowsSorting>
+                  {({ sortDirection }) => (
+                    <Table.SortableColumnHeader sortDirection={sortDirection}>
+                      Flag
+                    </Table.SortableColumnHeader>
+                  )}
+                </Table.Column>
+                {ENV_NAMES.map((env) => (
+                  <Table.Column key={env} id={env} className="cell-env">
+                    <span className="env-label">
+                      {nameFor(env)}
+                      {env === 'production' && <span className="live-dot" aria-hidden="true" />}
+                    </span>
+                  </Table.Column>
+                ))}
+                <Table.Column id="updated" allowsSorting className="cell-edited">
+                  {({ sortDirection }) => (
+                    <Table.SortableColumnHeader sortDirection={sortDirection}>
+                      Last edited
+                    </Table.SortableColumnHeader>
+                  )}
+                </Table.Column>
+              </Table.Header>
+              <Table.Body items={flags}>
+                {(flag: Flag) => (
+                  <FlagRow
+                    flag={flag}
+                    activeEnv={activeEnv}
+                    envNames={ENV_NAMES}
+                    stale={isFlagStale(flag.updated, staleFlagDays)}
+                    onToggle={(key, env, enabled) => {
+                      void handleToggle(key, env, enabled)
+                    }}
+                    onClick={(key) => navigate(`/flags/${key}`)}
+                  />
+                )}
+              </Table.Body>
+            </Table.Content>
+          </Table>
+          <div className="dc-table-foot">
             <Pagination
               total={total}
               limit={limit}

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Modal } from '../primitives/Modal'
-import { Button } from '../primitives/Button'
-import { TextField } from '../primitives/TextField'
+import { Button, Description, Input, Label, TextArea, TextField } from '@heroui/react'
+import { Dialog } from '../primitives/Dialog'
 import { Kbd } from '../primitives/Kbd'
 import { flagsApi } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
@@ -87,74 +86,63 @@ export function CreateFlagModal({ open, projectId, onClose }: CreateFlagModalPro
     !name.trim() || !key.trim() || saving || (requireDescription && !description.trim())
 
   return (
-    <Modal open={open} onClose={onClose} size="lg" titleId="create-flag-modal-title">
-      <Modal.Header
-        id="create-flag-modal-title"
-        subtitle="Flags start off in every environment. You can change defaults below."
+    <Dialog
+      className="flags-dialog"
+      size="lg"
+      open={open}
+      onClose={onClose}
+      title="Create flag"
+      subtitle="Flags start off in every environment. You can change defaults below."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} isDisabled={saving}>
+            Cancel
+          </Button>
+          <span className="spacer" />
+          <span className="create-flag-kbd-hint muted">
+            <Kbd keys={['⌘']} /> <Kbd keys={['↵']} /> to create
+          </span>
+          <Button variant="primary" onClick={() => void handleSubmit()} isDisabled={disabled}>
+            Create flag
+          </Button>
+        </>
+      }
+    >
+      <div
+        className="dc-form create-flag-form"
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') void handleSubmit()
+        }}
       >
-        Create flag
-      </Modal.Header>
-      <Modal.Body>
-        <div
-          className="create-flag-form"
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') void handleSubmit()
-          }}
-        >
-          <TextField
-            label="Name"
-            value={name}
-            onChange={handleNameChange}
-            placeholder="e.g. New cart experience"
-            hint="Human-readable. Shown in the admin UI."
-            autoFocus
-          />
-          <TextField
-            label="Key · immutable"
-            value={key}
-            onChange={handleKeyChange}
-            placeholder="checkout.new-cart"
-            hint={`Used in your code: client.isEnabled('${key || 'flag-key'}')`}
-            style={{ fontFamily: 'var(--font-mono)' }}
-          />
+        <TextField value={name} onChange={handleNameChange} autoFocus isRequired>
+          <Label>Name · required</Label>
+          <Input placeholder="e.g. New cart experience" />
+          <Description>Human-readable. Shown in the admin UI.</Description>
+        </TextField>
 
-          <div className="text-field">
-            <label className="text-field-label" htmlFor="create-flag-desc">
-              Description{requireDescription ? ' · required' : ''}
-            </label>
-            <textarea
-              id="create-flag-desc"
-              className="text-field-input create-flag-textarea"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What does this flag control? Who owns it? When can it be removed?"
-              rows={3}
-              aria-required={requireDescription}
-            />
-          </div>
+        <TextField value={key} onChange={handleKeyChange} isRequired>
+          <Label>Key · immutable · required</Label>
+          <Input className="mono" placeholder="checkout.new-cart" />
+          <Description>{`Used in your code: client.isEnabled('${key || 'flag-key'}')`}</Description>
+        </TextField>
 
-          <div className="snippet-preview">
-            <div className="snippet-label">Snippet preview</div>
-            <pre className="snippet-code">{`import { flagraft } from '@flagraft/sdk';
+        <TextField value={description} onChange={setDescription} isRequired={requireDescription}>
+          <Label>Description{requireDescription ? ' · required' : ''}</Label>
+          <TextArea
+            rows={3}
+            placeholder="What does this flag control? Who owns it? When can it be removed?"
+          />
+        </TextField>
+
+        <div className="snippet-preview">
+          <div className="snippet-label">Snippet preview</div>
+          <pre className="snippet-code">{`import { flagraft } from '@flagraft/sdk';
 
 const on = await flagraft.isEnabled('${key || 'your-flag-key'}', {
   userId: ctx.userId,
 });`}</pre>
-          </div>
         </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="ghost" onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <span className="spacer" />
-        <span className="create-flag-kbd-hint muted">
-          <Kbd keys={['⌘']} /> <Kbd keys={['↵']} /> to create
-        </span>
-        <Button variant="primary" onClick={() => void handleSubmit()} disabled={disabled}>
-          Create flag
-        </Button>
-      </Modal.Footer>
-    </Modal>
+      </div>
+    </Dialog>
   )
 }

@@ -1,6 +1,5 @@
-import { Toggle } from '../primitives/Toggle'
+import { Chip, Switch } from '@heroui/react'
 import { Tip } from '../primitives/Tip'
-import { Badge } from '../primitives/Badge'
 import type { PendingToggle } from '../../lib/types'
 
 interface StatePillProps {
@@ -31,20 +30,28 @@ export function StatePill({
 
   return (
     <div className={classes} data-env={env}>
-      <Toggle
-        checked={on}
+      <Switch
         size="sm"
-        disabled={disabled}
+        isSelected={on}
+        isDisabled={disabled}
         onChange={onToggle}
-        label={flagKey ? `${flagKey} in ${env}` : env}
-      />
+        aria-label={flagKey ? `${flagKey} in ${env}` : env}
+      >
+        <Switch.Content>
+          <Switch.Control>
+            <Switch.Thumb />
+          </Switch.Control>
+        </Switch.Content>
+      </Switch>
       <span className="state-label">{on ? 'on' : 'off'}</span>
       {pending && (
         <Tip
           tip={`${pending.requestedBy} requested ${pending.requestedEnabled ? 'on' : 'off'} -- toggle the same way to confirm.`}
         >
           <span>
-            <Badge variant="warning">pending</Badge>
+            <Chip className="flags-pending" size="sm">
+              pending
+            </Chip>
           </span>
         </Tip>
       )}

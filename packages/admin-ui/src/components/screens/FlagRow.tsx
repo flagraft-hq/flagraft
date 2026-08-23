@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import { Checkbox } from '../primitives/Checkbox'
-import { Button } from '../primitives/Button'
-import { Badge } from '../primitives/Badge'
-import { Modal } from '../primitives/Modal'
+import { Button, Checkbox, Chip, Table } from '@heroui/react'
+import { Dialog } from '../primitives/Dialog'
 import { Tip } from '../primitives/Tip'
 import { Denied } from '../primitives/Denied'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -14,10 +12,8 @@ interface FlagRowProps {
   flag: Flag
   activeEnv: string
   envNames: string[]
-  selected: boolean
   /** True when the flag hasn't changed within the project's stale window. */
   stale?: boolean
-  onSelect: (key: string, selected: boolean) => void
   onToggle: (key: string, env: string, enabled: boolean) => void
   onClick: (key: string) => void
 }
@@ -44,13 +40,16 @@ function avatarFor(author?: string | null): { initials: string; color: string } 
   }
 }
 
+/**
+ * One row of the flags table. Selection is owned by the table rather than by
+ * this component: the checkbox carries React Aria's `selection` slot, so the
+ * table wires it to its own `selectedKeys` and this row never sees the state.
+ */
 export function FlagRow({
   flag,
   activeEnv,
   envNames,
-  selected,
   stale = false,
-  onSelect,
   onToggle,
   onClick,
 }: FlagRowProps) {
@@ -78,56 +77,45 @@ export function FlagRow({
     }
   }
 
-  function handleCancel() {
-    setConfirmState(null)
-  }
-
-  function openDetail() {
-    onClick(flag.key)
-  }
-
   return (
-    <div
-      className={`flags-row body${selected ? ' selected' : ''}`}
-      role="row"
-      data-selected={selected || undefined}
-    >
-      <div className="cell-check">
-        <Checkbox
-          checked={selected}
-          onChange={(checked) => onSelect(flag.key, checked)}
-          ariaLabel="Select flag"
-        />
-      </div>
+    <Table.Row id={flag.key} className="flags-row">
+      <Table.Cell className="cell-check">
+        {/**
+         * React Aria composes this label with the row header cell, so the
+         * screen reader hears "Select" followed by the flag's own name --
+         * repeating the name here would say it twice.
+         */}
+        <Checkbox slot="selection" aria-label="Select">
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+          </Checkbox.Content>
+        </Checkbox>
+      </Table.Cell>
 
-      <div
-        className="cell-name"
-        onClick={openDetail}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') openDetail()
-        }}
-      >
-        <div className="name-stack">
+      <Table.Cell className="cell-name">
+        <button type="button" className="name-stack" onClick={() => onClick(flag.key)}>
           <span className="flag-name">
             <span className="flag-name-text">{flag.name}</span>
             {stale ? (
               <Tip tip={`No value change since ${relativeDate} — review or remove`}>
                 <span className="flag-stale-badge">
-                  <Badge variant="warning">stale</Badge>
+                  <Chip className="flags-stale" size="sm">
+                    stale
+                  </Chip>
                 </span>
               </Tip>
             ) : null}
           </span>
           <span className="flag-key mono">{flag.key}</span>
-        </div>
-      </div>
+        </button>
+      </Table.Cell>
 
       {envNames.map((env) => {
         const allowed = canWriteEnv(env)
         return (
-          <div
+          <Table.Cell
             key={env}
             className={`cell-env${isProductionEnv(env) ? ' cell-env-prod' : ''}${
               env === activeEnv ? ' cell-env-active' : ''
@@ -143,37 +131,48 @@ export function FlagRow({
                 onToggle={(checked) => handleToggleChange(env, checked)}
               />
             </Denied>
-          </div>
+          </Table.Cell>
         )
       })}
 
-      <div className="cell-edited">
-        <span className={`avatar avatar-sm avatar-${avatar.color}`} aria-hidden="true">
-          {avatar.initials}
-        </span>
-        <div className="edited-stack">
-          <span className="edited-author">{flag.author || 'System'}</span>
-          <span className="edited-when">{relativeDate}</span>
+      <Table.Cell className="cell-edited">
+        <div className="cell-edited-inner">
+          <span className={`flag-avatar flag-avatar-sm flag-avatar-${avatar.color}`} aria-hidden="true">
+            {avatar.initials}
+          </span>
+          <div className="edited-stack">
+            <span className="edited-author">{flag.author || 'System'}</span>
+            <span className="edited-when">{relativeDate}</span>
+          </div>
         </div>
-      </div>
 
-      <Modal open={confirmState !== null} onClose={handleCancel}>
-        <Modal.Header>{confirmState?.checked ? 'Enable' : 'Disable'} in Production?</Modal.Header>
-        <Modal.Body>
+        {/**
+         * ponytail: the confirm dialog lives inside a cell because a
+         * `Table.Row` may only have cells as children -- React Aria reads them
+         * to build its collection. It portals out of the table either way.
+         */}
+        <Dialog
+          className="flags-dialog"
+          open={confirmState !== null}
+          onClose={() => setConfirmState(null)}
+          title={`${confirmState?.checked ? 'Enable' : 'Disable'} in Production?`}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmState(null)}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleConfirm}>
+                {confirmState?.checked ? 'Enable' : 'Disable'}
+              </Button>
+            </>
+          }
+        >
           <p>
             {confirmState?.checked ? 'Enable' : 'Disable'} <strong>{flag.name}</strong> in{' '}
             <strong>{confirmState?.env}</strong>? This will affect production traffic.
           </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="default" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleConfirm}>
-            {confirmState?.checked ? 'Enable' : 'Disable'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
+        </Dialog>
+      </Table.Cell>
+    </Table.Row>
   )
 }

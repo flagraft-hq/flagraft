@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Table } from '@heroui/react'
 
 import { FlagRow } from '../FlagRow'
 import type { Flag } from '../../../lib/types'
@@ -35,17 +36,31 @@ const flag: Flag = {
 
 const onToggle = vi.fn()
 
+/** A row only renders inside a table; see FlagRow.test.tsx for the reasoning. */
 function renderRow() {
   return render(
-    <FlagRow
-      flag={flag}
-      activeEnv="development"
-      envNames={['development', 'production']}
-      selected={false}
-      onSelect={vi.fn()}
-      onToggle={onToggle}
-      onClick={vi.fn()}
-    />,
+    <Table>
+      <Table.Content aria-label="Flags" selectionMode="multiple">
+        <Table.Header>
+          <Table.Column id="select">{''}</Table.Column>
+          <Table.Column id="name" isRowHeader>
+            Flag
+          </Table.Column>
+          <Table.Column id="development">development</Table.Column>
+          <Table.Column id="production">production</Table.Column>
+          <Table.Column id="updated">Last edited</Table.Column>
+        </Table.Header>
+        <Table.Body>
+          <FlagRow
+            flag={flag}
+            activeEnv="development"
+            envNames={['development', 'production']}
+            onToggle={onToggle}
+            onClick={vi.fn()}
+          />
+        </Table.Body>
+      </Table.Content>
+    </Table>,
   )
 }
 

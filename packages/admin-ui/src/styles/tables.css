@@ -1,17 +1,19 @@
 /**
  * Shared chrome for every data table.
  *
- * The five tables grew up in separate domain files and drifted apart -- five
- * different header sizes, weights, letter-spacings and greys. This file is
- * imported LAST on purpose so one definition wins over all of them. Put
- * table-specific layout (column widths, row heights) in the domain file; put
- * anything that should look the same everywhere here.
+ * The tables grew up in separate domain files and drifted apart -- different
+ * header sizes, weights, letter-spacings and greys. This file is imported LAST
+ * on purpose so one definition wins over all of them. Put table-specific layout
+ * (column widths, row heights) in the domain file; put anything that should
+ * look the same everywhere here.
+ *
+ * Screens converted to HeroUI are NOT listed here -- they take their chrome
+ * from `dc.css` instead. Being imported last, this file would otherwise
+ * override the comp's card and header treatment.
  */
 
 /* ---- Surface: one card treatment for every table ---- */
-.users-table-wrap,
-.keys-card,
-.flags-list {
+.users-table-wrap {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
@@ -21,10 +23,8 @@
 
 /* ---- Header row ---- */
 .users-table thead th,
-.keys-table thead th,
 .ctx-table thead th,
-.settings-table thead th,
-.flags-row.flags-head {
+.settings-table thead th {
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -39,18 +39,8 @@
   white-space: nowrap;
 }
 
-/* The flags header is a grid row, so its cells inherit rather than being th */
-.flags-row.flags-head .env-label,
-.flags-row.flags-head .sort-head {
-  color: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-}
-
 /* ---- Body rows ---- */
 .users-table tbody td,
-.keys-table tbody td,
 .ctx-table tbody td,
 .settings-table tbody td {
   border-bottom: 1px solid var(--border);
@@ -58,33 +48,26 @@
 
 /* The footer supplies the closing edge, so the last row must not double it */
 .users-table tbody tr:last-child td,
-.keys-table tbody tr:last-child td,
 .ctx-table tbody tr:last-child td,
-.settings-table tbody tr:last-child td,
-.flags-list .flags-row:last-of-type {
+.settings-table tbody tr:last-child td {
   border-bottom: none;
 }
 
 /* Users sets its own more-specific row hover; it uses the same token. */
 .users-table tbody tr:hover,
-.keys-table tbody tr:hover,
 .settings-table tbody tr:hover {
   background: var(--bg-hover);
 }
 
 /* ---- Figures line up in columns ---- */
 .users-table,
-.keys-table,
 .ctx-table,
-.settings-table,
-.flags-list {
+.settings-table {
   font-variant-numeric: tabular-nums;
 }
 
 /* ---- Footer band ---- */
-.users-table-foot,
-.keys-table-foot,
-.flags-list-foot {
+.users-table-foot {
   display: flex;
   align-items: center;
   padding: 0.375rem 0.875rem;

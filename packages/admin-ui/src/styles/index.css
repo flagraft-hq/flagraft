@@ -34,9 +34,10 @@
  * and ours wins. An `import './x.css'` inside a `.tsx` would land wherever the
  * bundler happened to put it.
  *
- * Currently rendered by: KeysScreen.
+ * Currently rendered by: KeysScreen, FlagsScreen.
  */
 @import '@heroui/styles/components/button.css' layer(components);
+@import '@heroui/styles/components/checkbox.css' layer(components);
 @import '@heroui/styles/components/chip.css' layer(components);
 @import '@heroui/styles/components/description.css' layer(components);
 @import '@heroui/styles/components/field-error.css' layer(components);
@@ -48,7 +49,9 @@
 @import '@heroui/styles/components/popover.css' layer(components);
 @import '@heroui/styles/components/search-field.css' layer(components);
 @import '@heroui/styles/components/select.css' layer(components);
+@import '@heroui/styles/components/switch.css' layer(components);
 @import '@heroui/styles/components/table.css' layer(components);
+@import '@heroui/styles/components/textarea.css' layer(components);
 @import '@heroui/styles/components/textfield.css' layer(components);
 @import '@heroui/styles/components/tooltip.css' layer(components);
 
@@ -61,6 +64,7 @@
  */
 @import './base.css'; /* design tokens, theme, reset, utilities, Button, Toggle */
 @import './primitives.css'; /* Modal, Checkbox, Tip, Badge, Kbd */
+@import './dc.css'; /* design-comp chrome shared by every HeroUI screen */
 @import './layout.css'; /* app shell grid, TopBar, SideNav */
 @import './flags.css'; /* flags list, rows, state pill, tags, filter/bulk bars, create modal */
 @import './flag-detail.css'; /* flag detail header, meta, env cards, tabs */

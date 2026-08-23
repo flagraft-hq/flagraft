@@ -543,7 +543,7 @@
   gap: 0.375rem;
 }
 .pagination-size-label {
-  color: var(--text-4);
+  color: var(--text-1);
 }
 /* The row-count select sits inline, so drop the wrapper's block layout */
 .pagination-size .select-wrapper {

@@ -33,33 +33,6 @@ vi.mock('../../../lib/api', () => ({
   flagsApi: { toggle: vi.fn() },
 }))
 
-vi.mock('../FlagRow', () => ({
-  FlagRow: ({
-    flag,
-    onSelect,
-    onClick,
-    onToggle,
-  }: {
-    flag: { key: string; name: string }
-    onSelect: (key: string, selected: boolean) => void
-    onClick: (key: string) => void
-    onToggle: (key: string, env: string, enabled: boolean) => void
-  }) => (
-    <div data-testid={`flag-row-${flag.key}`} onClick={() => onSelect(flag.key, true)}>
-      {flag.name}
-      <button data-testid={`nav-${flag.key}`} onClick={() => onClick(flag.key)}>
-        Open
-      </button>
-      <button
-        data-testid={`toggle-${flag.key}`}
-        onClick={() => onToggle(flag.key, 'development', true)}
-      >
-        Toggle
-      </button>
-    </div>
-  ),
-}))
-
 vi.mock('../FlagBulkActionBar', () => ({
   FlagBulkActionBar: ({ selectedKeys }: { selectedKeys: string[] }) =>
     selectedKeys.length > 0 ? (
@@ -172,7 +145,7 @@ describe('FlagsScreen', () => {
     })
 
     render(<FlagsScreen />)
-    expect(document.querySelector('.flags-list')).toBeInTheDocument()
+    expect(screen.getByRole('grid', { name: 'Feature flags' })).toBeInTheDocument()
   })
 
   it('has a "Feature flags" heading', () => {
@@ -228,7 +201,7 @@ describe('FlagsScreen empty states', () => {
     render(<FlagsScreen />)
     expect(screen.getByText('No flags yet')).toBeInTheDocument()
     expect(screen.getByText('Create your first feature flag to get started.')).toBeInTheDocument()
-    expect(document.querySelector('.flags-list')).not.toBeInTheDocument()
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument()
   })
 
   it('shows the no-results empty state when a filter is active and nothing matches', async () => {
@@ -250,7 +223,7 @@ describe('FlagsScreen empty states', () => {
 
     expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
     expect(screen.getByText('Try adjusting your search or filters.')).toBeInTheDocument()
-    expect(document.querySelector('.flags-list')).not.toBeInTheDocument()
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument()
   })
 
   it('clear filters button resets the search box and drops the filtered empty state', () => {
@@ -337,19 +310,18 @@ describe('FlagsScreen integration', () => {
     )
   })
 
-  it('renders FlagRow for each flag', () => {
+  it('renders a row for each flag', () => {
     render(<FlagsScreen />)
-    expect(screen.getByTestId('flag-row-flag-alpha')).toBeInTheDocument()
-    expect(screen.getByTestId('flag-row-flag-beta')).toBeInTheDocument()
-    expect(screen.getByTestId('flag-row-flag-gamma')).toBeInTheDocument()
     expect(screen.getByText('Alpha Flag')).toBeInTheDocument()
     expect(screen.getByText('Beta Flag')).toBeInTheDocument()
     expect(screen.getByText('Gamma Flag')).toBeInTheDocument()
+    /** Three flags plus the header row. */
+    expect(screen.getAllByRole('row')).toHaveLength(4)
   })
 
   it('clicking the Flag column header sorts by name (ascending)', () => {
     render(<FlagsScreen />)
-    const flagHead = screen.getByRole('button', { name: /^flag$/i })
+    const flagHead = screen.getByRole('columnheader', { name: /^flag$/i })
     expect(flagHead.getAttribute('aria-sort')).toBe('none')
     fireEvent.click(flagHead)
     expect(flagHead.getAttribute('aria-sort')).toBe('ascending')
@@ -357,17 +329,30 @@ describe('FlagsScreen integration', () => {
 
   it('clicking an already-sorted column header toggles the direction', () => {
     render(<FlagsScreen />)
-    const flagHead = screen.getByRole('button', { name: /^flag$/i })
+    const flagHead = screen.getByRole('columnheader', { name: /^flag$/i })
     fireEvent.click(flagHead)
     expect(flagHead.getAttribute('aria-sort')).toBe('ascending')
     fireEvent.click(flagHead)
     expect(flagHead.getAttribute('aria-sort')).toBe('descending')
   })
 
+  it('asks the API to re-sort rather than reordering the page itself', () => {
+    render(<FlagsScreen />)
+    fireEvent.click(screen.getByRole('columnheader', { name: /^flag$/i }))
+    expect(mockUseFlags).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sortField: 'name', sortDir: 'asc' }),
+    )
+    /** The rows are still in the order the API handed them over. */
+    const names = screen.getAllByRole('rowheader').map((c) => c.textContent)
+    expect(names[0]).toContain('Alpha Flag')
+    expect(names[1]).toContain('Beta Flag')
+    expect(names[2]).toContain('Gamma Flag')
+  })
+
   it('selecting a flag shows bulk action bar', () => {
     render(<FlagsScreen />)
     expect(screen.queryByTestId('bulk-bar')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('flag-row-flag-alpha'))
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Select Alpha Flag/ }))
     expect(screen.getByTestId('bulk-bar')).toBeInTheDocument()
     expect(screen.getByText('1 selected')).toBeInTheDocument()
   })
@@ -379,14 +364,14 @@ describe('FlagsScreen integration', () => {
 
   it('clicking a flag row name navigates to the flag detail page', () => {
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByTestId('nav-flag-alpha'))
+    fireEvent.click(screen.getByText('Alpha Flag'))
     expect(mockNavigate).toHaveBeenCalledWith('/flags/flag-alpha')
   })
 
   it('selecting multiple flags updates the bulk bar counter', () => {
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByTestId('flag-row-flag-alpha'))
-    fireEvent.click(screen.getByTestId('flag-row-flag-beta'))
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Select Alpha Flag/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Select Beta Flag/ }))
     expect(screen.getByText('2 selected')).toBeInTheDocument()
   })
 
@@ -401,9 +386,10 @@ describe('FlagsScreen integration', () => {
     })
     mockToggle.mockResolvedValue({ data: {} })
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByTestId('toggle-flag-alpha'))
+    /** Alpha is on in development, so clicking its switch turns it off. */
+    fireEvent.click(screen.getByRole('switch', { name: 'flag-alpha in development' }))
     await waitFor(() =>
-      expect(mockToggle).toHaveBeenCalledWith('proj-1', 'flag-alpha', 'development', true),
+      expect(mockToggle).toHaveBeenCalledWith('proj-1', 'flag-alpha', 'development', false),
     )
     await waitFor(() => expect(mockRefetch).toHaveBeenCalled())
   })
@@ -411,7 +397,7 @@ describe('FlagsScreen integration', () => {
   it('a toggle error shows an inline error message', async () => {
     mockToggle.mockRejectedValue(new Error('Toggle failed'))
     render(<FlagsScreen />)
-    fireEvent.click(screen.getByTestId('toggle-flag-alpha'))
+    fireEvent.click(screen.getByRole('switch', { name: 'flag-alpha in development' }))
     await waitFor(() => expect(screen.getByText('Toggle failed')).toBeInTheDocument())
   })
 })
