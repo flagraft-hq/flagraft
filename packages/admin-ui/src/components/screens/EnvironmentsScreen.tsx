@@ -5,8 +5,7 @@ import { useToast } from '../../hooks/useToast'
 import { useEnvironments } from '../../hooks/useEnvironments'
 import type { EnvWithStats } from '../../hooks/useEnvironments'
 import { usePermissions } from '../../hooks/usePermissions'
-import { environmentsApi, apiBaseUrl } from '../../lib/api'
-import { CopyButton } from '../primitives/CopyButton'
+import { environmentsApi } from '../../lib/api'
 import { Denied } from '../primitives/Denied'
 import { Dialog } from '../primitives/Dialog'
 import { FormError } from '../primitives/FormError'
@@ -116,8 +115,6 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
           )}
         </div>
       </div>
-
-
 
       <div className="env-grid">
         {environments.map((env) => (

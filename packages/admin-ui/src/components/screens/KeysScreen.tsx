@@ -5,9 +5,7 @@ import {
   Description,
   Input,
   Label,
-  ListBox,
   SearchField,
-  Select,
   Table,
   TextField,
   Tooltip,
@@ -19,6 +17,7 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { usePermissions } from '../../hooks/usePermissions'
 import { keysApi, apiBaseUrl } from '../../lib/api'
+import { formatDate } from '../../lib/dates'
 import type { ApiKey, ApiKeyType, Env } from '../../lib/types'
 import { Denied } from '../primitives/Denied'
 import { Dialog } from '../primitives/Dialog'
@@ -27,6 +26,7 @@ import { CopyButton } from '../primitives/CopyButton'
 import { FormError } from '../primitives/FormError'
 import { ErrorState } from '../primitives/ErrorState'
 import { Pagination } from '../primitives/Pagination'
+import { FilterSelect } from '../primitives/FilterSelect'
 
 /** Rows per page before the user picks a different size. */
 const DEFAULT_PAGE_SIZE = 25
@@ -38,52 +38,9 @@ const DEFAULT_PAGE_SIZE = 25
  */
 function formatExpiry(expiresAt: string | null): { label: string; expired: boolean } {
   if (!expiresAt) return { label: 'Never', expired: false }
-  const date = new Date(expiresAt)
-  const formatted = date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  const expired = date.getTime() < Date.now()
+  const formatted = formatDate(expiresAt)
+  const expired = new Date(expiresAt).getTime() < Date.now()
   return { label: expired ? `Expired ${formatted}` : formatted, expired }
-}
-
-/** A HeroUI select over a fixed list of options, driven by a plain string value. */
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-  isDisabled,
-}: {
-  label: string
-  value: string
-  onChange: (next: string) => void
-  options: { value: string; label: string }[]
-  isDisabled?: boolean
-}) {
-  return (
-    <Select
-      aria-label={label}
-      selectedKey={value}
-      onSelectionChange={(key) => onChange(String(key))}
-      isDisabled={isDisabled}
-    >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover className="dc-popover">
-        <ListBox>
-          {options.map((o) => (
-            <ListBox.Item key={o.value} id={o.value}>
-              {o.label}
-            </ListBox.Item>
-          ))}
-        </ListBox>
-      </Select.Popover>
-    </Select>
-  )
 }
 
 export function KeysScreen() {

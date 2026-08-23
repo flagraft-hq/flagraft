@@ -137,7 +137,10 @@ export function FlagRow({
 
       <Table.Cell className="cell-edited">
         <div className="cell-edited-inner">
-          <span className={`flag-avatar flag-avatar-sm flag-avatar-${avatar.color}`} aria-hidden="true">
+          <span
+            className={`flag-avatar flag-avatar-sm flag-avatar-${avatar.color}`}
+            aria-hidden="true"
+          >
             {avatar.initials}
           </span>
           <div className="edited-stack">

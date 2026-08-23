@@ -35,6 +35,7 @@ export type IconName =
   | 'play'
   | 'user'
   | 'palette'
+  | 'more'
 
 interface IconProps extends React.SVGAttributes<SVGSVGElement> {
   name: IconName
@@ -251,6 +252,13 @@ export function Icon({ name, size = 16, className = '', ...rest }: IconProps) {
     play: (
       <>
         <path d="M6 4v16l14-8z" />
+      </>
+    ),
+    more: (
+      <>
+        <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
       </>
     ),
     user: (

@@ -194,8 +194,12 @@ describe('KeysScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /issue key/i }))
     const dialog = screen.getByRole('dialog')
 
-    // Admin scope is default — no environment select shown.
-    expect(within(dialog).queryByText('Environment')).not.toBeInTheDocument()
+    /**
+     * Admin scope is the default; the environment field stays visible but
+     * dimmed and disabled, because admin keys span every environment.
+     */
+    expect(within(dialog).getByText('Environment')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: /Environment/ })).toBeDisabled()
 
     // Switch to client → environment select appears.
     fireEvent.click(within(dialog).getByRole('button', { name: 'client' }))

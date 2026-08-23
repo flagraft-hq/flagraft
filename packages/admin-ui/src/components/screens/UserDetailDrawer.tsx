@@ -1,16 +1,15 @@
 import { useState } from 'react'
+import { Button, Chip, Drawer, Tooltip } from '@heroui/react'
 import type { WorkspaceUser } from '../../lib/api'
 import { usersApi } from '../../lib/api'
 import { USER_ROLES } from '../../lib/roles'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useResendInvite } from '../../hooks/useResendInvite'
-import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
-import { Button } from '../primitives/Button'
+import { formatDate } from '../../lib/dates'
+import { FilterSelect } from '../primitives/FilterSelect'
 import { Icon } from '../primitives/Icon'
-import { Select } from '../primitives/Select'
-import { Tip } from '../primitives/Tip'
 import { InviteLinksModal } from './InviteLinksModal'
 import { ResetPasswordModal } from './ResetPasswordModal'
 
@@ -21,8 +20,11 @@ interface UserDetailDrawerProps {
 }
 
 /**
- * Right-anchored 480px overlay showing details for one workspace user.
- * Closes on Escape or clicking the backdrop.
+ * Right-anchored overlay showing details for one workspace user.
+ *
+ * The parent mounts this only while a user is selected, so it is always open
+ * once rendered; React Aria closes it on Escape or a click outside and hands
+ * focus back to whatever opened it.
  */
 export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerProps) {
   const toast = useToast()
@@ -32,14 +34,6 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const relativeLastLogin = useRelativeDate(user.lastLoginAt ?? undefined)
-
-  /** While the reset modal is open, Escape closes it instead of the drawer. */
-  useKeyboardShortcuts({
-    Escape: () => {
-      if (showResetPassword) setShowResetPassword(false)
-      else onClose()
-    },
-  })
 
   async function handleSuspendToggle() {
     setBusy(true)
@@ -101,191 +95,159 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
     }
   }
 
-  const statusTone = user.status === 'active' ? 'teal' : user.status === 'invited' ? 'amber' : 'red'
-
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
-      <aside
-        className="user-drawer"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label={'User detail: ' + user.name}
-      >
-        <div className="user-drawer-head">
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
-            <Icon name="x" size={16} />
-          </button>
-        </div>
+    <Drawer.Root isOpen onOpenChange={(next) => !next && onClose()}>
+      <Drawer.Backdrop className="dc-backdrop">
+        <Drawer.Content placement="right" className="dc user-drawer">
+          <Drawer.Dialog aria-label={'User detail: ' + user.name}>
+            <Drawer.Header className="user-drawer-head">
+              <button type="button" className="dc-icon-btn" onClick={onClose} aria-label="Close">
+                <Icon name="x" size={16} />
+              </button>
+            </Drawer.Header>
 
-        <div className="user-drawer-hero">
-          <span className={'avatar lg color-' + user.tone}>{user.initials}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h2>{user.name}</h2>
-            <div className="user-drawer-email mono">{user.email}</div>
-            <div
-              className="row"
-              style={{ gap: '0.375rem', marginTop: '0.625rem', flexWrap: 'wrap', display: 'flex' }}
-            >
-              <span className={'badge badge-tone-' + roleTone(user.role)}>
-                <span className="role-dot" /> {user.role}
-              </span>
-              <span className={'badge badge-tone-' + statusTone}>
-                <span className="role-dot" /> {user.status}
-              </span>
-              {user.isSystem ? (
-                <span className="badge badge-tone-slate">
-                  <Icon name="bolt" size={9} /> service
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="user-drawer-body">
-          <section className="user-section">
-            <h3>Details</h3>
-            <DRow label="User ID" value={<span className="mono">{user.id}</span>} />
-            <DRow label="Joined" value={<span className="mono">{user.createdAt}</span>} />
-            <DRow
-              label="Last login"
-              value={
-                <span className="mono">
-                  {user.lastLoginAt == null ? 'never' : relativeLastLogin}
-                </span>
-              }
-            />
-            <DRow
-              label="Source"
-              value={
-                <span className="mono">{user.isSystem ? 'service-account' : 'scim · okta'}</span>
-              }
-            />
-          </section>
-
-          <section className="user-section">
-            <h3>Project access · {user.projects.length}</h3>
-            <div className="user-projects">
-              {user.projects.map((p) => (
-                <div key={p} className="user-project">
-                  <span
-                    className="proj-avatar"
-                    style={{
-                      width: '1.75rem',
-                      height: '1.75rem',
-                      fontSize: '0.6875rem',
-                      borderRadius: '0.5rem',
-                    }}
-                  >
-                    {p
-                      .split(' ')
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join('')}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{p}</div>
-                    <div className="muted mono" style={{ fontSize: '0.6875rem' }}>
+            <Drawer.Body className="user-drawer-body">
+              <div className="user-drawer-hero">
+                <span className={'avatar lg color-' + user.tone}>{user.initials}</span>
+                <div className="user-drawer-ident">
+                  <Drawer.Heading className="user-drawer-name">{user.name}</Drawer.Heading>
+                  <div className="user-drawer-email">{user.email}</div>
+                  <div className="user-drawer-tags">
+                    <Chip className={'users-role users-role--' + user.role} size="sm">
                       {user.role}
-                    </div>
+                    </Chip>
+                    <Chip className={'users-tag users-tag--' + statusTone(user.status)} size="sm">
+                      {user.status}
+                    </Chip>
+                    {user.isSystem ? (
+                      <Chip className="users-tag users-tag--slate" size="sm">
+                        service
+                      </Chip>
+                    ) : null}
                   </div>
-                  <Tip tip="Remove from project">
+                </div>
+              </div>
+
+              <section className="user-section">
+                <h3>Details</h3>
+                <DRow label="User ID" value={<span className="mono">{user.id}</span>} />
+                <DRow label="Joined" value={formatDate(user.createdAt)} />
+                <DRow
+                  label="Last login"
+                  value={
+                    <span className="mono">
+                      {user.lastLoginAt == null ? 'never' : relativeLastLogin}
+                    </span>
+                  }
+                />
+              </section>
+
+              <section className="user-section">
+                <h3>Project access · {user.projects.length}</h3>
+                <div className="user-projects">
+                  {user.projects.map((p) => (
+                    <div key={p} className="user-project">
+                      <span className="proj-avatar">{initialsOf(p)}</span>
+                      <div className="user-project-text">
+                        <div className="user-project-name">{p}</div>
+                        <div className="muted mono user-project-role">{user.role}</div>
+                      </div>
+                      <Tooltip>
+                        <Button
+                          className="dc-icon-btn"
+                          variant="ghost"
+                          isIconOnly
+                          onClick={() => void handleRemoveFromProject(p)}
+                          isDisabled={busy}
+                          aria-label={'Remove from ' + p}
+                        >
+                          <Icon name="x" size={12} />
+                        </Button>
+                        <Tooltip.Content>Remove from project</Tooltip.Content>
+                      </Tooltip>
+                    </div>
+                  ))}
+                  {showAddProject ? (
+                    <div className="user-add-project-picker">
+                      <FilterSelect
+                        label="Choose project"
+                        placeholder="Choose project..."
+                        value=""
+                        onChange={(v) => {
+                          if (v) void handleAddToProject(v)
+                        }}
+                        options={projects.map((p) => ({ value: p.id, label: p.name }))}
+                      />
+                      <Button size="sm" variant="ghost" onClick={() => setShowAddProject(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
                     <button
-                      className="icon-btn"
-                      onClick={() => void handleRemoveFromProject(p)}
+                      className="user-add-project"
+                      onClick={() => setShowAddProject(true)}
                       disabled={busy}
-                      aria-label={'Remove from ' + p}
                     >
-                      <Icon name="x" size={12} />
+                      <Icon name="plus" size={12} /> Add to project
                     </button>
-                  </Tip>
+                  )}
                 </div>
-              ))}
-              {showAddProject ? (
-                <div className="user-add-project-picker">
-                  <Select
-                    className="select-sm"
-                    aria-label="Choose project"
-                    placeholder="Choose project..."
-                    value=""
-                    onChange={(v) => {
-                      if (v) void handleAddToProject(v)
-                    }}
-                    options={projects.map((p) => ({ value: p.id, label: p.name }))}
-                  />
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddProject(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <button
-                  className="user-add-project"
-                  onClick={() => setShowAddProject(true)}
-                  disabled={busy}
+              </section>
+
+              <section className="user-section">
+                <h3>Recent activity</h3>
+                <p className="muted user-activity-empty">Activity log coming soon.</p>
+              </section>
+            </Drawer.Body>
+
+            <Drawer.Footer className="user-drawer-foot">
+              {user.status === 'invited' ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => void resendInvites([user])}
+                  isDisabled={busy}
                 >
-                  <Icon name="plus" size={12} /> Add to project
-                </button>
+                  <Icon name="refresh" size={14} />
+                  Resend invite
+                </Button>
+              ) : null}
+              <Button variant="ghost" onClick={() => setShowResetPassword(true)} isDisabled={busy}>
+                <Icon name="refresh" size={14} />
+                Reset password
+              </Button>
+              <span className="spacer" />
+              {user.status === 'suspended' ? (
+                <Button
+                  variant="primary"
+                  onClick={() => void handleSuspendToggle()}
+                  isDisabled={busy}
+                >
+                  <Icon name="check" size={14} />
+                  Reinstate
+                </Button>
+              ) : (
+                <Button
+                  variant="danger"
+                  onClick={() => void handleSuspendToggle()}
+                  isDisabled={busy || user.role === USER_ROLES.OWNER}
+                >
+                  <Icon name="minus" size={14} />
+                  Suspend
+                </Button>
               )}
-            </div>
-          </section>
+            </Drawer.Footer>
 
-          <section className="user-section">
-            <h3>Recent activity</h3>
-            <p className="muted" style={{ fontSize: '0.7812rem', margin: 0 }}>
-              Activity log coming soon.
-            </p>
-          </section>
-        </div>
+            <ResetPasswordModal
+              user={user}
+              open={showResetPassword}
+              onClose={() => setShowResetPassword(false)}
+            />
 
-        <div className="user-drawer-foot">
-          {user.status === 'invited' ? (
-            <Button
-              variant="ghost"
-              leftIcon="refresh"
-              onClick={() => void resendInvites([user])}
-              disabled={busy}
-            >
-              Resend invite
-            </Button>
-          ) : null}
-          <Button
-            variant="ghost"
-            leftIcon="refresh"
-            onClick={() => setShowResetPassword(true)}
-            disabled={busy}
-          >
-            Reset password
-          </Button>
-          <span className="spacer" style={{ flex: 1 }} />
-          {user.status === 'suspended' ? (
-            <Button
-              variant="primary"
-              leftIcon="check"
-              onClick={() => void handleSuspendToggle()}
-              disabled={busy}
-            >
-              Reinstate
-            </Button>
-          ) : (
-            <Button
-              variant="danger"
-              leftIcon="minus"
-              onClick={() => void handleSuspendToggle()}
-              disabled={busy || user.role === USER_ROLES.OWNER}
-            >
-              Suspend
-            </Button>
-          )}
-        </div>
-
-        <ResetPasswordModal
-          user={user}
-          open={showResetPassword}
-          onClose={() => setShowResetPassword(false)}
-        />
-
-        <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
-      </aside>
-    </div>
+            <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
+          </Drawer.Dialog>
+        </Drawer.Content>
+      </Drawer.Backdrop>
+    </Drawer.Root>
   )
 }
 
@@ -298,8 +260,18 @@ function DRow({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-function roleTone(role: WorkspaceUser['role']): 'amber' | 'teal' | 'slate' {
-  if (role === USER_ROLES.OWNER) return 'amber'
-  if (role === USER_ROLES.ADMIN) return 'teal'
-  return 'slate'
+/** Two-letter stand-in for a project logo. */
+function initialsOf(name: string): string {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
+function statusTone(status: WorkspaceUser['status']): 'teal' | 'amber' | 'red' {
+  if (status === 'active') return 'teal'
+  if (status === 'invited') return 'amber'
+  return 'red'
 }

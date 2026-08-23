@@ -127,6 +127,30 @@ beforeEach(() => {
   vi.mocked(usersApi.list).mockResolvedValue(page(mockUsers))
 })
 
+/**
+ * React Aria names a row checkbox by composing its own label with the row
+ * header cell, so the accessible name is "Select <name> <email> …" rather
+ * than an exact string.
+ */
+function rowCheckbox(name: string) {
+  return screen.getByRole('checkbox', { name: new RegExp(`^Select ${name}\\b`) })
+}
+
+/** Row actions live behind a "…" menu now: open it, then pick an item. */
+async function openRowMenu(name: string) {
+  fireEvent.click(screen.getByRole('button', { name: `Actions for ${name}` }))
+  return within(await screen.findByRole('menu'))
+}
+
+/**
+ * HeroUI's Select is a button plus a listbox, not a native `<select>`, so a
+ * value cannot be set with `fireEvent.change`.
+ */
+function chooseOption(selectLabel: string, optionLabel: string) {
+  fireEvent.click(screen.getByRole('button', { name: new RegExp(selectLabel) }))
+  fireEvent.click(screen.getByRole('option', { name: optionLabel }))
+}
+
 describe('UsersScreen', () => {
   it('renders users after load', async () => {
     renderScreen()
@@ -159,7 +183,7 @@ describe('UsersScreen', () => {
     await waitFor(() => screen.getByText('Alice'))
     /** Checkboxes expose their label via aria-label, not visible text. */
     expect(screen.getByRole('checkbox', { name: 'Select all' })).toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: 'Select Alice' })).toBeInTheDocument()
+    expect(rowCheckbox('Alice')).toBeInTheDocument()
     expect(screen.queryByText('Select all')).not.toBeInTheDocument()
     expect(screen.queryByText('Select Alice')).not.toBeInTheDocument()
   })
@@ -235,7 +259,7 @@ describe('UsersScreen', () => {
   async function selectUser(name: string) {
     renderScreen()
     await waitFor(() => screen.getByText('Alice'))
-    fireEvent.click(screen.getByRole('checkbox', { name: `Select ${name}` }))
+    fireEvent.click(rowCheckbox(name))
   }
 
   /** Row hover actions also have a "Suspend" button; scope to the bulk bar. */
@@ -246,9 +270,7 @@ describe('UsersScreen', () => {
   it('bulk role change patches every selected user and clears the selection', async () => {
     vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
     await selectUser('Alice')
-    fireEvent.change(screen.getByRole('combobox', { name: 'Change role' }), {
-      target: { value: 'editor' },
-    })
+    chooseOption('Change role', 'editor')
     await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { role: 'editor' }))
     await waitFor(() => expect(screen.queryByText(/selected/i)).not.toBeInTheDocument())
   })
@@ -256,9 +278,7 @@ describe('UsersScreen', () => {
   it('bulk add to project calls addToProject for every selected user', async () => {
     vi.mocked(usersApi.addToProject).mockResolvedValue({ data: {} } as AxiosResponse)
     await selectUser('Bob')
-    fireEvent.change(screen.getByRole('combobox', { name: 'Add to project' }), {
-      target: { value: 'p1' },
-    })
+    chooseOption('Add to project', 'Demo')
     await waitFor(() => expect(usersApi.addToProject).toHaveBeenCalledWith('u2', 'p1'))
   })
 
@@ -274,9 +294,7 @@ describe('UsersScreen', () => {
   it('shows an error toast when a bulk action fails', async () => {
     vi.mocked(usersApi.patch).mockRejectedValue(new Error('boom'))
     await selectUser('Alice')
-    fireEvent.change(screen.getByRole('combobox', { name: 'Change role' }), {
-      target: { value: 'editor' },
-    })
+    chooseOption('Change role', 'editor')
     await waitFor(() => expect(screen.getByText('Failed to change roles')).toBeInTheDocument())
     // Selection is kept so the user can retry
     expect(screen.getByText(/selected/i)).toBeInTheDocument()
@@ -313,8 +331,8 @@ describe('UsersScreen', () => {
       )
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Bob' }))
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Carl' }))
+    fireEvent.click(rowCheckbox('Bob'))
+    fireEvent.click(rowCheckbox('Carl'))
     fireEvent.click(bulkBar().getByRole('button', { name: 'Resend invites' }))
     await waitFor(() => expect(screen.getByText('Resent 1 of 2 invites')).toBeInTheDocument())
     expect(screen.getByText(/1 skipped: this invite was sent moments ago/i)).toBeInTheDocument()
@@ -339,7 +357,7 @@ describe('UsersScreen', () => {
     } as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
-    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    fireEvent.click((await openRowMenu('Bob')).getByRole('menuitem', { name: 'Resend invite' }))
     await waitFor(() => expect(usersApi.resendInvite).toHaveBeenCalledWith('u2'))
     await waitFor(() => expect(screen.getByText('Invite resent')).toBeInTheDocument())
   })
@@ -351,7 +369,7 @@ describe('UsersScreen', () => {
     } as unknown as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
-    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    fireEvent.click((await openRowMenu('Bob')).getByRole('menuitem', { name: 'Resend invite' }))
     await waitFor(() => expect(screen.getByText('Share invite links')).toBeInTheDocument())
     expect(screen.getByText('https://x/invite/tok-1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /copy invite link for bob@a.com/i })).toBeVisible()
@@ -368,7 +386,7 @@ describe('UsersScreen', () => {
     } as unknown as AxiosResponse<Awaited<ReturnType<typeof usersApi.resendInvite>>['data']>)
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
-    fireEvent.click(screen.getByRole('button', { name: 'Resend invite' }))
+    fireEvent.click((await openRowMenu('Bob')).getByRole('menuitem', { name: 'Resend invite' }))
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://x/invite/tok-2'))
     await waitFor(() => expect(screen.getByText(/copied to the clipboard/i)).toBeInTheDocument())
     expect(screen.queryByText('Share invite links')).not.toBeInTheDocument()
@@ -380,7 +398,7 @@ describe('UsersScreen', () => {
     vi.mocked(usersApi.patch).mockResolvedValue({ data: {} } as AxiosResponse<WorkspaceUser>)
     renderScreen()
     await waitFor(() => screen.getByText('Alice'))
-    fireEvent.click(screen.getByRole('button', { name: 'Suspend' }))
+    fireEvent.click((await openRowMenu('Alice')).getByRole('menuitem', { name: 'Suspend' }))
     await waitFor(() => expect(usersApi.patch).toHaveBeenCalledWith('u1', { status: 'suspended' }))
   })
 
@@ -390,7 +408,7 @@ describe('UsersScreen', () => {
     >)
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))
+    fireEvent.click((await openRowMenu('Bob')).getByRole('menuitem', { name: 'Cancel invite' }))
     await waitFor(() => expect(usersApi.cancelInvite).toHaveBeenCalledWith('u2'))
     expect(usersApi.delete).not.toHaveBeenCalled()
   })
@@ -401,14 +419,14 @@ describe('UsersScreen', () => {
     )
     renderScreen()
     await waitFor(() => screen.getByText('Bob'))
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel invite' }))
+    fireEvent.click((await openRowMenu('Bob')).getByRole('menuitem', { name: 'Cancel invite' }))
     await waitFor(() => expect(screen.getByText(/already accepted/i)).toBeInTheDocument())
   })
 
   it('disables role change and suspend when only owners are selected', async () => {
     vi.mocked(usersApi.list).mockResolvedValue(page([{ ...mockUsers[0], role: 'owner' }]))
     await selectUser('Alice')
-    expect(screen.getByRole('combobox', { name: 'Change role' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Change role/ })).toBeDisabled()
     expect(bulkBar().getByRole('button', { name: /^suspend$/i })).toBeDisabled()
   })
 
@@ -420,9 +438,9 @@ describe('UsersScreen', () => {
       }),
     )
     renderScreen()
-    await waitFor(() => expect(screen.getByText('Privileged access')).toBeInTheDocument())
-    const card = screen.getByText('Privileged access').closest('.users-stat') as HTMLElement
+    await waitFor(() => expect(screen.getByText(/Privileged access/)).toBeInTheDocument())
+    const card = document.querySelector('.users-stat[data-tone="slate"]') as HTMLElement
     expect(within(card).getByText('2')).toBeInTheDocument()
-    expect(within(card).getByText('1 owner · 1 admin')).toBeInTheDocument()
+    expect(within(card).getByText(/1 owner, 1 admin/)).toBeInTheDocument()
   })
 })

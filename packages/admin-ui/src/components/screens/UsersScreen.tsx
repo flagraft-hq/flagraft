@@ -1,5 +1,15 @@
 import { useEffect, useState, ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import {
+  Button,
+  Checkbox,
+  Chip,
+  Dropdown,
+  SearchField,
+  Table,
+  type Selection,
+  type SortDescriptor,
+} from '@heroui/react'
 import { usersApi } from '../../lib/api'
 import { useUsers } from '../../hooks/useUsers'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -8,11 +18,8 @@ import { USER_ROLES } from '../../lib/roles'
 import { useToast } from '../../hooks/useToast'
 import { useResendInvite } from '../../hooks/useResendInvite'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
-import { Button } from '../primitives/Button'
-import { Checkbox } from '../primitives/Checkbox'
+import { FilterSelect } from '../primitives/FilterSelect'
 import { Icon } from '../primitives/Icon'
-import { Select } from '../primitives/Select'
-import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
 import { Pagination } from '../primitives/Pagination'
 import { InviteLinksModal } from './InviteLinksModal'
@@ -26,6 +33,14 @@ type StatusFilter = 'all' | 'active' | 'invited' | 'suspended' | 'system'
 const DEFAULT_PAGE_SIZE = 25
 type SortKey = 'name' | 'role' | 'projects' | 'last'
 type SortDir = 'asc' | 'desc'
+
+/** Table column ids that sort, mapped to the key the API expects. */
+const SORTABLE: Record<string, SortKey> = {
+  name: 'name',
+  role: 'role',
+  projects: 'projects',
+  last: 'last',
+}
 
 /**
  * Workspace-wide directory of users: every human + service account, across projects.
@@ -98,24 +113,26 @@ export function UsersScreen() {
       })
   }, [searchParams, setSearchParams])
 
-  const allChecked = users.length > 0 && users.every((u) => selected.has(u.id))
-  const someChecked = users.some((u) => selected.has(u.id)) && !allChecked
-
-  function toggleAll() {
-    const ns = new Set(selected)
-    if (allChecked) users.forEach((u) => ns.delete(u.id))
-    else users.forEach((u) => ns.add(u.id))
-    setSelected(ns)
+  /** "Select all" arrives as the string `all` rather than a set of keys. */
+  function handleSelectionChange(keys: Selection) {
+    setSelected(
+      keys === 'all' ? new Set(users.map((u) => u.id)) : new Set(Array.from(keys, String)),
+    )
   }
 
-  function toggleOne(id: string) {
-    const ns = new Set(selected)
-    if (ns.has(id)) ns.delete(id)
-    else ns.add(id)
-    setSelected(ns)
+  function handleSortChange(descriptor: SortDescriptor) {
+    const key = SORTABLE[String(descriptor.column)]
+    if (!key) return
+    setSortBy({ key, dir: descriptor.direction === 'ascending' ? 'asc' : 'desc' })
+  }
+
+  const sortDescriptor: SortDescriptor = {
+    column: sortBy.key,
+    direction: sortBy.dir === 'asc' ? 'ascending' : 'descending',
   }
 
   const selectedUsers = users.filter((u) => selected.has(u.id))
+  const anyFilters = q !== '' || statusFilter !== 'all' || roleFilter !== 'all'
 
   async function refreshUsers() {
     refetch()
@@ -154,25 +171,10 @@ export function UsersScreen() {
     }
   }
 
-  function setSort(key: SortKey) {
-    setSortBy((s) => ({ key, dir: s.key === key && s.dir === 'desc' ? 'asc' : 'desc' }))
-  }
-
-  function sortHead(key: SortKey, label: string) {
-    return (
-      <button className="sort-head" onClick={() => setSort(key)}>
-        <span>{label}</span>
-        <span className={'sort-arrow' + (sortBy.key === key ? ' on' : '')}>
-          <Icon
-            name="chevronDown"
-            size={11}
-            style={{
-              transform: sortBy.key === key && sortBy.dir === 'asc' ? 'rotate(180deg)' : 'none',
-            }}
-          />
-        </span>
-      </button>
-    )
+  function resetFilters() {
+    setQ('')
+    setStatusFilter('all')
+    setRoleFilter('all')
   }
 
   if (loading) {
@@ -188,7 +190,7 @@ export function UsersScreen() {
   }
 
   return (
-    <div className="users-screen">
+    <div className="users-screen dc">
       <div className="page-header">
         <div className="page-header-text">
           <h1>Users</h1>
@@ -202,7 +204,8 @@ export function UsersScreen() {
           </p>
         </div>
         <div className="page-header-actions">
-          <Button variant="primary" leftIcon="plus" onClick={() => setShowInvite(true)}>
+          <Button variant="primary" onClick={() => setShowInvite(true)}>
+            <Icon name="plus" size={14} />
             Invite user
           </Button>
         </div>
@@ -212,26 +215,14 @@ export function UsersScreen() {
         <StatCard
           label="Total users"
           value={counts.all}
-          sub={
-            <>
-              {counts.active} active · {counts.system} service
-            </>
-          }
+          sub={`${counts.active} active, ${counts.system} service`}
           icon="user"
           tone="teal"
         />
         <StatCard
           label="Pending invites"
           value={counts.invited}
-          sub={
-            counts.invited > 0 ? (
-              <>
-                Expires in <b>7&nbsp;days</b>
-              </>
-            ) : (
-              'Nothing pending'
-            )
-          }
+          sub={counts.invited > 0 ? 'expires in 7 days' : 'nothing pending'}
           icon="sparkles"
           tone="amber"
           warn={counts.invited > 0}
@@ -239,32 +230,21 @@ export function UsersScreen() {
         <StatCard
           label="Privileged access"
           value={counts.owners + counts.admins}
-          sub={`${counts.owners} owner · ${counts.admins} admin`}
+          sub={`${counts.owners} owner${counts.owners === 1 ? '' : 's'}, ${counts.admins} admin${counts.admins === 1 ? '' : 's'}`}
           icon="shield"
           tone="slate"
         />
       </div>
 
-      <div className="users-toolbar">
-        <div className="users-search">
-          <Icon name="search" size={14} className="ic" />
-          <input
-            placeholder="Search by name, email, project..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          {q ? (
-            <button
-              className="users-search-clear"
-              onClick={() => setQ('')}
-              aria-label="Clear search"
-            >
-              <Icon name="x" size={12} />
-            </button>
-          ) : null}
-        </div>
+      <div className="dc-toolbar users-toolbar">
+        <SearchField aria-label="Search users" value={q} onChange={setQ}>
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="Search by name, email, project..." />
+          </SearchField.Group>
+        </SearchField>
 
-        <div className="chip-group" role="tablist" aria-label="Status filter">
+        <div className="users-chip-group" role="group" aria-label="Status filter">
           {(
             [
               { id: 'all', label: 'All', n: counts.all },
@@ -276,23 +256,21 @@ export function UsersScreen() {
           ).map((c) => (
             <button
               key={c.id}
-              className="chip"
+              className="users-chip"
               aria-pressed={statusFilter === c.id}
               data-tone={c.tone}
               onClick={() => setStatusFilter(c.id)}
             >
               <span>{c.label}</span>
-              <span className="chip-n num">{c.n}</span>
+              <span className="users-chip-n num">{c.n}</span>
             </button>
           ))}
         </div>
 
-        <span style={{ flex: 1 }} />
+        <span className="users-toolbar-spacer" />
 
-        <Select
-          className="select-sm"
-          aria-label="Role filter"
-          placeholder=""
+        <FilterSelect
+          label="Role filter"
           value={roleFilter}
           onChange={setRoleFilter}
           options={[
@@ -305,83 +283,104 @@ export function UsersScreen() {
         />
       </div>
 
-      <div className="users-table-wrap">
-        <table className="users-table">
-          <thead>
-            <tr>
-              <th className="col-check">
-                <Checkbox
-                  checked={allChecked}
-                  indeterminate={someChecked}
-                  onChange={toggleAll}
-                  ariaLabel="Select all"
-                />
-              </th>
-              <th>{sortHead('name', 'Person')}</th>
-              <th>{sortHead('role', 'Role')}</th>
-              <th>{sortHead('projects', 'Project access')}</th>
-              <th>{sortHead('last', 'Last login')}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.length === 0 ? (
-              <tr>
-                <td colSpan={6}>
-                  <div className="empty-filtered" style={{ padding: '2rem', textAlign: 'center' }}>
-                    <div className="ill" style={{ marginBottom: 10 }}>
-                      <Icon name="user" size={28} style={{ color: 'var(--text-3)' }} />
-                    </div>
-                    <h3 style={{ margin: '0 0 6px', fontSize: '0.9375rem' }}>No users match</h3>
-                    <p className="muted" style={{ margin: '0 0 12px', fontSize: '0.8125rem' }}>
-                      Try clearing the search or changing the status filter.
-                    </p>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setQ('')
-                        setStatusFilter('all')
-                        setRoleFilter('all')
-                      }}
-                    >
-                      Reset filters
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              users.map((u) => (
-                <UserRow
-                  key={u.id}
-                  user={u}
-                  selected={selected.has(u.id)}
-                  active={detail?.id === u.id}
-                  onSelect={() => toggleOne(u.id)}
-                  onOpen={() => setDetail(u)}
-                  onResend={() => void resendInvites([u])}
-                  onSuspendToggle={() => void handleRowSuspendToggle(u)}
-                  onCancelInvite={() => void handleCancelInvite(u)}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-
-        <div className="users-table-foot">
-          <Pagination
-            total={total}
-            limit={limit}
-            offset={offset}
-            onOffsetChange={setOffset}
-            onLimitChange={(next) => {
-              /** Page numbers change meaning with the size, so start over. */
-              setLimit(next)
-              setOffset(0)
-            }}
-            noun="user"
-          />
+      {total === 0 ? (
+        <div className="dc-empty users-empty">
+          <h3>No users match</h3>
+          <p>Try clearing the search or changing the status filter.</p>
+          {anyFilters && (
+            <Button variant="ghost" onClick={resetFilters}>
+              Reset filters
+            </Button>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="users-card dc-card">
+          <Table>
+            <Table.Content
+              aria-label="Workspace users"
+              selectionMode="multiple"
+              selectedKeys={selected}
+              onSelectionChange={handleSelectionChange}
+              sortDescriptor={sortDescriptor}
+              onSortChange={handleSortChange}
+              onRowAction={(key) => {
+                const user = users.find((u) => u.id === String(key))
+                if (user) setDetail(user)
+              }}
+            >
+              <Table.Header>
+                <Table.Column id="select" className="cell-check">
+                  <Checkbox slot="selection" aria-label="Select all">
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox.Content>
+                  </Checkbox>
+                </Table.Column>
+                <Table.Column id="name" isRowHeader allowsSorting>
+                  {({ sortDirection }) => (
+                    <Table.SortableColumnHeader sortDirection={sortDirection}>
+                      Person
+                    </Table.SortableColumnHeader>
+                  )}
+                </Table.Column>
+                <Table.Column id="role" allowsSorting className="cell-role">
+                  {({ sortDirection }) => (
+                    <Table.SortableColumnHeader sortDirection={sortDirection}>
+                      Role
+                    </Table.SortableColumnHeader>
+                  )}
+                </Table.Column>
+                <Table.Column id="projects" allowsSorting className="cell-projects">
+                  {({ sortDirection }) => (
+                    <Table.SortableColumnHeader sortDirection={sortDirection}>
+                      Project access
+                    </Table.SortableColumnHeader>
+                  )}
+                </Table.Column>
+                <Table.Column id="last" allowsSorting className="cell-last">
+                  {({ sortDirection }) => (
+                    <Table.SortableColumnHeader sortDirection={sortDirection}>
+                      Last login
+                    </Table.SortableColumnHeader>
+                  )}
+                </Table.Column>
+                <Table.Column id="actions" className="cell-actions">
+                  <span className="sr-only">Actions</span>
+                </Table.Column>
+              </Table.Header>
+              <Table.Body items={users}>
+                {(u: WorkspaceUser) => (
+                  <UserRow
+                    user={u}
+                    active={detail?.id === u.id}
+                    onOpen={() => setDetail(u)}
+                    onResend={() => void resendInvites([u])}
+                    onSuspendToggle={() => void handleRowSuspendToggle(u)}
+                    onCancelInvite={() => void handleCancelInvite(u)}
+                  />
+                )}
+              </Table.Body>
+            </Table.Content>
+          </Table>
+
+          <div className="dc-table-foot">
+            <Pagination
+              total={total}
+              limit={limit}
+              offset={offset}
+              onOffsetChange={setOffset}
+              onLimitChange={(next) => {
+                /** Page numbers change meaning with the size, so start over. */
+                setLimit(next)
+                setOffset(0)
+              }}
+              noun="user"
+            />
+          </div>
+        </div>
+      )}
 
       <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
 
@@ -427,29 +426,28 @@ function StatCard({ label, value, sub, icon, tone, warn }: StatCardProps) {
         <Icon name={icon} size={14} />
       </div>
       <div className="users-stat-body">
-        <div className="users-stat-lbl">{label}</div>
         <div className="users-stat-val num">{value}</div>
-        <div className="users-stat-sub">{sub}</div>
+        <div className="users-stat-lbl">
+          {label}
+          {' · '}
+          <span className="users-stat-sub">{sub}</span>
+        </div>
       </div>
     </div>
   )
 }
 
-function RoleBadge({ role }: { role: WorkspaceUser['role'] }) {
-  const tone = role === USER_ROLES.OWNER ? 'amber' : role === USER_ROLES.ADMIN ? 'teal' : 'slate'
+function RoleChip({ role }: { role: WorkspaceUser['role'] }) {
   return (
-    <span className={'badge badge-tone-' + tone}>
-      <span className="role-dot" />
+    <Chip className={'users-role users-role--' + role} size="sm">
       {role}
-    </span>
+    </Chip>
   )
 }
 
 interface UserRowProps {
   user: WorkspaceUser
-  selected: boolean
   active: boolean
-  onSelect: () => void
   onOpen: () => void
   onResend: () => void
   onSuspendToggle: () => void
@@ -458,124 +456,125 @@ interface UserRowProps {
 
 function UserRow({
   user: u,
-  selected,
   active,
-  onSelect,
   onOpen,
   onResend,
   onSuspendToggle,
   onCancelInvite,
 }: UserRowProps) {
   const relativeDate = useRelativeDate(u.lastLoginAt ?? undefined)
+  const isOwner = u.role === USER_ROLES.OWNER
+
+  /** One menu per row, so the action ids are matched here rather than inline. */
+  function handleAction(key: string) {
+    if (key === 'edit') onOpen()
+    else if (key === 'resend') onResend()
+    else if (key === 'cancel') onCancelInvite()
+    else if (key === 'suspend') onSuspendToggle()
+  }
 
   return (
-    <tr
+    <Table.Row
+      id={u.id}
       className={
         'users-row' +
-        (selected ? ' selected' : '') +
         (u.status === 'suspended' ? ' suspended' : '') +
         (u.status === 'invited' ? ' invited' : '')
       }
       data-active={active ? 'true' : undefined}
-      onClick={onOpen}
     >
-      <td className="col-check" onClick={(e) => e.stopPropagation()}>
-        <Checkbox checked={selected} onChange={onSelect} ariaLabel={'Select ' + u.name} />
-      </td>
-      <td>
-        <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
-          <span className={'avatar sm color-' + u.tone}>{u.initials}</span>
-          <div style={{ minWidth: 0 }}>
+      <Table.Cell className="cell-check">
+        {/**
+         * React Aria composes this label with the row header cell, so the
+         * screen reader hears "Select" followed by the person's own name.
+         */}
+        <Checkbox slot="selection" aria-label="Select">
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+          </Checkbox.Content>
+        </Checkbox>
+      </Table.Cell>
+
+      <Table.Cell className="cell-person">
+        <div className="users-person">
+          {/** The initials duplicate the name, so keep them out of the row's announcement. */}
+          <span className={'avatar sm color-' + u.tone} aria-hidden="true">
+            {u.initials}
+          </span>
+          <div className="users-person-text">
             <div className="users-name">
               {u.name}
               {u.isSystem ? (
-                <span style={{ marginLeft: 6 }} className="badge badge-tone-slate">
-                  <Icon name="bolt" size={9} /> service
-                </span>
+                <Chip className="users-tag users-tag--slate" size="sm">
+                  service
+                </Chip>
               ) : null}
               {u.status === 'invited' ? (
-                <span style={{ marginLeft: 6 }} className="badge badge-tone-amber">
-                  <span className="role-dot" /> invited
-                </span>
+                <Chip className="users-tag users-tag--amber" size="sm">
+                  invited
+                </Chip>
               ) : null}
               {u.status === 'suspended' ? (
-                <span style={{ marginLeft: 6 }} className="badge badge-tone-red">
-                  <span className="role-dot" /> suspended
-                </span>
+                <Chip className="users-tag users-tag--red" size="sm">
+                  suspended
+                </Chip>
               ) : null}
             </div>
-            <div className="users-email mono">{u.email}</div>
+            <div className="users-email">{u.email}</div>
           </div>
         </div>
-      </td>
-      <td>
-        <RoleBadge role={u.role} />
-      </td>
-      <td>
-        <div className="users-projects">
-          {u.projects.slice(0, 2).map((p) => (
-            <span key={p} className="proj-chip">
-              {p}
-            </span>
-          ))}
-          {u.projects.length > 2 ? (
-            <span className="proj-more">+{u.projects.length - 2}</span>
-          ) : null}
-        </div>
-      </td>
-      <td>
-        <span className={'users-last mono' + (u.lastLoginAt == null ? ' never' : '')}>
-          {u.lastLoginAt == null ? 'never' : relativeDate}
+      </Table.Cell>
+
+      <Table.Cell className="cell-role">
+        <RoleChip role={u.role} />
+      </Table.Cell>
+
+      <Table.Cell className="cell-projects">
+        {u.projects.length === 0 ? (
+          <span className="muted">—</span>
+        ) : (
+          <span className="users-projects">{u.projects.join(', ')}</span>
+        )}
+      </Table.Cell>
+
+      <Table.Cell className="cell-last">
+        <span className={'users-last' + (u.lastLoginAt == null ? ' never' : '')}>
+          {u.lastLoginAt == null ? 'Never' : relativeDate}
         </span>
-      </td>
-      <td onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', gap: '0.125rem' }}>
-          {u.status === 'invited' ? (
-            <>
-              <Tip tip="Resend invite">
-                <button className="icon-btn" aria-label="Resend invite" onClick={onResend}>
-                  <Icon name="refresh" size={13} />
-                </button>
-              </Tip>
-              <Tip tip="Cancel invite">
-                <button
-                  className="icon-btn danger"
-                  aria-label="Cancel invite"
-                  onClick={onCancelInvite}
-                >
-                  <Icon name="x" size={13} />
-                </button>
-              </Tip>
-            </>
-          ) : (
-            <>
-              <Tip tip="Edit user">
-                <button className="icon-btn" aria-label="Edit user" onClick={onOpen}>
-                  <Icon name="edit" size={13} />
-                </button>
-              </Tip>
-              <Tip
-                tip={
-                  u.role === USER_ROLES.OWNER
-                    ? 'Transfer ownership first'
-                    : u.status === 'suspended'
-                      ? 'Reinstate'
-                      : 'Suspend'
-                }
-              >
-                <button
-                  className="icon-btn"
-                  disabled={u.role === USER_ROLES.OWNER}
-                  aria-label={u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
-                  onClick={onSuspendToggle}
-                >
-                  <Icon name={u.status === 'suspended' ? 'check' : 'minus'} size={13} />
-                </button>
-              </Tip>
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
+      </Table.Cell>
+
+      <Table.Cell className="cell-actions">
+        <Dropdown>
+          <Dropdown.Trigger className="dc-icon-btn" aria-label={`Actions for ${u.name}`}>
+            <Icon name="more" size={16} />
+          </Dropdown.Trigger>
+          <Dropdown.Popover className="dc-popover" placement="bottom end">
+            <Dropdown.Menu onAction={(key) => handleAction(String(key))}>
+              {u.status === 'invited' ? (
+                <>
+                  <Dropdown.Item id="resend">Resend invite</Dropdown.Item>
+                  <Dropdown.Item id="cancel" className="users-menu-danger">
+                    Cancel invite
+                  </Dropdown.Item>
+                </>
+              ) : (
+                <>
+                  <Dropdown.Item id="edit">Edit user</Dropdown.Item>
+                  <Dropdown.Item
+                    id="suspend"
+                    isDisabled={isOwner}
+                    className={u.status === 'suspended' ? undefined : 'users-menu-danger'}
+                  >
+                    {u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
+                  </Dropdown.Item>
+                </>
+              )}
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
+      </Table.Cell>
+    </Table.Row>
   )
 }

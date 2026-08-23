@@ -100,13 +100,12 @@ describe('EnvironmentsScreen', () => {
   })
 
   /**
-   * The endpoint used to be a made-up `api.flagraft.io/v1/<slug>`. Every
-   * install is self-hosted, so it has to come from the deployment -- and there
-   * is one of it, not one per environment.
+   * The endpoint used to be a made-up `api.flagraft.io/v1/<slug>` on every
+   * card. Every install is self-hosted, so no domain can be hardcoded -- and
+   * the environment was never in the URL anyway, the client key selects it.
    */
-  it('shows a single endpoint taken from the deployment, not a hardcoded domain', () => {
+  it('shows no hardcoded API domain', () => {
     render(<EnvironmentsScreen />)
-    expect(screen.getAllByText('https://flags.example.com/api/v1')).toHaveLength(1)
     expect(screen.queryByText(/flagraft\.io/)).not.toBeInTheDocument()
   })
 

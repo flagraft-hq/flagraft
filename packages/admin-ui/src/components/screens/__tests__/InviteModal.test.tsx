@@ -39,12 +39,17 @@ function renderModal(open = true, onClose = vi.fn(), onInvited = vi.fn()) {
   return render(<InviteModal open={open} onClose={onClose} onInvited={onInvited} />)
 }
 
+/** The emails field is a HeroUI TextArea now, found by its label. */
+function emailsField() {
+  return screen.getByLabelText(/email addresses/i)
+}
+
 describe('InviteModal', () => {
   it('renders email textarea, role select, and project chips when open', () => {
     renderModal()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(document.getElementById('invite-emails')).toBeInTheDocument()
-    expect(document.getElementById('invite-role')).toBeInTheDocument()
+    expect(emailsField()).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Workspace role/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /alpha/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /beta/i })).toBeInTheDocument()
   })
@@ -62,7 +67,7 @@ describe('InviteModal', () => {
 
   it('Send button is disabled when no project is selected', () => {
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'x@a.com' },
     })
     // No project chip clicked yet — button stays disabled
@@ -72,7 +77,7 @@ describe('InviteModal', () => {
 
   it('Send button is enabled when email and project are filled', () => {
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'x@a.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
@@ -92,7 +97,7 @@ describe('InviteModal', () => {
 
   it('shows the correct parsed email count in the hint text', () => {
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'a@a.com, b@a.com' },
     })
     expect(screen.getByText(/2 recipients/i)).toBeInTheDocument()
@@ -101,7 +106,7 @@ describe('InviteModal', () => {
   it('flags an invalid email and blocks sending until it is fixed', () => {
     renderModal()
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'good@a.com, not-an-email' },
     })
     expect(screen.getByText(/1 invalid/i)).toBeInTheDocument()
@@ -115,7 +120,7 @@ describe('InviteModal', () => {
     } as unknown as Awaited<ReturnType<typeof usersApi.invite>>)
     renderModal()
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'a@a.com, A@a.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
@@ -127,7 +132,7 @@ describe('InviteModal', () => {
       data: [{ email: 'x@a.com', tempPassword: 'tmp-123' }],
     } as unknown as Awaited<ReturnType<typeof usersApi.invite>>)
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'x@a.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
@@ -153,7 +158,7 @@ describe('InviteModal', () => {
       inviteResult({ emailed: true }) as unknown as Awaited<ReturnType<typeof usersApi.invite>>,
     )
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
+    fireEvent.change(emailsField(), { target: { value: 'x@a.com' } })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
     await waitFor(() => expect(screen.getByText(/1 invite sent/i)).toBeInTheDocument())
@@ -165,7 +170,7 @@ describe('InviteModal', () => {
       inviteResult({ emailed: false }) as unknown as Awaited<ReturnType<typeof usersApi.invite>>,
     )
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
+    fireEvent.change(emailsField(), { target: { value: 'x@a.com' } })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
     await waitFor(() => expect(screen.getByText('Share manually')).toBeInTheDocument())
@@ -179,7 +184,7 @@ describe('InviteModal', () => {
     )
     const mockOnInvited = vi.fn()
     render(<InviteModal open onClose={vi.fn()} onInvited={mockOnInvited} />)
-    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
+    fireEvent.change(emailsField(), { target: { value: 'x@a.com' } })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
     await waitFor(() => expect(mockOnInvited).toHaveBeenCalled())
@@ -191,7 +196,7 @@ describe('InviteModal', () => {
     )
     const mockOnClose = vi.fn()
     render(<InviteModal open onClose={mockOnClose} />)
-    fireEvent.change(document.getElementById('invite-emails')!, { target: { value: 'x@a.com' } })
+    fireEvent.change(emailsField(), { target: { value: 'x@a.com' } })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: /send.*invite/i }))
     await waitFor(() => expect(screen.getByRole('button', { name: /^done$/i })).toBeInTheDocument())
@@ -202,7 +207,7 @@ describe('InviteModal', () => {
   it('shows error toast on invite failure', async () => {
     vi.mocked(usersApi.invite).mockRejectedValueOnce(new Error('Network error'))
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'x@a.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /alpha/i }))
@@ -218,7 +223,7 @@ describe('InviteModal', () => {
 
   it('Send button label shows count: "Send 2 invites" for 2 emails', () => {
     renderModal()
-    fireEvent.change(document.getElementById('invite-emails')!, {
+    fireEvent.change(emailsField(), {
       target: { value: 'a@a.com, b@a.com' },
     })
     expect(screen.getByRole('button', { name: /send 2 invites/i })).toBeInTheDocument()
