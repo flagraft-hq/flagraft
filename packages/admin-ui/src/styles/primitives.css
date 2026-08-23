@@ -251,7 +251,7 @@
 /* Compact variant for toolbars and the bulk bar */
 .select.select-sm,
 .select-input.select-sm {
-  padding: 0.3125rem 1.75rem 0.3125rem 0.625rem;
+  padding: 0.125rem 1.625rem 0.125rem 0.425rem;
   font-size: 0.7812rem;
   background-position: right 0.5rem center;
 }

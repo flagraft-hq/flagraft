@@ -195,10 +195,10 @@ textarea::placeholder {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0 0.75rem;
+  padding: 10px 20px;
   height: 2.125rem;
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   background: var(--bg-elev);
   color: var(--text-1);
   font-family: var(--font-sans);
@@ -281,12 +281,12 @@ textarea::placeholder {
 .btn.sm {
   height: 1.75rem;
   font-size: 0.75rem;
-  padding: 0 0.625rem;
+  padding: 0 0.875rem;
 }
 
 .btn.lg {
   height: 2.5rem;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
   font-size: 0.875rem;
 }
 

@@ -153,9 +153,9 @@
   align-items: center;
   gap: 7px;
   height: 38px;
-  padding: 0 17px;
+  padding: 10px 20px;
   border: none;
-  border-radius: var(--dc-r);
+  border-radius: var(--r-pill);
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -171,7 +171,7 @@
   background: var(--pri);
 }
 .dc .button--ghost {
-  padding: 0 15px;
+  padding: 0 20px;
   background: transparent;
   color: var(--text-2);
 }
@@ -474,6 +474,10 @@
 .dc .checkbox__control {
   border-radius: 5px;
   border-width: 2px;
+}
+
+.dc .switch:not([data-selected='true']) .switch__control {
+  background: var(--text-4);
 }
 
 .dc-card .table__column .checkbox,

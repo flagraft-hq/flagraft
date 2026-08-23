@@ -18,7 +18,7 @@ import { useApiKeys } from '../../hooks/useApiKeys'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { usePermissions } from '../../hooks/usePermissions'
-import { keysApi } from '../../lib/api'
+import { keysApi, apiBaseUrl } from '../../lib/api'
 import type { ApiKey, ApiKeyType, Env } from '../../lib/types'
 import { Denied } from '../primitives/Denied'
 import { Dialog } from '../primitives/Dialog'
@@ -487,7 +487,11 @@ function IssueKeyModal({ open, projectId, environments, onClose, onIssued }: Iss
             label="Environment"
             value={environmentId}
             onChange={setEnvironmentId}
-            options={environments.length ? environments.map((e) => ({ value: e.id, label: e.name })) : [{ value: '', label: 'No environments' }]}
+            options={
+              environments.length
+                ? environments.map((e) => ({ value: e.id, label: e.name }))
+                : [{ value: '', label: 'No environments' }]
+            }
             isDisabled={!needsEnv || environments.length === 0}
           />
           {needsEnv && environments.length === 0 && (
@@ -508,7 +512,7 @@ function RevealKeyModal({
   projectSlug: string
   onClose: () => void
 }) {
-  const curl = `curl https://api.flagraft.io/v1/admin/projects/${projectSlug}/flags \\
+  const curl = `curl ${apiBaseUrl}/admin/projects/${projectSlug}/flags \\
   -H "Authorization: ${plaintext ?? ''}"`
 
   return (

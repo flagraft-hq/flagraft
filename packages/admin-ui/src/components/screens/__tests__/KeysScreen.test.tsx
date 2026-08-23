@@ -27,6 +27,7 @@ vi.mock('../../../hooks/useToast', () => ({
 }))
 
 vi.mock('../../../lib/api', () => ({
+  apiBaseUrl: 'https://flags.example.com/api/v1',
   keysApi: { create: vi.fn(), delete: vi.fn() },
 }))
 
@@ -200,7 +201,9 @@ describe('KeysScreen', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'client' }))
     expect(within(dialog).getByText('Environment')).toBeInTheDocument()
 
-    fireEvent.change(within(dialog).getByPlaceholderText('e.g. CI / e2e tests'), { target: { value: 'Test label' } })
+    fireEvent.change(within(dialog).getByPlaceholderText('e.g. CI / e2e tests'), {
+      target: { value: 'Test label' },
+    })
     fireEvent.click(within(dialog).getByRole('button', { name: /generate key/i }))
 
     await waitFor(() =>
@@ -220,7 +223,9 @@ describe('KeysScreen', () => {
     render(<KeysScreen />)
     fireEvent.click(screen.getByRole('button', { name: /issue key/i }))
     const dialog = screen.getByRole('dialog')
-    fireEvent.change(within(dialog).getByPlaceholderText('e.g. CI / e2e tests'), { target: { value: 'Test label' } })
+    fireEvent.change(within(dialog).getByPlaceholderText('e.g. CI / e2e tests'), {
+      target: { value: 'Test label' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /generate key/i }))
     expect(await screen.findByText('Server says no')).toBeInTheDocument()
   })

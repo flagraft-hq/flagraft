@@ -34,7 +34,7 @@
  * and ours wins. An `import './x.css'` inside a `.tsx` would land wherever the
  * bundler happened to put it.
  *
- * Currently rendered by: KeysScreen, FlagsScreen.
+ * Currently rendered by: KeysScreen, FlagsScreen, EnvironmentsScreen.
  */
 @import '@heroui/styles/components/button.css' layer(components);
 @import '@heroui/styles/components/checkbox.css' layer(components);
@@ -68,7 +68,7 @@
 @import './layout.css'; /* app shell grid, TopBar, SideNav */
 @import './flags.css'; /* flags list, rows, state pill, tags, filter/bulk bars, create modal */
 @import './flag-detail.css'; /* flag detail header, meta, env cards, tabs */
-@import './environments.css'; /* environments screen: card grid, stats, env form */
+@import './environments.css'; /* environments screen: endpoint strip, card grid, stats, env form */
 @import './settings.css'; /* project settings screen */
 @import './auth.css'; /* login / auth screens */
 @import './users.css'; /* users screen, detail drawer, invite modal */

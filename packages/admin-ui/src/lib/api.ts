@@ -27,13 +27,24 @@ export class ApiError extends Error {
   }
 }
 
+/** Where the API lives: VITE_API_URL when set, localhost otherwise. */
+const apiOrigin = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000'
+
+/**
+ * The base URL of this install's API, for the endpoints and snippets shown in
+ * the UI. There is no flagraft.io to hardcode: every install is self-hosted on
+ * its own domain, so this is whatever the admin UI is configured to talk to.
+ * SDKs use `<base>/client/...` and it is the same for every environment --
+ * which environment an SDK reads is decided by its client key, not the URL.
+ */
+export const apiBaseUrl = `${apiOrigin}/api/v1`
+
 /**
  * Axios instance for API calls.
- * Uses VITE_API_URL or defaults to localhost.
  * withCredentials ensures the flagraft_session cookie is sent on every request.
  */
 const http = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000',
+  baseURL: apiOrigin,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10_000,
   withCredentials: true,
