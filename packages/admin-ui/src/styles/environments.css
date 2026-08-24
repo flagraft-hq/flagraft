@@ -5,9 +5,10 @@
  * dc.css and only the card grid, pills and stat boxes live here.
  */
 
-/* Screen padding — matches .flags-screen / .flag-detail (24px all round) */
 .env-screen {
   padding: var(--s-6);
+  display: flex;
+  flex-direction: column;
 }
 
 .env-empty-project,
@@ -17,11 +18,12 @@
   font-size: 0.875rem;
 }
 
-/* Two-column card grid (collapses to one column on narrow viewports) */
+/* Three-column card grid since max cards is 3 */
 .env-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--s-4);
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-6);
+  margin-top: var(--s-8);
 }
 @media (max-width: 720px) {
   .env-grid {
@@ -110,22 +112,32 @@
   gap: var(--s-2);
 }
 .env-stat {
-  padding: 0.625rem 0.75rem;
-  background: transparent;
+  padding: 0.75rem 0.875rem;
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
-  border-radius: calc(var(--dc-r) + 2px);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.env-stat:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
 }
 .env-stat-label {
-  font-size: 0.6875rem;
-  color: var(--text-3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-2);
 }
 .env-stat-value {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--text-1);
+  color: var(--pri-fg);
   font-variant-numeric: tabular-nums;
-  margin-top: 4px;
+  margin-top: 0.25rem;
 }
 
 .env-card-url-section {
