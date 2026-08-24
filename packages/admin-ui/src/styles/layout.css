@@ -152,7 +152,7 @@
   width: 100%;
   height: 2.125rem;
   padding: 0 var(--s-3) 0 2.25rem;
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   border: 1px solid var(--border);
   background: var(--bg-subtle);
   font-size: 0.8125rem;
@@ -239,29 +239,24 @@
   max-width: 45%;
 }
 
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin-left: auto;
-}
 .key-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.3125rem 0.625rem;
-  border-radius: var(--r-md);
-  border: 1px solid var(--border);
-  background: var(--bg-subtle);
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background: var(--pri-soft);
+  color: var(--pri-fg);
   font-family: var(--font-mono);
   font-size: 0.75rem;
+  font-weight: 500;
 }
 .key-indicator .dot {
-  width: 0.4375rem;
-  height: 0.4375rem;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 999px;
-  background: var(--pri);
-  box-shadow: 0 0 0 3px var(--pri-soft);
+  background: var(--pri-fg);
 }
 .icon-btn {
   width: 2.125rem;

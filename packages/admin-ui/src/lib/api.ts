@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+import { loginUrlFor } from './nextPath'
+
 import type { UserRole } from './roles'
 import type {
   Flag,
@@ -51,10 +53,23 @@ const http = axios.create({
 })
 
 /**
+ * Endpoints where a 401 is an ordinary answer rather than an expired session.
+ * The boot session check answers 401 for every signed-out visitor, so bouncing
+ * on it would stop the app from ever rendering a signed-out page -- including
+ * the 404. The login form and the public invite flow report their own 401s.
+ */
+const EXPECTED_401_PATHS = [
+  '/api/v1/admin/auth/me',
+  '/api/v1/admin/auth/login',
+  '/api/v1/public/invite/',
+]
+
+/**
  * Global response handler.
  * Extracts the human-readable server message from the response body so
  * components never have to parse AxiosError themselves.
- * Redirects to /login on 401 Unauthorized.
+ * Sends the browser to /login when a session expires mid-use, carrying the
+ * current location as `next` so signing back in returns there.
  */
 http.interceptors.response.use(
   (res) => res,
@@ -62,9 +77,12 @@ http.interceptors.response.use(
     if (axios.isAxiosError(err)) {
       const status = err.response?.status ?? 0
       const path = window.location.pathname
+      const requested = err.config?.url ?? ''
+      const expected = EXPECTED_401_PATHS.some((p) => requested.startsWith(p))
       /** The invite-accept page is public; a 401 there must not bounce to login. */
-      if (status === 401 && path !== '/login' && !path.startsWith('/invite/')) {
-        window.location.href = '/login'
+      const onPublicPage = path === '/login' || path.startsWith('/invite/')
+      if (status === 401 && !expected && !onPublicPage) {
+        window.location.href = loginUrlFor(path, window.location.search)
       }
       const data = err.response?.data as
         | { message?: string; issues?: { message: string }[] }

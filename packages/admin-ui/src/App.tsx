@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate } from 'react-router-dom'
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
 import React from 'react'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ProjectProvider } from './contexts/ProjectContext'
@@ -13,6 +13,9 @@ import { AcceptInviteScreen } from './components/screens/AcceptInviteScreen'
 import { UsersScreen } from './components/screens/UsersScreen'
 import { EnvironmentsScreen } from './components/screens/EnvironmentsScreen'
 import { KeysScreen } from './components/screens/KeysScreen'
+import { NotFoundScreen } from './components/screens/NotFoundScreen'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { loginUrlFor, safeNext } from './lib/nextPath'
 import './styles/index.css'
 
 function Placeholder({ title }: { title: string }) {
@@ -24,20 +27,30 @@ function Placeholder({ title }: { title: string }) {
   )
 }
 
+/**
+ * Gates a route on a signed-in session. Signed-out visitors go to the login
+ * screen with where they were headed attached, so signing in returns them to
+ * the link they followed rather than the default screen.
+ */
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
+  const { pathname, search } = useLocation()
   if (loading) return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to={loginUrlFor(pathname, search)} replace />
   return <>{children}</>
 }
 
 function AppRoutes() {
   const { user, loading } = useAuth()
+  const { search } = useLocation()
   if (loading) return null
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/flags" replace /> : <LoginScreen />} />
+      <Route
+        path="/login"
+        element={user ? <Navigate to={safeNext(search)} replace /> : <LoginScreen />}
+      />
       <Route path="/invite/:token" element={<AcceptInviteScreen />} />
       <Route
         path="/"
@@ -117,20 +130,36 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
+      <Route path="*" element={<NotFoundScreen />} />
     </Routes>
+  )
+}
+
+/**
+ * Wraps the routed screens so a crash in one screen shows the 500 page rather
+ * than a blank document. Keyed on the path, so navigating away recovers.
+ */
+function RoutesWithBoundary() {
+  const { pathname } = useLocation()
+  return (
+    <ErrorBoundary resetKey={pathname}>
+      <AppRoutes />
+    </ErrorBoundary>
   )
 }
 
 export function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <ProjectProvider>
-            <AppRoutes />
-          </ProjectProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <ProjectProvider>
+              <RoutesWithBoundary />
+            </ProjectProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }

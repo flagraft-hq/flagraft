@@ -34,9 +34,20 @@ vi.mock('./components/screens/FlagDetailScreen', () => ({
   FlagDetailScreen: () => <div data-testid="flag-detail-screen">Flag Detail</div>,
 }))
 
-vi.mock('./components/screens/LoginScreen', () => ({
-  LoginScreen: () => <div data-testid="login-screen">Login</div>,
-}))
+/** Reports the URL it was rendered at, so ?next= handling can be asserted. */
+vi.mock('./components/screens/LoginScreen', async () => {
+  const { useLocation } = await import('react-router-dom')
+  return {
+    LoginScreen: () => {
+      const { pathname, search } = useLocation()
+      return (
+        <div data-testid="login-screen" data-location={`${pathname}${search}`}>
+          Login
+        </div>
+      )
+    },
+  }
+})
 
 vi.mock('./components/screens/UsersScreen', () => ({
   UsersScreen: () => <div data-testid="users-screen">Users</div>,
@@ -122,10 +133,26 @@ describe('Routing — authenticated user', () => {
     expect(screen.getByTestId('keys-screen')).toBeInTheDocument()
   })
 
+  it('an unknown route renders the 404 page as a full page, without the app shell', () => {
+    renderAt('/nope/not-a-page')
+    expect(screen.getByText('Page not found')).toBeInTheDocument()
+    expect(screen.queryByTestId('main-layout')).not.toBeInTheDocument()
+  })
+
   it('/login redirects to /flags when already authenticated', () => {
     renderAt('/login')
     expect(screen.getByTestId('flags-screen')).toBeInTheDocument()
     expect(screen.queryByTestId('login-screen')).not.toBeInTheDocument()
+  })
+
+  it('/login honours ?next= when already authenticated', () => {
+    renderAt('/login?next=%2Fkeys')
+    expect(screen.getByTestId('keys-screen')).toBeInTheDocument()
+  })
+
+  it('/login ignores an off-site ?next= when already authenticated', () => {
+    renderAt('/login?next=https%3A%2F%2Fevil.com')
+    expect(screen.getByTestId('flags-screen')).toBeInTheDocument()
   })
 })
 
@@ -138,6 +165,20 @@ describe('Routing — unauthenticated user', () => {
     renderAt('/flags')
     expect(screen.getByTestId('login-screen')).toBeInTheDocument()
     expect(screen.queryByTestId('flags-screen')).not.toBeInTheDocument()
+  })
+
+  it('an unknown route still renders the 404 page, not the login screen', () => {
+    renderAt('/nope/not-a-page')
+    expect(screen.getByText('Page not found')).toBeInTheDocument()
+    expect(screen.queryByTestId('login-screen')).not.toBeInTheDocument()
+  })
+
+  it('a protected deep link carries where it was headed as ?next=', () => {
+    renderAt('/flags/checkout-v2?tab=activity')
+    expect(screen.getByTestId('login-screen')).toHaveAttribute(
+      'data-location',
+      '/login?next=%2Fflags%2Fcheckout-v2%3Ftab%3Dactivity',
+    )
   })
 
   it('/users redirects to /login when not authenticated', () => {

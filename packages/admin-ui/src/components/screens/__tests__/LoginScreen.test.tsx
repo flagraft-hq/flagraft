@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { LoginScreen } from '../LoginScreen'
 
 const mockLogin = vi.fn()
@@ -22,12 +22,26 @@ vi.mock('../../../hooks/useToast', () => ({
   useToast: () => ({ push: mockToastPush }),
 }))
 
-function renderLogin() {
+/** Reports where the screen navigated to after a successful sign-in. */
+function LocationDisplay() {
+  const { pathname } = useLocation()
+  return <span data-testid="loc">{pathname}</span>
+}
+
+function renderLogin(entry = '/login') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[entry]}>
       <LoginScreen />
+      <LocationDisplay />
     </MemoryRouter>,
   )
+}
+
+/** Fills the form and submits it. */
+function signIn() {
+  fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'a@b.com' } })
+  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'secret123' } })
+  fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
 }
 
 beforeEach(() => {
@@ -50,6 +64,27 @@ describe('LoginScreen', () => {
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'secret123' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('a@b.com', 'secret123'))
+  })
+
+  it('lands on /flags after signing in with no return path', async () => {
+    mockLogin.mockResolvedValue(undefined)
+    renderLogin()
+    signIn()
+    await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/flags'))
+  })
+
+  it('returns to the ?next= path after signing in', async () => {
+    mockLogin.mockResolvedValue(undefined)
+    renderLogin('/login?next=%2Fkeys')
+    signIn()
+    await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/keys'))
+  })
+
+  it('ignores an off-site ?next= and lands on /flags', async () => {
+    mockLogin.mockResolvedValue(undefined)
+    renderLogin('/login?next=https%3A%2F%2Fevil.com')
+    signIn()
+    await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/flags'))
   })
 
   it('shows error alert on failed login', async () => {

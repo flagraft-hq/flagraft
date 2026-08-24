@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { safeNext } from '../../lib/nextPath'
 import { Icon } from '../primitives/Icon'
 import { Button } from '../primitives/Button'
 
@@ -18,6 +19,7 @@ const PREVIEW_FLAGS = [
  */
 export function LoginScreen() {
   const navigate = useNavigate()
+  const { search } = useLocation()
   const { login } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -34,7 +36,7 @@ export function LoginScreen() {
     setSubmitting(true)
     try {
       await login(email, password)
-      navigate('/flags', { replace: true })
+      navigate(safeNext(search), { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed.')
     } finally {
