@@ -597,3 +597,50 @@
 .pagination-next-ico {
   transform: rotate(-90deg);
 }
+
+/* ── Switch ──────────────────────────────────────────────────────────────── */
+
+/**
+ * HeroUI draws its switch with a rounded-rectangle thumb in a squarish track.
+ * The design uses a pill track with a round thumb, so the geometry is restated
+ * here for every switch in the app. One size, matching the hand-rolled
+ * `.toggle` in base.css, so the two implementations are indistinguishable.
+ */
+.switch__control,
+.switch--sm .switch__control,
+.switch--lg .switch__control {
+  width: 2.5rem;
+  height: 1.5rem;
+  border-radius: var(--r-pill);
+  background: var(--ink-300);
+}
+.theme-dark .switch__control {
+  background: #2a3855;
+}
+.switch[aria-checked='true'] .switch__control,
+.switch[data-selected='true'] .switch__control {
+  background: var(--pri);
+}
+
+.switch__thumb,
+.switch--sm .switch__thumb,
+.switch--lg .switch__thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-inline-start: 0.125rem;
+  border-radius: var(--r-pill);
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    0 1px 1px rgba(0, 0, 0, 0.06);
+}
+/** Travel = track width - track height. */
+.switch[aria-checked='true'] .switch__thumb,
+.switch[data-selected='true'] .switch__thumb,
+.switch--sm[aria-checked='true'] .switch__thumb,
+.switch--sm[data-selected='true'] .switch__thumb,
+.switch--lg[aria-checked='true'] .switch__thumb,
+.switch--lg[data-selected='true'] .switch__thumb {
+  margin-inline-start: 1.05rem;
+  background: #ffffff;
+}

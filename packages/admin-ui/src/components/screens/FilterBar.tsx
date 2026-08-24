@@ -13,9 +13,10 @@ interface FilterBarProps {
   onClearAll: () => void
 }
 
-const STATE_OPTIONS: { value: Exclude<StateFilter, null>; label: string }[] = [
-  { value: 'on', label: 'on' },
-  { value: 'off', label: 'off' },
+const STATE_OPTIONS: { value: StateFilter; label: string }[] = [
+  { value: null, label: 'All' },
+  { value: 'on', label: 'Enabled' },
+  { value: 'off', label: 'Disabled' },
 ]
 
 export function FilterBar({
@@ -30,27 +31,26 @@ export function FilterBar({
 
   return (
     <div className="filters-bar dc-toolbar">
-      <SearchField aria-label="Search flags" value={search} onChange={onSearchChange}>
+      <SearchField aria-label="Search flags" value={search} onChange={onSearchChange} className="search-pill">
         <SearchField.Group>
           <SearchField.SearchIcon />
-          <SearchField.Input placeholder="Search by name, key, description…" />
+          <SearchField.Input placeholder="Filter by name or key..." />
           <span className="kbd-hint">
             <Kbd keys={['/']} />
           </span>
         </SearchField.Group>
       </SearchField>
 
-      <div className="flags-chip-group" role="group" aria-label={`State filter for ${envName}`}>
+      <div className="dc-chip-group" role="group" aria-label={`State filter for ${envName}`}>
         {STATE_OPTIONS.map(({ value, label }) => (
           <button
-            key={value}
+            key={value ?? 'all'}
             type="button"
-            className="flags-chip"
+            className="dc-chip"
             aria-pressed={stateFilter === value}
-            onClick={() => onStateFilterChange(stateFilter === value ? null : value)}
+            onClick={() => onStateFilterChange(value)}
           >
-            <Icon name="filter" size={12} />
-            {label} in {envName}
+            {label}
           </button>
         ))}
       </div>

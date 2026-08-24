@@ -31,7 +31,6 @@ export function StatePill({
   return (
     <div className={classes} data-env={env}>
       <Switch
-        size="sm"
         isSelected={on}
         isDisabled={disabled}
         onChange={onToggle}

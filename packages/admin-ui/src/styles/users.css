@@ -100,53 +100,6 @@
   flex: 1;
 }
 
-.users-chip-group {
-  display: inline-flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.users-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border: 2px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-elev);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-2);
-  cursor: pointer;
-}
-.users-chip:hover {
-  color: var(--text-1);
-  border-color: var(--border-strong);
-}
-.users-chip[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--pri) 10%, transparent);
-  border-color: color-mix(in srgb, var(--pri) 35%, transparent);
-  color: var(--pri);
-}
-.users-chip-n {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--text-3);
-}
-.users-chip[aria-pressed='true'] .users-chip-n {
-  color: inherit;
-}
-.users-chip[data-tone='amber'][aria-pressed='true'] {
-  background: color-mix(in srgb, var(--acc) 12%, transparent);
-  border-color: color-mix(in srgb, var(--acc) 35%, transparent);
-  color: var(--acc);
-}
-.users-chip[data-tone='red'][aria-pressed='true'] {
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
-  color: var(--danger);
-}
-
 /* ── Table ───────────────────────────────────────────────────────────────── */
 
 /**

@@ -206,7 +206,7 @@ export function UsersScreen() {
         <div className="page-header-actions">
           <Button variant="primary" onClick={() => setShowInvite(true)}>
             <Icon name="plus" size={14} />
-            Invite user
+            Invite users
           </Button>
         </div>
       </div>
@@ -244,7 +244,7 @@ export function UsersScreen() {
           </SearchField.Group>
         </SearchField>
 
-        <div className="users-chip-group" role="group" aria-label="Status filter">
+        <div className="dc-chip-group" role="group" aria-label="Status filter">
           {(
             [
               { id: 'all', label: 'All', n: counts.all },
@@ -256,13 +256,13 @@ export function UsersScreen() {
           ).map((c) => (
             <button
               key={c.id}
-              className="users-chip"
+              className="dc-chip"
               aria-pressed={statusFilter === c.id}
               data-tone={c.tone}
               onClick={() => setStatusFilter(c.id)}
             >
               <span>{c.label}</span>
-              <span className="users-chip-n num">{c.n}</span>
+              <span className="dc-chip-n num">{c.n}</span>
             </button>
           ))}
         </div>

@@ -27,45 +27,16 @@
 .filters-bar .search-field {
   width: 320px;
 }
+.filters-bar .search-pill [data-slot='input-wrapper'],
+.filters-bar .search-pill .react-aria-SearchField,
+.filters-bar .search-pill [class*='group'],
+.filters-bar .search-pill {
+  border-radius: 999px !important;
+}
 .filters-bar .kbd-hint {
   flex-shrink: 0;
   display: inline-flex;
   color: var(--text-3);
-}
-
-.flags-chip-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-/**
- * Our own filter chip, deliberately not named `.chip`: HeroUI uses that name
- * for its own Chip component and this screen renders both.
- */
-.flags-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 13px;
-  border: 2px solid var(--border);
-  border-radius: var(--dc-r);
-  background: var(--bg-elev);
-  color: var(--text-2);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.flags-chip:hover {
-  background: var(--bg-subtle);
-  color: var(--text-1);
-}
-.flags-chip[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--pri) 12%, transparent);
-  border-color: color-mix(in srgb, var(--pri) 40%, transparent);
-  color: var(--pri);
 }
 
 .filters-spacer {
@@ -261,10 +232,6 @@
 .cell-env-prod .state-pill-on .switch__control {
   background: var(--danger);
 }
-.cell-env .state-pill-off .switch__control {
-  background: var(--text-4);
-}
-
 /* ── Last-edited cell ────────────────────────────────────────────────────── */
 
 .cell-edited-inner {

@@ -11,6 +11,8 @@ interface DialogProps {
   className?: string
   /** Widens the dialog from 480px to 560px, for forms rather than confirms. */
   size?: 'default' | 'lg'
+  /** Marks the dialog as a destructive confirm: adds a warning badge by the title. */
+  danger?: boolean
   children?: ReactNode
   footer: ReactNode
 }
@@ -33,6 +35,7 @@ export function Dialog({
   subtitle,
   className,
   size = 'default',
+  danger = false,
   children,
   footer,
 }: DialogProps) {
@@ -48,21 +51,22 @@ export function Dialog({
     >
       <Modal.Container>
         <Modal.Dialog className={classes}>
+          {/**
+           * The close button is positioned against the dialog rather than the
+           * header so the header stays a simple badge + text row.
+           */}
+          <button type="button" onClick={onClose} aria-label="Close" className="dc-dialog-close">
+            <Icon name="x" size={16} />
+          </button>
           <Modal.Header>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div>
-                <Modal.Heading>{title}</Modal.Heading>
-                {subtitle && <Description>{subtitle}</Description>}
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="dc-icon-btn"
-                style={{ margin: '-4px -4px 0 0' }}
-              >
-                <Icon name="x" size={16} />
-              </button>
+            {danger && (
+              <span className="modal__icon dc-dialog-icon" aria-hidden="true">
+                <Icon name="alert" size={18} />
+              </span>
+            )}
+            <div>
+              <Modal.Heading>{title}</Modal.Heading>
+              {subtitle && <Description>{subtitle}</Description>}
             </div>
           </Modal.Header>
           {children && <Modal.Body>{children}</Modal.Body>}

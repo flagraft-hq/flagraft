@@ -354,6 +354,63 @@
   background: var(--bg-subtle);
 }
 
+/* ── Filter chips ────────────────────────────────────────────────────────── */
+
+/**
+ * The toolbar's on/off style filter chips, shared by the flags and users
+ * screens. Deliberately not named `.chip`: HeroUI owns that name for its own
+ * Chip component and both screens render one.
+ *
+ * `.dc-chip-n` is the optional count badge; `data-tone` recolours the pressed
+ * state for chips that mean something other than "normal".
+ */
+.dc-chip-group {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.dc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.dc-chip:hover {
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+.dc-chip[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--pri) 10%, transparent);
+  border-color: color-mix(in srgb, var(--pri) 35%, transparent);
+  color: var(--pri);
+}
+.dc-chip-n {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.dc-chip[aria-pressed='true'] .dc-chip-n {
+  color: inherit;
+}
+.dc-chip[data-tone='amber'][aria-pressed='true'] {
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+  border-color: color-mix(in srgb, var(--acc) 35%, transparent);
+  color: var(--acc);
+}
+.dc-chip[data-tone='red'][aria-pressed='true'] {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger);
+}
+
 /* ── Table card ──────────────────────────────────────────────────────────── */
 
 /**
@@ -476,10 +533,6 @@
   border-width: 2px;
 }
 
-.dc .switch:not([data-selected='true']) .switch__control {
-  background: var(--text-4);
-}
-
 .dc-card .table__column .checkbox,
 .dc-card .table__cell .checkbox {
   display: inline-flex;
@@ -506,9 +559,17 @@
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(3px);
 }
+/**
+ * HeroUI pads the dialog itself (`p-6`), which leaves the footer's tinted band
+ * and its divider floating inside a white gutter. Padding moves onto the
+ * header, body and footer instead so all three share one left edge and the
+ * footer band runs the full width; `overflow: hidden` clips it to the corners.
+ */
 .dc-dialog.modal__dialog {
   width: 480px;
   max-width: calc(100vw - 48px);
+  padding: 0;
+  overflow: hidden;
   background: var(--bg-elev);
   border: 2px solid var(--border);
   border-radius: calc(var(--dc-r) + 6px);
@@ -518,9 +579,44 @@
 .dc-dialog--lg.modal__dialog {
   width: 560px;
 }
-.dc-dialog .modal__header {
-  display: block;
+
+/** Sits against the dialog's own padding, clear of the header row. */
+.dc-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.dc-dialog-close:hover {
+  background: var(--bg-subtle);
+  color: var(--text-1);
+}
+
+.dc-dialog .modal__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 52px 12px 20px;
+  margin: 0;
+  border: none;
+}
+/** Destructive confirms get a tinted badge to the left of the title. */
+.dc-dialog-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-pill);
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 .dc-dialog .modal__heading {
   margin: 0;
@@ -535,7 +631,8 @@
   color: var(--text-3);
 }
 .dc-dialog .modal__body {
-  padding: 12px 20px 16px;
+  margin: 0;
+  padding: 0 20px 18px;
   font-size: 0.8125rem;
   color: var(--text-2);
   line-height: 1.6;
@@ -548,10 +645,10 @@
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
+  margin: 0;
   padding: 12px 20px;
   border-top: 2px solid var(--border);
   background: var(--bg-subtle);
-  border-radius: 0 0 calc(var(--dc-r) + 6px) calc(var(--dc-r) + 6px);
 }
 .dc-dialog .modal__footer .button {
   height: 36px;

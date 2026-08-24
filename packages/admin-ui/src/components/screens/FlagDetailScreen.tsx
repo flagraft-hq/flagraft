@@ -334,7 +334,6 @@ function EnvironmentsTab({
                 <Denied when={!canWriteEnv(env)} reason={`Your role can’t change flags in ${env}`}>
                   <Toggle
                     checked={isOn}
-                    size="lg"
                     disabled={!canWriteEnv(env)}
                     onChange={(newValue) => handleToggle(env, newValue)}
                   />

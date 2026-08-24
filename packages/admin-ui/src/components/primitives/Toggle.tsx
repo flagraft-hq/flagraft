@@ -6,8 +6,6 @@ interface ToggleProps {
   label?: string
   disabled?: boolean
   variant?: 'default' | 'production'
-  /** Visual size of the toggle track. Defaults to 'default' (36×20 px). */
-  size?: 'sm' | 'default' | 'lg'
 }
 
 export function Toggle({
@@ -16,7 +14,6 @@ export function Toggle({
   label,
   disabled = false,
   variant = 'default',
-  size = 'default',
 }: ToggleProps) {
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -34,15 +31,6 @@ export function Toggle({
     setShowConfirm(false)
   }
 
-  /**
-   * Build track class list: base + optional size modifier.
-   * 'default' size needs no extra class — the base .toggle-track
-   * already defines the default (36×20) dimensions.
-   */
-  const trackClass = ['toggle-track', size === 'sm' ? 'track-sm' : size === 'lg' ? 'track-lg' : '']
-    .filter(Boolean)
-    .join(' ')
-
   return (
     <div className="toggle-wrapper">
       <button
@@ -54,7 +42,7 @@ export function Toggle({
         data-variant={variant}
         onClick={handleToggle}
       >
-        <span className={trackClass}>
+        <span className="toggle-track">
           <span className="toggle-thumb" />
         </span>
         {label && <span className="toggle-label">{label}</span>}

@@ -155,6 +155,7 @@ export function FlagRow({
          * to build its collection. It portals out of the table either way.
          */}
         <Dialog
+          danger
           className="flags-dialog"
           open={confirmState !== null}
           onClose={() => setConfirmState(null)}

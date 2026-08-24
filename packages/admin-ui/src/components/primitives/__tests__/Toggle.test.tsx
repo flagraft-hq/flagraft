@@ -69,22 +69,6 @@ describe('Toggle', () => {
     expect(screen.queryByText('Enable production toggle?')).toBeNull()
   })
 
-  it('applies track-sm class when size is sm', () => {
-    const { container } = render(<Toggle checked={false} onChange={() => {}} size="sm" />)
-    expect(container.querySelector('.track-sm')).toBeTruthy()
-  })
-
-  it('applies track-lg class when size is lg', () => {
-    const { container } = render(<Toggle checked={false} onChange={() => {}} size="lg" />)
-    expect(container.querySelector('.track-lg')).toBeTruthy()
-  })
-
-  it('applies no size modifier class for default size', () => {
-    const { container } = render(<Toggle checked={false} onChange={() => {}} size="default" />)
-    expect(container.querySelector('.track-sm')).toBeNull()
-    expect(container.querySelector('.track-lg')).toBeNull()
-  })
-
   it('production variant checked state carries data-variant and aria-checked', () => {
     const { container } = render(<Toggle checked={true} onChange={() => {}} variant="production" />)
     const btn = container.querySelector('[data-variant="production"]')

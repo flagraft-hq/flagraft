@@ -337,10 +337,11 @@ textarea::placeholder {
   cursor: not-allowed;
 }
 
+/** One size everywhere: 40x24 px track with a 20 px round thumb. */
 .toggle-track {
   display: inline-block;
-  width: 2.25rem;
-  height: 1.25rem;
+  width: 2.5rem;
+  height: 1.5rem;
   background-color: var(--ink-300);
   border-radius: var(--r-pill);
   position: relative;
@@ -350,33 +351,14 @@ textarea::placeholder {
   background-color: #2a3855;
 }
 
-/** Small size: 30x17 px, matches design .sm */
-.toggle-track.track-sm {
-  width: 1.875rem;
-  height: 1.0625rem;
-}
-
-/** Large size: 44x24 px, matches design .lg */
-.toggle-track.track-lg {
-  width: 2.75rem;
-  height: 1.5rem;
-}
-
 .toggle-on .toggle-track {
-  background-color: var(--teal-500);
-}
-.theme-dark .toggle-on .toggle-track {
-  background-color: var(--teal-400);
+  background-color: var(--pri);
 }
 
-/**
- * Thumb is sized to the track height minus 4px. Each size variant overrides
- * the dimensions so the thumb scales correctly for sm/default/lg.
- */
 .toggle-thumb {
   display: inline-block;
-  width: 1rem;
-  height: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
   background-color: white;
   border-radius: var(--r-pill);
   position: absolute;
@@ -387,28 +369,14 @@ textarea::placeholder {
     0 1px 1px rgba(0, 0, 0, 0.06);
   transition: transform 0.14s ease;
 }
-.toggle-track.track-sm .toggle-thumb {
-  width: 0.8125rem;
-  height: 0.8125rem;
-}
-.toggle-track.track-lg .toggle-thumb {
-  width: 1.25rem;
-  height: 1.25rem;
-}
 
 /**
  * Travel must be in rem like the track, or the thumb stops short of the
  * right edge once the global scale knob moves off 16px.
- * travel = track width - track height, for each size.
+ * travel = track width - track height.
  */
 .toggle-on .toggle-thumb {
   transform: translateX(1rem);
-}
-.toggle-on .toggle-track.track-sm .toggle-thumb {
-  transform: translateX(0.8125rem);
-}
-.toggle-on .toggle-track.track-lg .toggle-thumb {
-  transform: translateX(1.25rem);
 }
 
 .toggle-label {
