@@ -207,10 +207,12 @@ textarea::placeholder {
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-1);
   transition:
     background 0.08s ease,
     border-color 0.08s ease,
-    transform 0.08s ease;
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
 }
 
 .btn:hover {
@@ -250,6 +252,7 @@ textarea::placeholder {
   background: transparent;
   border-color: transparent;
   color: var(--text-2);
+  box-shadow: none;
 }
 
 .btn.ghost:hover {
@@ -258,7 +261,7 @@ textarea::placeholder {
 }
 
 .btn.danger {
-  background: var(--bg-elev);
+  background: var(--danger-soft);
   color: var(--danger-fg);
   border-color: var(--danger-soft-border);
 }

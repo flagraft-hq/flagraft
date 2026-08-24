@@ -51,54 +51,38 @@ export function EnvStrategies({ projectId, flagKey, env, contextFields }: EnvStr
 
   return (
     <div className="env-strategies">
-      <div className="env-strategies-head">
-        <span className="env-strategies-label">Targeting</span>
-        <span className="spacer" />
+      <div className="env-card-foot">
+        <div className="env-strategies-state">
+          {loading ? (
+            <span className="muted">Loading…</span>
+          ) : error ? (
+            <span>
+              <span className="danger-text">{error}</span>{' '}
+              <button className="link-btn" onClick={refetch}>
+                Retry
+              </button>
+            </span>
+          ) : strategies.length === 0 ? (
+            <span className="muted">No targeting rules — default value applies</span>
+          ) : (
+            <span className="muted">
+              {strategies.length} targeting {strategies.length === 1 ? 'rule' : 'rules'}
+              {' · '}
+              {Array.from(new Set(strategies.flatMap(s => s.constraints.map(c => c.fieldKey)))).join(', ')}
+            </span>
+          )}
+        </div>
+        
         <Denied when={!allowed} reason={`Your role can’t change targeting in ${env}`}>
-          <Button
-            size="sm"
-            variant="primary"
-            leftIcon="target"
+          <button
+            className="add-rule-btn"
             disabled={!allowed}
             onClick={() => setEditing(true)}
           >
-            Edit targeting
-          </Button>
+            Add rule
+          </button>
         </Denied>
       </div>
-
-      {loading ? (
-        <div className="env-strategies-state muted">Loading…</div>
-      ) : error ? (
-        <div className="env-strategies-state">
-          <span className="danger-text">{error}</span>{' '}
-          <button className="link-btn" onClick={refetch}>
-            Retry
-          </button>
-        </div>
-      ) : strategies.length === 0 ? (
-        <div className="env-strategies-state muted">On for everyone while enabled.</div>
-      ) : (
-        <div className="env-strategies-list">
-          {strategies.map((s, si) => (
-            <div key={s.id} className="env-strategy">
-              {si > 0 && <span className="env-strategy-or">or</span>}
-              {s.constraints.length === 0 ? (
-                <span className="muted">matches everyone</span>
-              ) : (
-                <div className="cond-group">
-                  {s.constraints.map((c, ci) => (
-                    <span key={ci} className="cond-wrap">
-                      {ci > 0 && <span className="cond-and">and</span>}
-                      <Condition c={c} contextFields={contextFields} />
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       <StrategyEditorModal
         open={editing}
