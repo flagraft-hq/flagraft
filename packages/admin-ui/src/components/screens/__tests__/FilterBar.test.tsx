@@ -13,7 +13,7 @@ const defaultProps = {
   onClearAll: vi.fn(),
 }
 
-const PLACEHOLDER = 'Search by name, key, description…'
+const PLACEHOLDER = 'Filter by name or key...'
 
 describe('FilterBar', () => {
   it('renders search input with correct value', () => {
@@ -30,35 +30,29 @@ describe('FilterBar', () => {
 
   it('names the environment the state filter applies to', () => {
     render(<FilterBar {...defaultProps} />)
-    expect(screen.getByRole('button', { name: 'on in Production' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'off in Production' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'State filter for Production' })).toBeInTheDocument()
   })
 
   it('marks the active state chip as pressed', () => {
     render(<FilterBar {...defaultProps} stateFilter="on" />)
-    expect(screen.getByRole('button', { name: 'on in Production' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
-    expect(screen.getByRole('button', { name: 'off in Production' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(screen.getByRole('button', { name: 'Enabled' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Disabled' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('selects a state filter when its chip is clicked', async () => {
     const onStateFilterChange = vi.fn()
     render(<FilterBar {...defaultProps} onStateFilterChange={onStateFilterChange} />)
-    await userEvent.click(screen.getByRole('button', { name: 'off in Production' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Disabled' }))
     expect(onStateFilterChange).toHaveBeenCalledWith('off')
   })
 
-  it('clears the state filter when the active chip is clicked again', async () => {
+  it('clears the state filter when "All" is clicked', async () => {
     const onStateFilterChange = vi.fn()
     render(
       <FilterBar {...defaultProps} stateFilter="on" onStateFilterChange={onStateFilterChange} />,
     )
-    await userEvent.click(screen.getByRole('button', { name: 'on in Production' }))
+    await userEvent.click(screen.getByRole('button', { name: 'All' }))
     expect(onStateFilterChange).toHaveBeenCalledWith(null)
   })
 

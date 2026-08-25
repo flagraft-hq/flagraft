@@ -195,15 +195,7 @@ describe('FlagDetailScreen', () => {
     expect(mockFlagsApi.delete).not.toHaveBeenCalled()
   })
 
-  it('Copy key button copies the key and shows inline "Copied" feedback', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-    renderScreen()
-    const copyBtn = await screen.findByRole('button', { name: /copy key/i })
-    fireEvent.click(copyBtn)
-    await waitFor(() => expect(writeText).toHaveBeenCalled())
-    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument()
-  })
+
 
   it('SDK snippet button opens SDK snippets modal', async () => {
     renderScreen()

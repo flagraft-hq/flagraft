@@ -259,7 +259,7 @@ describe('FlagsScreen empty states', () => {
     /** With no filters yet, an empty project shows the no-data state. */
     expect(screen.getByText('No flags yet')).toBeInTheDocument()
 
-    fireEvent.change(screen.getByPlaceholderText(/search by name/i), {
+    fireEvent.change(screen.getByPlaceholderText(/filter by name/i), {
       target: { value: 'nothing-matches-this' },
     })
 
@@ -279,7 +279,7 @@ describe('FlagsScreen empty states', () => {
     })
 
     render(<FlagsScreen />)
-    const searchBox = screen.getByPlaceholderText(/search by name/i)
+    const searchBox = screen.getByPlaceholderText(/filter by name/i)
     fireEvent.change(searchBox, { target: { value: 'zzz' } })
     expect(screen.getByText('No flags match your filters')).toBeInTheDocument()
 
