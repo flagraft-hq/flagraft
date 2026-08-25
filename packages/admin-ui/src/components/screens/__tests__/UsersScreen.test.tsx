@@ -37,6 +37,19 @@ vi.mock('../../../lib/api', () => ({
   },
 }))
 
+/** usePermissions reads two contexts; mocking it directly keeps the tests flat. */
+const perms = vi.hoisted(() => ({ canManage: true }))
+
+vi.mock('../../../hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: perms.canManage ? 'admin' : 'viewer',
+    canWrite: perms.canManage,
+    canProjectAdmin: perms.canManage,
+    canOwnerAct: false,
+    canWriteEnv: () => perms.canManage,
+  }),
+}))
+
 vi.mock('../../../contexts/ProjectContext', () => ({
   useProject: () => ({
     activeProject: { id: 'p1', name: 'Demo', slug: 'demo', flagCount: 0 },
@@ -123,6 +136,7 @@ function renderScreen(initialEntry = '/users') {
 }
 
 beforeEach(() => {
+  perms.canManage = true
   vi.clearAllMocks()
   vi.mocked(usersApi.list).mockResolvedValue(page(mockUsers))
 })
@@ -442,5 +456,36 @@ describe('UsersScreen', () => {
     const card = document.querySelector('.users-stat[data-tone="slate"]') as HTMLElement
     expect(within(card).getByText('2')).toBeInTheDocument()
     expect(within(card).getByText(/1 owner, 1 admin/)).toBeInTheDocument()
+  })
+})
+
+describe('UsersScreen without member-management rights', () => {
+  beforeEach(() => {
+    perms.canManage = false
+  })
+
+  it('still lists members, because the list itself is not privileged', async () => {
+    renderScreen()
+    expect(await screen.findByText('Alice')).toBeInTheDocument()
+    expect(screen.getByText('Bob')).toBeInTheDocument()
+  })
+
+  it('disables the invite button rather than pretending it is not there', async () => {
+    renderScreen()
+    await screen.findByText('Alice')
+    expect(screen.getByRole('button', { name: /invite users/i })).toBeDisabled()
+  })
+
+  it('offers no row selection, so there is no bulk bar to reach', async () => {
+    renderScreen()
+    await screen.findByText('Alice')
+    expect(screen.queryByRole('checkbox', { name: /select all/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: /^select$/i })).not.toBeInTheDocument()
+  })
+
+  it('offers no per-row action menu', async () => {
+    renderScreen()
+    await screen.findByText('Alice')
+    expect(screen.queryByRole('button', { name: /actions for/i })).not.toBeInTheDocument()
   })
 })

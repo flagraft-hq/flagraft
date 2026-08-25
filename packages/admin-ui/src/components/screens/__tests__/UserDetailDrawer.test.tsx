@@ -3,6 +3,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UserDetailDrawer } from '../UserDetailDrawer'
 import type { WorkspaceUser } from '../../../lib/api'
 
+/** usePermissions reads two contexts; mocking it directly keeps the tests flat. */
+const perms = vi.hoisted(() => ({ canManage: true }))
+
+vi.mock('../../../hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: perms.canManage ? 'admin' : 'viewer',
+    canWrite: perms.canManage,
+    canProjectAdmin: perms.canManage,
+    canOwnerAct: false,
+    canWriteEnv: () => perms.canManage,
+  }),
+}))
+
 vi.mock('../../../lib/api', () => ({
   usersApi: {
     resetPassword: vi.fn(),
@@ -72,6 +85,7 @@ function renderDrawer(user: WorkspaceUser = activeUser, onClose = vi.fn(), onUpd
 }
 
 beforeEach(() => {
+  perms.canManage = true
   vi.clearAllMocks()
 })
 
@@ -272,5 +286,29 @@ describe('UserDetailDrawer', () => {
     const dialog = screen.getByRole('dialog')
     fireEvent.click(dialog)
     expect(mockOnClose).not.toHaveBeenCalled()
+  })
+})
+
+describe('UserDetailDrawer without member-management rights', () => {
+  beforeEach(() => {
+    perms.canManage = false
+  })
+
+  it('still shows who the person is and what they can reach', () => {
+    renderDrawer()
+    expect(screen.getByText(activeUser.name)).toBeInTheDocument()
+    expect(screen.getByText(/project access/i)).toBeInTheDocument()
+  })
+
+  it('drops the footer actions instead of showing them greyed out', () => {
+    renderDrawer()
+    expect(screen.queryByRole('button', { name: /reset password/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^suspend$/i })).not.toBeInTheDocument()
+  })
+
+  it('offers no way to change project access', () => {
+    renderDrawer()
+    expect(screen.queryByRole('button', { name: /add to project/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /remove from/i })).not.toBeInTheDocument()
   })
 })

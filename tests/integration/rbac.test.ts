@@ -155,12 +155,14 @@ describeIfDb('session RBAC', () => {
     const mine = await createProject(app, rootKey, 'editor-scope')
     const editor = await sessionUser(app, rootKey, 'editor', [mine.id])
 
-    const listUsers = await app.inject({
-      method: 'GET',
-      url: '/api/v1/admin/users',
+    /** Reading the member list is allowed; changing it is not. */
+    const inviteSomeone = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/users/invite',
       cookies: editor.cookies,
+      payload: { emails: ['nope@co.com'], role: 'viewer', projectIds: [] },
     })
-    expect(listUsers.statusCode).toBe(403)
+    expect(inviteSomeone.statusCode).toBe(403)
 
     const createProj = await app.inject({
       method: 'POST',
@@ -171,6 +173,49 @@ describeIfDb('session RBAC', () => {
     expect(createProj.statusCode).toBe(403)
     await app.close()
   })
+
+  it.each(['editor', 'viewer'] as const)(
+    'a %s can read the member list but never its credentials',
+    async (role) => {
+      const app = await buildServer({ db })
+      const rootKey = await createRootKey(db!)
+      const mine = await createProject(app, rootKey, `read-members-${role}`)
+      const member = await sessionUser(app, rootKey, role, [mine.id])
+
+      const list = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/users',
+        cookies: member.cookies,
+      })
+      expect(list.statusCode).toBe(200)
+
+      const body = list.json() as { data: Record<string, unknown>[] }
+      expect(body.data.length).toBeGreaterThan(0)
+      for (const user of body.data) {
+        expect(user).not.toHaveProperty('passwordHash')
+        expect(user).not.toHaveProperty('inviteTokenHash')
+        expect(user).not.toHaveProperty('sessionVersion')
+      }
+
+      const detail = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/users/${member.id}`,
+        cookies: member.cookies,
+      })
+      expect(detail.statusCode).toBe(200)
+      expect(detail.json()).not.toHaveProperty('passwordHash')
+
+      /** Reading is where it stops: no role change, no suspension. */
+      const promote = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/users/${member.id}`,
+        cookies: member.cookies,
+        payload: { role: 'owner' },
+      })
+      expect(promote.statusCode).toBe(403)
+      await app.close()
+    },
+  )
 
   it('admin-role session can manage users and responses never leak credentials', async () => {
     const app = await buildServer({ db })
@@ -884,10 +929,16 @@ describeIfDb('session RBAC', () => {
     const rootKey = await createRootKey(db!)
     const admin = await sessionUser(app, rootKey, 'admin', [])
 
+    /**
+     * Probes with a change rather than a read: reading the member list is
+     * open to every role, so it would stay 200 after the demotion and prove
+     * nothing.
+     */
     const before = await app.inject({
-      method: 'GET',
-      url: '/api/v1/admin/users',
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${admin.id}`,
       cookies: admin.cookies,
+      payload: { name: 'Still An Admin' },
     })
     expect(before.statusCode).toBe(200)
 
@@ -900,9 +951,10 @@ describeIfDb('session RBAC', () => {
     expect(demote.statusCode).toBe(200)
 
     const after = await app.inject({
-      method: 'GET',
-      url: '/api/v1/admin/users',
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${admin.id}`,
       cookies: admin.cookies,
+      payload: { name: 'Not Anymore' },
     })
     expect(after.statusCode).toBe(403)
     await app.close()

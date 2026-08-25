@@ -9,6 +9,7 @@ import { useResendInvite } from '../../hooks/useResendInvite'
 import { useRelativeDate } from '../../hooks/useRelativeDate'
 import { formatDate } from '../../lib/dates'
 import { FilterSelect } from '../primitives/FilterSelect'
+import { usePermissions } from '../../hooks/usePermissions'
 import { Icon } from '../primitives/Icon'
 import { InviteLinksModal } from './InviteLinksModal'
 import { ResetPasswordModal } from './ResetPasswordModal'
@@ -33,6 +34,12 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   const [showAddProject, setShowAddProject] = useState(false)
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [busy, setBusy] = useState(false)
+  /**
+   * Editors and viewers may read a member's details but change nothing, so
+   * the controls are left out rather than shown greyed: everything in the
+   * footer and the project list acts, none of it informs.
+   */
+  const { canProjectAdmin: canManageMembers } = usePermissions()
   const relativeLastLogin = useRelativeDate(user.lastLoginAt ?? undefined)
 
   async function handleSuspendToggle() {
@@ -152,22 +159,24 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
                         <div className="user-project-name">{p}</div>
                         <div className="muted mono user-project-role">{user.role}</div>
                       </div>
-                      <Tooltip>
-                        <Button
-                          className="dc-icon-btn"
-                          variant="ghost"
-                          isIconOnly
-                          onClick={() => void handleRemoveFromProject(p)}
-                          isDisabled={busy}
-                          aria-label={'Remove from ' + p}
-                        >
-                          <Icon name="x" size={12} />
-                        </Button>
-                        <Tooltip.Content>Remove from project</Tooltip.Content>
-                      </Tooltip>
+                      {canManageMembers ? (
+                        <Tooltip>
+                          <Button
+                            className="dc-icon-btn"
+                            variant="ghost"
+                            isIconOnly
+                            onClick={() => void handleRemoveFromProject(p)}
+                            isDisabled={busy}
+                            aria-label={'Remove from ' + p}
+                          >
+                            <Icon name="x" size={12} />
+                          </Button>
+                          <Tooltip.Content>Remove from project</Tooltip.Content>
+                        </Tooltip>
+                      ) : null}
                     </div>
                   ))}
-                  {showAddProject ? (
+                  {!canManageMembers ? null : showAddProject ? (
                     <div className="user-add-project-picker">
                       <FilterSelect
                         label="Choose project"
@@ -200,42 +209,48 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
               </section>
             </Drawer.Body>
 
-            <Drawer.Footer className="user-drawer-foot">
-              {user.status === 'invited' ? (
+            {canManageMembers ? (
+              <Drawer.Footer className="user-drawer-foot">
+                {user.status === 'invited' ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => void resendInvites([user])}
+                    isDisabled={busy}
+                  >
+                    <Icon name="refresh" size={14} />
+                    Resend invite
+                  </Button>
+                ) : null}
                 <Button
                   variant="ghost"
-                  onClick={() => void resendInvites([user])}
+                  onClick={() => setShowResetPassword(true)}
                   isDisabled={busy}
                 >
                   <Icon name="refresh" size={14} />
-                  Resend invite
+                  Reset password
                 </Button>
-              ) : null}
-              <Button variant="ghost" onClick={() => setShowResetPassword(true)} isDisabled={busy}>
-                <Icon name="refresh" size={14} />
-                Reset password
-              </Button>
-              <span className="spacer" />
-              {user.status === 'suspended' ? (
-                <Button
-                  variant="primary"
-                  onClick={() => void handleSuspendToggle()}
-                  isDisabled={busy}
-                >
-                  <Icon name="check" size={14} />
-                  Reinstate
-                </Button>
-              ) : (
-                <Button
-                  variant="danger"
-                  onClick={() => void handleSuspendToggle()}
-                  isDisabled={busy || user.role === USER_ROLES.OWNER}
-                >
-                  <Icon name="minus" size={14} />
-                  Suspend
-                </Button>
-              )}
-            </Drawer.Footer>
+                <span className="spacer" />
+                {user.status === 'suspended' ? (
+                  <Button
+                    variant="primary"
+                    onClick={() => void handleSuspendToggle()}
+                    isDisabled={busy}
+                  >
+                    <Icon name="check" size={14} />
+                    Reinstate
+                  </Button>
+                ) : (
+                  <Button
+                    variant="danger"
+                    onClick={() => void handleSuspendToggle()}
+                    isDisabled={busy || user.role === USER_ROLES.OWNER}
+                  >
+                    <Icon name="minus" size={14} />
+                    Suspend
+                  </Button>
+                )}
+              </Drawer.Footer>
+            ) : null}
 
             <ResetPasswordModal
               user={user}

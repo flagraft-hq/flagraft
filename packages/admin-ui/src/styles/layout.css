@@ -347,7 +347,8 @@
   padding: 0.625rem;
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  background: var(--bg-muted);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-2);
 }
 
 .sidenav-user-avatar {

@@ -32,10 +32,17 @@ function isOwnerActor(req: FastifyRequest): boolean {
 }
 
 export async function userRoutes(fastify: FastifyInstance) {
+  /**
+   * Listing members is readable by anyone signed in: knowing who your
+   * teammates are is not privileged, and the screen is how editors and
+   * viewers find out who to ask for access. Every mutation below stays
+   * workspace-admin only. Rows go through toPublicUser, so no credential or
+   * invite-token material leaves here.
+   */
   fastify.get(
     '/admin/users',
     {
-      preHandler: fastify.requireRootKey,
+      preHandler: fastify.requireAdminKey,
       schema: {
         querystring: {
           type: 'object',
@@ -57,7 +64,7 @@ export async function userRoutes(fastify: FastifyInstance) {
     },
   )
 
-  fastify.get('/admin/users/:id', { preHandler: fastify.requireRootKey }, async (req) => {
+  fastify.get('/admin/users/:id', { preHandler: fastify.requireAdminKey }, async (req) => {
     const { id } = req.params as { id: string }
     const user = await service.getUserWithProjects(fastify.db, id)
     if (!user) throw new AppError('User not found', 404, 'Not Found')

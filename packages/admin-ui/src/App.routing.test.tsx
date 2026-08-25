@@ -133,6 +133,29 @@ describe('Routing — authenticated user', () => {
     expect(screen.getByTestId('keys-screen')).toBeInTheDocument()
   })
 
+  it('/keys shows a 403 to a role that cannot manage keys', () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...loggedInUser, role: 'viewer' },
+      loading: false,
+      login: vi.fn(),
+      logout: vi.fn(),
+    })
+    renderAt('/keys')
+    expect(screen.getByText("You don't have access")).toBeInTheDocument()
+    expect(screen.queryByTestId('keys-screen')).not.toBeInTheDocument()
+  })
+
+  it('/keys renders for an editor never -- hiding the nav link is not the guard', () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...loggedInUser, role: 'editor' },
+      loading: false,
+      login: vi.fn(),
+      logout: vi.fn(),
+    })
+    renderAt('/keys')
+    expect(screen.queryByTestId('keys-screen')).not.toBeInTheDocument()
+  })
+
   it('an unknown route renders the 404 page as a full page, without the app shell', () => {
     renderAt('/nope/not-a-page')
     expect(screen.getByText('Page not found')).toBeInTheDocument()

@@ -24,6 +24,8 @@ import { ErrorState } from '../primitives/ErrorState'
 import { Pagination } from '../primitives/Pagination'
 import { InviteLinksModal } from './InviteLinksModal'
 import { UserBulkActionBar } from './UserBulkActionBar'
+import { Denied } from '../primitives/Denied'
+import { usePermissions } from '../../hooks/usePermissions'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { InviteModal } from './InviteModal'
 
@@ -59,6 +61,13 @@ export function UsersScreen() {
   const [offset, setOffset] = useState(0)
   const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  /**
+   * Any member may read the list -- knowing who your teammates are is not
+   * privileged -- but only owners and admins may change it. Selection and the
+   * row menus are hidden rather than disabled for everyone else: they exist
+   * only to act, so a dead version of them would be noise.
+   */
+  const { canProjectAdmin: canManageMembers } = usePermissions()
   const [detail, setDetail] = useState<WorkspaceUser | null>(null)
   const [showInvite, setShowInvite] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -204,10 +213,16 @@ export function UsersScreen() {
           </p>
         </div>
         <div className="page-header-actions">
-          <Button variant="primary" onClick={() => setShowInvite(true)}>
-            <Icon name="plus" size={14} />
-            Invite users
-          </Button>
+          <Denied when={!canManageMembers} reason="Only owners and admins can invite people">
+            <Button
+              variant="primary"
+              onClick={() => setShowInvite(true)}
+              isDisabled={!canManageMembers}
+            >
+              <Icon name="plus" size={14} />
+              Invite users
+            </Button>
+          </Denied>
         </div>
       </div>
 
@@ -298,7 +313,7 @@ export function UsersScreen() {
           <Table>
             <Table.Content
               aria-label="Workspace users"
-              selectionMode="multiple"
+              selectionMode={canManageMembers ? 'multiple' : 'none'}
               selectedKeys={selected}
               onSelectionChange={handleSelectionChange}
               sortDescriptor={sortDescriptor}
@@ -309,15 +324,17 @@ export function UsersScreen() {
               }}
             >
               <Table.Header>
-                <Table.Column id="select" className="cell-check">
-                  <Checkbox slot="selection" aria-label="Select all">
-                    <Checkbox.Content>
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
-                    </Checkbox.Content>
-                  </Checkbox>
-                </Table.Column>
+                {canManageMembers ? (
+                  <Table.Column id="select" className="cell-check">
+                    <Checkbox slot="selection" aria-label="Select all">
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
+                  </Table.Column>
+                ) : null}
                 <Table.Column id="name" isRowHeader allowsSorting>
                   {({ sortDirection }) => (
                     <Table.SortableColumnHeader sortDirection={sortDirection}>
@@ -346,14 +363,17 @@ export function UsersScreen() {
                     </Table.SortableColumnHeader>
                   )}
                 </Table.Column>
-                <Table.Column id="actions" className="cell-actions">
-                  <span className="sr-only">Actions</span>
-                </Table.Column>
+                {canManageMembers ? (
+                  <Table.Column id="actions" className="cell-actions">
+                    <span className="sr-only">Actions</span>
+                  </Table.Column>
+                ) : null}
               </Table.Header>
               <Table.Body items={users}>
                 {(u: WorkspaceUser) => (
                   <UserRow
                     user={u}
+                    canManage={canManageMembers}
                     active={detail?.id === u.id}
                     onOpen={() => setDetail(u)}
                     onResend={() => void resendInvites([u])}
@@ -385,7 +405,7 @@ export function UsersScreen() {
       <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
 
       <UserBulkActionBar
-        selectedUsers={selectedUsers}
+        selectedUsers={canManageMembers ? selectedUsers : []}
         onDone={async () => {
           await refreshUsers()
           setSelected(new Set())
@@ -447,6 +467,8 @@ function RoleChip({ role }: { role: WorkspaceUser['role'] }) {
 
 interface UserRowProps {
   user: WorkspaceUser
+  /** False for editors and viewers: the row reads, but offers no actions. */
+  canManage: boolean
   active: boolean
   onOpen: () => void
   onResend: () => void
@@ -456,6 +478,7 @@ interface UserRowProps {
 
 function UserRow({
   user: u,
+  canManage,
   active,
   onOpen,
   onResend,
@@ -483,19 +506,21 @@ function UserRow({
       }
       data-active={active ? 'true' : undefined}
     >
-      <Table.Cell className="cell-check">
-        {/**
-         * React Aria composes this label with the row header cell, so the
-         * screen reader hears "Select" followed by the person's own name.
-         */}
-        <Checkbox slot="selection" aria-label="Select">
-          <Checkbox.Content>
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
-          </Checkbox.Content>
-        </Checkbox>
-      </Table.Cell>
+      {canManage ? (
+        <Table.Cell className="cell-check">
+          {/**
+           * React Aria composes this label with the row header cell, so the
+           * screen reader hears "Select" followed by the person's own name.
+           */}
+          <Checkbox slot="selection" aria-label="Select">
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+            </Checkbox.Content>
+          </Checkbox>
+        </Table.Cell>
+      ) : null}
 
       <Table.Cell className="cell-person">
         <div className="users-person">
@@ -545,36 +570,38 @@ function UserRow({
         </span>
       </Table.Cell>
 
-      <Table.Cell className="cell-actions">
-        <Dropdown>
-          <Dropdown.Trigger className="dc-icon-btn" aria-label={`Actions for ${u.name}`}>
-            <Icon name="more" size={16} />
-          </Dropdown.Trigger>
-          <Dropdown.Popover className="dc-popover" placement="bottom end">
-            <Dropdown.Menu onAction={(key) => handleAction(String(key))}>
-              {u.status === 'invited' ? (
-                <>
-                  <Dropdown.Item id="resend">Resend invite</Dropdown.Item>
-                  <Dropdown.Item id="cancel" className="users-menu-danger">
-                    Cancel invite
-                  </Dropdown.Item>
-                </>
-              ) : (
-                <>
-                  <Dropdown.Item id="edit">Edit user</Dropdown.Item>
-                  <Dropdown.Item
-                    id="suspend"
-                    isDisabled={isOwner}
-                    className={u.status === 'suspended' ? undefined : 'users-menu-danger'}
-                  >
-                    {u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
-                  </Dropdown.Item>
-                </>
-              )}
-            </Dropdown.Menu>
-          </Dropdown.Popover>
-        </Dropdown>
-      </Table.Cell>
+      {canManage ? (
+        <Table.Cell className="cell-actions">
+          <Dropdown>
+            <Dropdown.Trigger className="dc-icon-btn" aria-label={`Actions for ${u.name}`}>
+              <Icon name="more" size={16} />
+            </Dropdown.Trigger>
+            <Dropdown.Popover className="dc-popover" placement="bottom end">
+              <Dropdown.Menu onAction={(key) => handleAction(String(key))}>
+                {u.status === 'invited' ? (
+                  <>
+                    <Dropdown.Item id="resend">Resend invite</Dropdown.Item>
+                    <Dropdown.Item id="cancel" className="users-menu-danger">
+                      Cancel invite
+                    </Dropdown.Item>
+                  </>
+                ) : (
+                  <>
+                    <Dropdown.Item id="edit">Edit user</Dropdown.Item>
+                    <Dropdown.Item
+                      id="suspend"
+                      isDisabled={isOwner}
+                      className={u.status === 'suspended' ? undefined : 'users-menu-danger'}
+                    >
+                      {u.status === 'suspended' ? 'Reinstate' : 'Suspend'}
+                    </Dropdown.Item>
+                  </>
+                )}
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+        </Table.Cell>
+      ) : null}
     </Table.Row>
   )
 }

@@ -14,8 +14,10 @@ import { UsersScreen } from './components/screens/UsersScreen'
 import { EnvironmentsScreen } from './components/screens/EnvironmentsScreen'
 import { KeysScreen } from './components/screens/KeysScreen'
 import { NotFoundScreen } from './components/screens/NotFoundScreen'
+import { ForbiddenScreen } from './components/screens/ForbiddenScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { loginUrlFor, safeNext } from './lib/nextPath'
+import { usePermissions } from './hooks/usePermissions'
 import './styles/index.css'
 
 function Placeholder({ title }: { title: string }) {
@@ -37,6 +39,17 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   const { pathname, search } = useLocation()
   if (loading) return null
   if (!user) return <Navigate to={loginUrlFor(pathname, search)} replace />
+  return <>{children}</>
+}
+
+/**
+ * Gates a route on role, not just on being signed in. Hiding a nav item is
+ * not access control by itself -- without this, typing the URL would still
+ * render the screen.
+ */
+function RequireProjectAdmin({ action, children }: { action: string; children: React.ReactNode }) {
+  const { canProjectAdmin } = usePermissions()
+  if (!canProjectAdmin) return <ForbiddenScreen action={action} />
   return <>{children}</>
 }
 
@@ -115,7 +128,9 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <MainLayout>
-              <KeysScreen />
+              <RequireProjectAdmin action="manage API keys">
+                <KeysScreen />
+              </RequireProjectAdmin>
             </MainLayout>
           </RequireAuth>
         }
