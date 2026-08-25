@@ -1,27 +1,18 @@
 import { useState, useEffect } from 'react'
+import { Button, Chip, Description, Input, Label, Switch, TextField, Tooltip } from '@heroui/react'
 import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useEnvironments } from '../../hooks/useEnvironments'
 import type { EnvWithStats } from '../../hooks/useEnvironments'
 import { usePermissions } from '../../hooks/usePermissions'
 import { environmentsApi } from '../../lib/api'
-import { Button } from '../primitives/Button'
-import { CopyButton } from '../primitives/CopyButton'
 import { Denied } from '../primitives/Denied'
+import { Dialog } from '../primitives/Dialog'
 import { FormError } from '../primitives/FormError'
 import { Icon } from '../primitives/Icon'
-import { Badge } from '../primitives/Badge'
-import { Modal } from '../primitives/Modal'
-import { Toggle } from '../primitives/Toggle'
-import { TextField } from '../primitives/TextField'
 import { Tip } from '../primitives/Tip'
 import { ErrorState } from '../primitives/ErrorState'
 import { MAX_ENVIRONMENTS_PER_PROJECT } from '../../lib/limits'
-
-/** Public SDK base URL shown per environment (display value, not the admin API). */
-function baseUrlFor(slug: string): string {
-  return `api.flagraft.io/v1/${slug}`
-}
 
 /** Slugify a name for the env slug field: lowercase, no spaces. */
 function toSlug(value: string): string {
@@ -87,7 +78,7 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="env-screen">
+    <div className="env-screen dc">
       <div className="page-header">
         <div className="page-header-text">
           <h1>Environments</h1>
@@ -101,21 +92,23 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
             {environments.length} of {MAX_ENVIRONMENTS_PER_PROJECT} used
           </span>
           {atLimit ? (
-            <Tip tip="Limit reached — delete an environment to add another.">
-              <span>
-                <Button variant="primary" leftIcon="plus" disabled>
-                  New environment
-                </Button>
-              </span>
-            </Tip>
+            <Tooltip>
+              <Button variant="primary" isDisabled>
+                <Icon name="plus" size={14} />
+                New environment
+              </Button>
+              <Tooltip.Content>
+                Limit reached — delete an environment to add another.
+              </Tooltip.Content>
+            </Tooltip>
           ) : (
             <Denied when={!canProjectAdmin} reason="Only owners and admins can manage environments">
               <Button
                 variant="primary"
-                leftIcon="plus"
-                disabled={!canProjectAdmin}
+                isDisabled={!canProjectAdmin}
                 onClick={() => setShowNew(true)}
               >
+                <Icon name="plus" size={14} />
                 New environment
               </Button>
             </Denied>
@@ -133,45 +126,49 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
               </span>
               {env.protected && (
                 <Tip tip="Protected — destructive changes require confirmation">
-                  <Badge variant="danger">
-                    <Icon name="shield" size={10} /> protected
-                  </Badge>
+                  <span>
+                    <Chip className="env-protected" size="sm">
+                      <Icon name="shield" size={10} /> protected
+                    </Chip>
+                  </span>
                 </Tip>
               )}
               <span className="spacer" />
-              <Tip
-                tip={
-                  canProjectAdmin
-                    ? 'Edit environment'
-                    : 'Only owners and admins can manage environments'
-                }
-              >
-                <button
-                  className="icon-btn"
+              <Tooltip>
+                <Button
+                  className="dc-icon-btn"
+                  variant="ghost"
+                  isIconOnly
                   aria-label="Edit environment"
-                  disabled={!canProjectAdmin}
+                  isDisabled={!canProjectAdmin}
                   onClick={() => setEditing(env)}
                 >
                   <Icon name="edit" size={14} />
-                </button>
-              </Tip>
+                </Button>
+                <Tooltip.Content>
+                  {canProjectAdmin
+                    ? 'Edit environment'
+                    : 'Only owners and admins can manage environments'}
+                </Tooltip.Content>
+              </Tooltip>
               {!env.protected && (
-                <Tip
-                  tip={
-                    canProjectAdmin
-                      ? 'Delete environment'
-                      : 'Only owners and admins can manage environments'
-                  }
-                >
-                  <button
-                    className="icon-btn"
+                <Tooltip>
+                  <Button
+                    className="dc-icon-btn env-delete-btn"
+                    variant="ghost"
+                    isIconOnly
                     aria-label="Delete environment"
-                    disabled={!canProjectAdmin}
+                    isDisabled={!canProjectAdmin}
                     onClick={() => setDeleteTarget(env)}
                   >
                     <Icon name="trash" size={14} />
-                  </button>
-                </Tip>
+                  </Button>
+                  <Tooltip.Content>
+                    {canProjectAdmin
+                      ? 'Delete environment'
+                      : 'Only owners and admins can manage environments'}
+                  </Tooltip.Content>
+                </Tooltip>
               )}
             </div>
 
@@ -190,16 +187,6 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
                 <div className="env-stat-label">Client keys</div>
                 <div className="env-stat-value num">{env.clientKeys ?? '—'}</div>
               </div>
-            </div>
-
-            <div className="env-card-foot">
-              <span className="muted env-baseurl-label">Base URL</span>
-              <code className="mono env-baseurl">{baseUrlFor(env.slug)}</code>
-              <span className="spacer" />
-              <CopyButton
-                value={baseUrlFor(env.slug)}
-                ariaLabel={`Copy base URL for ${env.name}`}
-              />
             </div>
           </div>
         ))}
@@ -223,23 +210,33 @@ function EnvironmentsScreenInner({ projectId }: { projectId: string }) {
         onSaved={refetchAll}
       />
 
-      <Modal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}>
-        <Modal.Header>Delete environment</Modal.Header>
-        <Modal.Body>
-          <p>
-            Delete <strong>{deleteTarget?.name}</strong>? This removes its flag state and keys and
-            cannot be undone.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={() => void handleDelete()} disabled={deleting}>
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <Dialog
+        className="env-dialog"
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete environment"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)} isDisabled={deleting}>
+              Cancel
+            </Button>
+            <span className="spacer" />
+            <Button
+              variant="danger"
+              onClick={() => void handleDelete()}
+              isDisabled={deleting}
+              isPending={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Delete <strong>{deleteTarget?.name}</strong>? This removes its flag state and keys and
+          cannot be undone.
+        </p>
+      </Dialog>
     </div>
   )
 }
@@ -324,56 +321,70 @@ function EnvFormModal({
   const disabled = !name.trim() || !slug.trim() || slugTaken || saving
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Modal.Header subtitle={isEdit ? undefined : 'A new environment starts with all flags off.'}>
-        {isEdit ? 'Edit environment' : 'New environment'}
-      </Modal.Header>
-      <Modal.Body>
-        <div className="env-form">
-          <FormError message={submitError} />
-          <TextField
-            label="Name"
-            value={name}
-            onChange={handleNameChange}
-            placeholder="e.g. Preview"
-          />
-          <TextField
-            label="Slug"
-            value={slug}
-            onChange={(v) => {
-              setSlugTouched(true)
-              setSlug(toSlug(v))
-            }}
-            placeholder="preview"
-            disabled={isEdit}
-            style={{ fontFamily: 'var(--font-mono)' }}
-            hint={
-              slugTaken
-                ? 'An environment with this slug already exists.'
-                : isEdit
-                  ? 'The slug is immutable once created.'
-                  : 'Used in URLs and SDK config. Lowercase, no spaces.'
-            }
-            error={slugTaken ? 'An environment with this slug already exists.' : undefined}
-          />
-          <div className="env-form-field">
-            <span className="env-form-label">Protected</span>
-            <div className="env-form-protected">
-              <Toggle checked={isProtected} onChange={setIsProtected} />
-              <span className="muted">Require confirmation for changes</span>
-            </div>
+    <Dialog
+      className="env-dialog"
+      size="lg"
+      open={open}
+      onClose={onClose}
+      title={isEdit ? 'Edit environment' : 'New environment'}
+      subtitle={isEdit ? undefined : 'A new environment starts with all flags off.'}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} isDisabled={saving}>
+            Cancel
+          </Button>
+          <span className="spacer" />
+          <Button
+            variant="primary"
+            onClick={() => void handleSubmit()}
+            isDisabled={disabled}
+            isPending={saving}
+          >
+            {isEdit ? 'Save changes' : 'Create environment'}
+          </Button>
+        </>
+      }
+    >
+      <div className="dc-form">
+        <FormError message={submitError} />
+        <TextField value={name} onChange={handleNameChange} autoFocus isRequired>
+          <Label>Name</Label>
+          <Input placeholder="e.g. Preview" />
+        </TextField>
+        <TextField
+          value={slug}
+          onChange={(v) => {
+            setSlugTouched(true)
+            setSlug(toSlug(v))
+          }}
+          isDisabled={isEdit}
+          isInvalid={slugTaken}
+          isRequired
+        >
+          <Label>Slug</Label>
+          <Input className="mono" placeholder="preview" />
+          <Description>
+            {slugTaken
+              ? 'An environment with this slug already exists.'
+              : isEdit
+                ? 'The slug is immutable once created.'
+                : 'Used in URLs and SDK config. Lowercase, no spaces.'}
+          </Description>
+        </TextField>
+        <div className="dc-form-field">
+          <span className="dc-form-label">Protected</span>
+          <div className="env-form-protected">
+            <Switch isSelected={isProtected} onChange={setIsProtected} aria-label="Protected">
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Content>
+            </Switch>
+            <span className="muted">Require confirmation for changes</span>
           </div>
         </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="ghost" onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <span className="spacer" />
-        <Button variant="primary" onClick={() => void handleSubmit()} disabled={disabled}>
-          {isEdit ? 'Save changes' : 'Create environment'}
-        </Button>
-      </Modal.Footer>
-    </Modal>
+      </div>
+    </Dialog>
   )
 }

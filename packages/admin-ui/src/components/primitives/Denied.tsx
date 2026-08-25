@@ -17,5 +17,9 @@ interface DeniedProps {
  */
 export function Denied({ when, reason, children }: DeniedProps) {
   if (!when) return <>{children}</>
-  return <Tip tip={reason}>{children}</Tip>
+  return (
+    <Tip position="left" tip={reason}>
+      {children}
+    </Tip>
+  )
 }

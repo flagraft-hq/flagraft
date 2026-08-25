@@ -257,7 +257,7 @@
 .auth-form .input:focus {
   outline: none;
   border-color: var(--pri);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 .auth-form .err {
   display: flex;

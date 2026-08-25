@@ -35,6 +35,8 @@ export type IconName =
   | 'play'
   | 'user'
   | 'palette'
+  | 'more'
+  | 'logOut'
 
 interface IconProps extends React.SVGAttributes<SVGSVGElement> {
   name: IconName
@@ -61,7 +63,7 @@ export function Icon({ name, size = 16, className = '', ...rest }: IconProps) {
     ...rest,
   }
 
-  const icons: Record<IconName, JSX.Element> = {
+  const icons: Record<IconName, React.JSX.Element> = {
     flag: (
       <>
         <path d="M5 21V4" />
@@ -90,8 +92,9 @@ export function Icon({ name, size = 16, className = '', ...rest }: IconProps) {
     ),
     key: (
       <>
-        <path d="M14 9.5a5 5 0 1 0-5 5L10 16l2 2 1-1 1 1 2-2-1-1 1-1-1-1 1-1-1-1" />
-        <circle cx="14" cy="9.5" r="1.2" fill="currentColor" />
+        <circle cx="7.5" cy="15.5" r="5.5" />
+        <path d="m21 2-9.6 9.6" />
+        <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
       </>
     ),
     history: (
@@ -251,6 +254,20 @@ export function Icon({ name, size = 16, className = '', ...rest }: IconProps) {
     play: (
       <>
         <path d="M6 4v16l14-8z" />
+      </>
+    ),
+    more: (
+      <>
+        <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      </>
+    ),
+    logOut: (
+      <>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
       </>
     ),
     user: (

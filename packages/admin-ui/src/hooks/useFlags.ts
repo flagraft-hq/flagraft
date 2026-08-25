@@ -21,7 +21,14 @@ interface UseFlagsResult {
   flags: Flag[]
   /** Rows matching the filters across every page, for the pager. */
   total: number
+  /** True only for the very first load, when there is nothing to show yet. */
   loading: boolean
+  /**
+   * True while a later request is in flight -- a filter, sort, search or page
+   * change. The previous page stays on screen, so this dims it rather than
+   * replacing it.
+   */
+  refreshing: boolean
   error: string | null
   refetch: () => void
 }
@@ -43,6 +50,9 @@ export function useFlags({
   const [flags, setFlags] = useState<Flag[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  /** Flips once the first response lands; every fetch after that is a refresh. */
+  const settled = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
 
@@ -54,7 +64,8 @@ export function useFlags({
 
   useEffect(() => {
     const id = ++requestId.current
-    setLoading(true)
+    if (settled.current) setRefreshing(true)
+    else setLoading(true)
     setError(null)
     flagsApi
       .list(projectId, {
@@ -70,7 +81,9 @@ export function useFlags({
         if (id !== requestId.current) return
         setFlags(res.data.data)
         setTotal(res.data.total)
+        settled.current = true
         setLoading(false)
+        setRefreshing(false)
       })
       .catch((err: unknown) => {
         if (id !== requestId.current) return
@@ -78,7 +91,9 @@ export function useFlags({
         setError(err instanceof Error ? err.message : 'Failed to load flags')
         setFlags([])
         setTotal(0)
+        settled.current = true
         setLoading(false)
+        setRefreshing(false)
       })
   }, [projectId, search, stateFilter, env, sortField, sortDir, limit, offset, tick])
 
@@ -86,5 +101,5 @@ export function useFlags({
     setTick((t) => t + 1)
   }
 
-  return { flags, total, loading, error, refetch }
+  return { flags, total, loading, refreshing, error, refetch }
 }

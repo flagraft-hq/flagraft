@@ -1,4 +1,64 @@
+@layer theme, base, components, utilities;
+
 @import 'tailwindcss';
+
+/**
+ * HeroUI's overlay stylesheets (modal, popover, tooltip) `@apply` animation
+ * utilities such as `fade-in-0` from this package. Its own barrel entry point
+ * imports it; taking the pieces individually means importing it here instead.
+ */
+@import 'tw-animate-css';
+
+/**
+ * HeroUI ships plain CSS rather than a Tailwind plugin, so it is wired in by
+ * import rather than by plugin.
+ *
+ * Its `@heroui/styles` entry point pulls in every component's CSS at once --
+ * around 36 KB gzipped of rules for components this app does not render. These
+ * four are the pieces needed no matter which components are used.
+ *
+ * Everything here sits inside `@layer`, which is why the hand-written files
+ * further down still win wherever the two overlap.
+ */
+@import '@heroui/styles/base' layer(base);
+@import '@heroui/styles/themes/default';
+@import '@heroui/styles/utilities';
+@import '@heroui/styles/variants';
+
+/**
+ * Per-component HeroUI styles, added as components are adopted rather than all
+ * at once. Keep this list to what the app actually renders.
+ *
+ * These live here rather than being imported from the component files so the
+ * cascade stays readable: everything HeroUI is above, everything ours is below,
+ * and ours wins. An `import './x.css'` inside a `.tsx` would land wherever the
+ * bundler happened to put it.
+ *
+ * Currently rendered by: KeysScreen, FlagsScreen, EnvironmentsScreen, UsersScreen.
+ */
+@import '@heroui/styles/components/button.css' layer(components);
+@import '@heroui/styles/components/checkbox.css' layer(components);
+@import '@heroui/styles/components/chip.css' layer(components);
+@import '@heroui/styles/components/description.css' layer(components);
+@import '@heroui/styles/components/drawer.css' layer(components);
+@import '@heroui/styles/components/dropdown.css' layer(components);
+@import '@heroui/styles/components/field-error.css' layer(components);
+@import '@heroui/styles/components/input.css' layer(components);
+@import '@heroui/styles/components/label.css' layer(components);
+@import '@heroui/styles/components/list-box.css' layer(components);
+@import '@heroui/styles/components/list-box-item.css' layer(components);
+@import '@heroui/styles/components/menu.css' layer(components);
+@import '@heroui/styles/components/menu-item.css' layer(components);
+@import '@heroui/styles/components/modal.css' layer(components);
+@import '@heroui/styles/components/popover.css' layer(components);
+@import '@heroui/styles/components/search-field.css' layer(components);
+@import '@heroui/styles/components/select.css' layer(components);
+@import '@heroui/styles/components/switch.css' layer(components);
+@import '@heroui/styles/components/table.css' layer(components);
+@import '@heroui/styles/components/textarea.css' layer(components);
+@import '@heroui/styles/components/textfield.css' layer(components);
+@import '@heroui/styles/components/tooltip.css' layer(components);
+
 @import './theme.css'; /* Tailwind's theme, mapped onto the design tokens */
 
 /**
@@ -8,14 +68,17 @@
  */
 @import './base.css'; /* design tokens, theme, reset, utilities, Button, Toggle */
 @import './primitives.css'; /* Modal, Checkbox, Tip, Badge, Kbd */
+@import './dc.css'; /* design-comp chrome shared by every HeroUI screen */
 @import './layout.css'; /* app shell grid, TopBar, SideNav */
 @import './flags.css'; /* flags list, rows, state pill, tags, filter/bulk bars, create modal */
 @import './flag-detail.css'; /* flag detail header, meta, env cards, tabs */
-@import './environments.css'; /* environments screen: card grid, stats, env form */
+@import './environments.css'; /* environments screen: endpoint strip, card grid, stats, env form */
 @import './settings.css'; /* project settings screen */
 @import './auth.css'; /* login / auth screens */
 @import './users.css'; /* users screen, detail drawer, invite modal */
 @import './modals.css'; /* SDK snippet modal, edit-flag form */
+@import './loading.css'; /* table skeletons and refresh states */
+@import './error.css'; /* 404 / 500 error pages */
 @import './toast.css'; /* toast notification stack */
 @import './keys.css'; /* API keys screen: table, security note, issue/reveal dialogs */
 @import './tables.css'; /* shared table chrome -- must stay last, see file header */

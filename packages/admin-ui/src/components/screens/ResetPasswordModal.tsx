@@ -1,11 +1,10 @@
 import { useState } from 'react'
+import { Button, Description, Input, Label, TextField } from '@heroui/react'
 import { usersApi } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
-import { Button } from '../primitives/Button'
+import { Dialog } from '../primitives/Dialog'
 import { FormError } from '../primitives/FormError'
-import { Modal } from '../primitives/Modal'
 import { PasswordStrength } from '../primitives/PasswordStrength'
-import { TextField } from '../primitives/TextField'
 
 interface ResetPasswordModalProps {
   user: { id: string; email: string }
@@ -39,8 +38,7 @@ export function ResetPasswordModal({ user, open, onClose }: ResetPasswordModalPr
     onClose()
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit() {
     if (!canSubmit) return
     setError(null)
     setSubmitting(true)
@@ -60,58 +58,58 @@ export function ResetPasswordModal({ user, open, onClose }: ResetPasswordModalPr
   }
 
   return (
-    <Modal open={open} onClose={handleClose} titleId="reset-password-title">
-      <Modal.Header
-        id="reset-password-title"
-        subtitle={
-          <>
-            Set a new password for <span className="mono">{user.email}</span>. They will be signed
-            out everywhere.
-          </>
-        }
-      >
-        Reset password
-      </Modal.Header>
-      <form onSubmit={(e) => void handleSubmit(e)} noValidate>
-        <Modal.Body>
-          <div className="invite-form">
-            <div>
-              <TextField
-                label="New password"
-                type="password"
-                value={password}
-                onChange={(v) => {
-                  setPassword(v)
-                  if (error) setError(null)
-                }}
-                placeholder="At least 8 characters"
-                autoComplete="new-password"
-                autoFocus
-              />
-              <PasswordStrength password={password} />
-            </div>
-            <TextField
-              label="Confirm password"
-              type="password"
-              value={confirm}
-              onChange={setConfirm}
-              placeholder="Re-enter password"
-              autoComplete="new-password"
-              error={mismatch ? "Passwords don't match" : undefined}
-            />
-            <FormError message={error} />
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <span style={{ flex: 1 }} />
-          <Button variant="ghost" type="button" onClick={handleClose} disabled={submitting}>
+    <Dialog
+      className="users-dialog"
+      open={open}
+      onClose={handleClose}
+      title="Reset password"
+      subtitle={`Set a new password for ${user.email}. They will be signed out everywhere.`}
+      footer={
+        <>
+          <span className="spacer" />
+          <Button variant="ghost" onClick={handleClose} isDisabled={submitting}>
             Cancel
           </Button>
-          <Button variant="primary" type="submit" disabled={!canSubmit}>
+          <Button
+            variant="primary"
+            onClick={() => void handleSubmit()}
+            isDisabled={!canSubmit}
+            isPending={submitting}
+          >
             {submitting ? 'Resetting…' : 'Reset password'}
           </Button>
-        </Modal.Footer>
-      </form>
-    </Modal>
+        </>
+      }
+    >
+      {/** Enter submits, the way the old <form> did. */}
+      <div
+        className="dc-form"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void handleSubmit()
+        }}
+      >
+        <div>
+          <TextField
+            value={password}
+            onChange={(v) => {
+              setPassword(v)
+              if (error) setError(null)
+            }}
+            type="password"
+            autoFocus
+          >
+            <Label>New password</Label>
+            <Input placeholder="At least 8 characters" autoComplete="new-password" />
+          </TextField>
+          <PasswordStrength password={password} />
+        </div>
+        <TextField value={confirm} onChange={setConfirm} type="password" isInvalid={mismatch}>
+          <Label>Confirm password</Label>
+          <Input placeholder="Re-enter password" autoComplete="new-password" />
+          {mismatch ? <Description>Passwords don&apos;t match</Description> : null}
+        </TextField>
+        <FormError message={error} />
+      </div>
+    </Dialog>
   )
 }

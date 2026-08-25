@@ -44,13 +44,17 @@ export function SideNav({ current, onNav }: SideNavProps) {
   const { user, logout } = useAuth()
 
   /**
-   * Only owners and admins can load the Users screen, so for everyone else
-   * the link would go nowhere but an error state.
+   * Nav visibility follows what a role can *read*, not what it can change.
+   * Environments, project settings and the member list are all worth reading
+   * on any role, so they stay -- the screens disable their own controls.
+   * API keys are the exception: without admin there is nothing on that screen
+   * but masked rows and two buttons that cannot be pressed, so it is hidden
+   * rather than shown as a dead end. The route is guarded to match.
    */
-  const canSeeUsers = user?.role === USER_ROLES.OWNER || user?.role === USER_ROLES.ADMIN
+  const isWorkspaceAdmin = user?.role === USER_ROLES.OWNER || user?.role === USER_ROLES.ADMIN
   const groups = NAV.map((g) => ({
     ...g,
-    items: g.items.filter((it) => it.id !== 'users' || canSeeUsers),
+    items: g.items.filter((it) => it.id !== 'keys' || isWorkspaceAdmin),
   }))
 
   return (
@@ -76,10 +80,10 @@ export function SideNav({ current, onNav }: SideNavProps) {
           <div className="sidenav-user-avatar">{user.name.slice(0, 2).toUpperCase()}</div>
           <div className="sidenav-user-info">
             <div className="sidenav-user-name">{user.name}</div>
-            <div className="sidenav-user-role mono">{user.role}</div>
+            <div className="sidenav-user-role capitalize">{user.role}</div>
           </div>
           <button className="icon-btn" onClick={() => void logout()} aria-label="Sign out">
-            <Icon name="arrowRight" size={14} />
+            <Icon name="logOut" size={16} />
           </button>
         </div>
       )}

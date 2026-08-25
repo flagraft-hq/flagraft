@@ -284,6 +284,7 @@ function MemberRow({
         <select
           className="select-input role-select"
           value={member.role}
+          data-role={member.role}
           disabled={locked}
           onChange={(e) => onChangeRole(e.target.value as UserRole)}
           aria-label={`Role for ${member.name}`}

@@ -15,19 +15,25 @@ vi.mock('../../../contexts/AuthContext', () => ({
 }))
 
 describe('SideNav role gating', () => {
-  it.each(['owner', 'admin'])('shows the Users link to an %s', (role) => {
+  it.each(['owner', 'admin'])('shows the API keys link to an %s', (role) => {
+    state.role = role
+    render(<SideNav current="flags" onNav={vi.fn()} />)
+    expect(screen.getByText('API keys')).toBeInTheDocument()
+  })
+
+  it.each(['editor', 'viewer'])('hides the API keys link from an %s', (role) => {
+    state.role = role
+    render(<SideNav current="flags" onNav={vi.fn()} />)
+    expect(screen.queryByText('API keys')).not.toBeInTheDocument()
+  })
+
+  /** Nav visibility follows read access, and every role may read these. */
+  it.each(['owner', 'admin', 'editor', 'viewer'])('shows the read-only modules to a %s', (role) => {
     state.role = role
     render(<SideNav current="flags" onNav={vi.fn()} />)
     expect(screen.getByText('Users')).toBeInTheDocument()
-  })
-
-  it.each(['editor', 'viewer'])('hides the Users link from an %s', (role) => {
-    state.role = role
-    render(<SideNav current="flags" onNav={vi.fn()} />)
-    expect(screen.queryByText('Users')).not.toBeInTheDocument()
-    /** Everything else in that group still shows. */
     expect(screen.getByText('Environments')).toBeInTheDocument()
-    expect(screen.getByText('API keys')).toBeInTheDocument()
     expect(screen.getByText('Project settings')).toBeInTheDocument()
+    expect(screen.getByText('Flags')).toBeInTheDocument()
   })
 })

@@ -55,10 +55,12 @@ beforeEach(() => {
 describe('EnvStrategies', () => {
   it('shows the on-for-everyone state when there are no strategies', async () => {
     renderIt()
-    expect(await screen.findByText(/on for everyone while enabled/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/No targeting rules — default value applies/i),
+    ).toBeInTheDocument()
   })
 
-  it('renders field, operator, and each value distinctly for an existing strategy', async () => {
+  it('renders a summary of rules and fields for existing strategies', async () => {
     mockApi.list.mockResolvedValue({
       data: [
         {
@@ -69,20 +71,16 @@ describe('EnvStrategies', () => {
       ],
     })
     renderIt()
-    expect(await screen.findByText('tenant')).toBeInTheDocument()
-    expect(screen.getByText('in')).toBeInTheDocument()
-    // each value is its own chip
-    expect(screen.getByText('phyg')).toBeInTheDocument()
-    expect(screen.getByText('hell')).toBeInTheDocument()
+    expect(await screen.findByText(/1 targeting rule · tenant/i)).toBeInTheDocument()
   })
 
   it('edit flow: add a strategy + condition, save, and refetch', async () => {
     const user = userEvent.setup()
     mockApi.replace.mockResolvedValue({ data: [] })
     renderIt()
-    await screen.findByText(/on for everyone/i)
+    await screen.findByText(/No targeting rules/i)
 
-    await user.click(screen.getByRole('button', { name: /edit targeting/i }))
+    await user.click(screen.getByRole('button', { name: /add rule/i }))
     const dialog = screen.getByRole('dialog')
 
     await user.click(within(dialog).getByRole('button', { name: /add strategy/i }))
@@ -101,9 +99,9 @@ describe('EnvStrategies', () => {
   it('shows an inline error when a constraint is incomplete', async () => {
     const user = userEvent.setup()
     renderIt()
-    await screen.findByText(/on for everyone/i)
+    await screen.findByText(/No targeting rules/i)
 
-    await user.click(screen.getByRole('button', { name: /edit targeting/i }))
+    await user.click(screen.getByRole('button', { name: /add rule/i }))
     const dialog = screen.getByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: /add strategy/i }))
     await user.click(within(dialog).getByRole('button', { name: /add condition/i }))

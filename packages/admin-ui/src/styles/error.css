@@ -1,0 +1,81 @@
+/* ============================================================
+   Error pages -- 404 (NotFoundScreen) and 500 (ErrorBoundary)
+   ============================================================ */
+.error-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--s-8) var(--s-6);
+  background: var(--bg-app);
+}
+
+.error-page-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 30rem;
+}
+
+.error-page-code {
+  font-family: var(--font-mono);
+  font-size: 3.25rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(150deg, var(--pri) 0%, var(--pri-hover) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  user-select: none;
+  margin: var(--s-5) 0 var(--s-3);
+}
+
+.error-page-icon {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: var(--pri-soft);
+  border: 1px solid var(--pri-soft-border);
+  color: var(--pri-fg);
+}
+
+.error-page-title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0 0 var(--s-2);
+}
+
+.error-page-message {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-3);
+  margin: 0;
+}
+
+.error-page-detail {
+  width: 100%;
+  margin: var(--s-4) 0 0;
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.error-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-2);
+  margin-top: var(--s-6);
+}

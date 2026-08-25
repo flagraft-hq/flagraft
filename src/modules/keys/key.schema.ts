@@ -27,7 +27,7 @@ export type ListKeysQuery = z.infer<typeof listKeysQuerySchema>
 export const createKeySchema = z.object({
   type: z.enum([API_KEY_TYPES.CLIENT, API_KEY_TYPES.ADMIN]),
   environmentId: z.string().uuid().optional(),
-  description: z.string().optional(),
+  description: z.string().trim().min(1, 'Label is required'),
 })
 
 export type CreateKeyInput = z.infer<typeof createKeySchema>

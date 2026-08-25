@@ -1,15 +1,29 @@
 /* ============================================================
-   Users directory
+   Users directory — on HeroUI
+   ============================================================
+
+   The screen carries `dc`, so the comp's tokens, page header, buttons,
+   toolbar, table card and dialog chrome all come from dc.css. What is left
+   here is what only this screen has: the stat cards, the status chip group,
+   the person/role/project cells, the detail drawer and the invite dialogs.
    ============================================================ */
+
 .users-screen {
-  padding: 1.5rem;
+  padding: var(--s-6);
 }
+
+.users-loading {
+  color: var(--text-3);
+  font-size: 0.875rem;
+}
+
+/* ── Stat cards ──────────────────────────────────────────────────────────── */
 
 .users-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
 }
 @media (max-width: 1100px) {
   .users-stats {
@@ -18,59 +32,42 @@
 }
 
 .users-stat {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg, 0.75rem);
-  padding: 0.875rem 1rem;
   display: grid;
-  grid-template-columns: 2rem 1fr;
+  grid-template-columns: 2.25rem 1fr;
   gap: 0.75rem;
   align-items: center;
-  box-shadow: var(--shadow-1);
+  padding: 0.875rem 1rem;
+  background: var(--bg-elev);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 4px);
+  box-shadow: var(--dc-shadow);
   position: relative;
 }
+/** A pending invite is the one stat that wants attention, so it gets an edge. */
 .users-stat.warn {
-  border-color: var(--acc-soft-border);
+  border-color: color-mix(in srgb, var(--acc) 35%, var(--border));
 }
-.users-stat.warn::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.75rem;
-  bottom: 0.75rem;
-  width: 0.1875rem;
-  background: var(--acc);
-  border-radius: 0 0.1875rem 0.1875rem 0;
-}
+
 .users-stat-ic {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.5rem;
-  background: var(--pri-soft);
-  border: 1px solid var(--pri-soft-border);
-  color: var(--pri-fg);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
   display: grid;
   place-items: center;
+  background: color-mix(in srgb, var(--pri) 12%, transparent);
+  color: var(--pri);
 }
 .users-stat[data-tone='amber'] .users-stat-ic {
-  background: var(--acc-soft);
-  border-color: var(--acc-soft-border);
-  color: var(--acc-fg);
+  background: color-mix(in srgb, var(--acc) 15%, transparent);
+  color: var(--acc);
 }
 .users-stat[data-tone='slate'] .users-stat-ic {
   background: var(--bg-subtle);
-  border-color: var(--border);
   color: var(--text-3);
 }
+
 .users-stat-body {
   min-width: 0;
-}
-.users-stat-lbl {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-4);
-  font-weight: 600;
 }
 .users-stat-val {
   font-size: 1.375rem;
@@ -78,305 +75,218 @@
   letter-spacing: -0.02em;
   color: var(--text-1);
   line-height: 1.15;
+}
+.users-stat-lbl {
+  font-size: 0.71875rem;
+  color: var(--text-2);
   margin-top: 0.125rem;
+  line-height: 1.35;
 }
 .users-stat-sub {
-  font-size: 0.7188rem;
   color: var(--text-3);
-  margin-top: 0.125rem;
 }
 
-/* Toolbar */
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+
+/** The chips and the role select share the row with the search field. */
 .users-toolbar {
-  display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border);
-  background: var(--bg-elev);
-  border-radius: var(--r-lg, 0.75rem);
-  box-shadow: var(--shadow-1);
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
 }
-.users-search {
-  position: relative;
+/** The comp's placeholder is long, so this search field is wider than the norm. */
+.users-toolbar .search-field {
+  width: 300px;
+}
+.users-toolbar-spacer {
   flex: 1;
-  min-width: 15rem;
-  max-width: 22.5rem;
-}
-.users-search .ic {
-  position: absolute;
-  left: 0.625rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-3);
-}
-.users-search input {
-  width: 100%;
-  height: 2rem;
-  padding: 0 1.875rem 0 2rem;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md, 0.5rem);
-  font-size: 0.8125rem;
-  color: var(--text-1);
-}
-.users-search input:focus {
-  outline: none;
-  background: var(--bg-elev);
-  box-shadow: var(--focus);
-  border-color: var(--pri);
-}
-.users-search-clear {
-  position: absolute;
-  right: 0.375rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-.users-search-clear:hover {
-  background: var(--bg-hover);
-  color: var(--text-1);
 }
 
-/* Chip group */
-.chip-group {
-  display: inline-flex;
-  gap: 0.25rem;
-  padding: 0.125rem;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  background: transparent;
-  border: none;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-2);
-  cursor: pointer;
-}
-.chip:hover {
-  color: var(--text-1);
-}
-.chip[aria-pressed='true'] {
-  background: var(--bg-elev);
-  color: var(--text-1);
-  box-shadow: var(--shadow-1);
-}
-.chip-n {
-  font-size: 0.6875rem;
-  color: var(--text-4);
-  font-family: var(--font-mono);
-  font-weight: 600;
-}
+/* ── Table ───────────────────────────────────────────────────────────────── */
 
-/* Table */
-.users-table-wrap {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-1);
-  overflow: hidden;
+/**
+ * Fixed tracks reproduce the comp's column widths; `.dc-card` in dc.css
+ * supplies the card, header band, row rules and hover.
+ */
+.users-card .table__content {
+  table-layout: fixed;
 }
-.users-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.8125rem;
+.users-card .cell-check {
+  width: 44px;
 }
-.users-table thead th {
-  text-align: left;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-4);
-  padding: 0.625rem 0.875rem;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border);
+.users-card .cell-role {
+  width: 140px;
+}
+.users-card .cell-projects {
+  width: 27%;
+}
+.users-card .cell-last {
+  width: 132px;
+}
+/** Two-word column labels must not stack. */
+.users-card .table__header .table__column {
   white-space: nowrap;
 }
-.users-table thead th.col-check {
-  width: 2.5rem;
-  padding-left: 0.875rem;
-  padding-right: 0;
-}
-.users-table tbody td {
-  padding: 0.75rem 0.875rem;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-.users-table tbody td.col-check {
-  width: 2.5rem;
-  padding-right: 0;
-}
-.users-table tbody tr.users-row {
-  cursor: pointer;
-  transition: background 0.06s;
-}
-.users-table tbody tr.users-row:hover {
-  background: var(--bg-hover);
-}
-.users-table tbody tr.users-row.selected {
-  background: var(--pri-soft);
-}
-.users-table tbody tr.users-row.selected:hover {
-  background: var(--pri-soft);
-}
-.users-table tbody tr.users-row[data-active='true'] {
-  background: var(--pri-soft);
-  box-shadow: inset 3px 0 0 var(--pri);
-}
-.users-table tbody tr.users-row.invited {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.04), transparent 30%);
-}
-.users-table tbody tr.users-row.suspended .users-name,
-.users-table tbody tr.users-row.suspended .users-email {
-  opacity: 0.6;
-}
-.users-table tbody tr:last-child td {
-  border-bottom: none;
+.users-card .cell-actions {
+  width: 56px;
+  text-align: right;
 }
 
+/** Rows open the drawer on click, so the whole row reads as a target. */
+.users-card .users-row {
+  cursor: pointer;
+}
+.users-card .users-row[data-active='true'] .table__cell {
+  background: color-mix(in srgb, var(--pri) 8%, transparent);
+}
+.users-card .users-row.suspended .users-name,
+.users-card .users-row.suspended .users-email {
+  opacity: 0.6;
+}
+
+.users-person {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+.users-person-text {
+  min-width: 0;
+}
 .users-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 600;
   font-size: 0.8438rem;
   color: var(--text-1);
   letter-spacing: -0.005em;
-  display: flex;
-  align-items: center;
 }
 .users-email {
   font-size: 0.75rem;
   color: var(--text-3);
   margin-top: 0.125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.users-projects {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .users-last {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-3);
 }
 .users-last.never {
   color: var(--text-4);
 }
+.users-card .cell-actions .dc-icon-btn {
+  margin-left: auto;
+}
 
-.users-projects {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-}
-.proj-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.125rem 0.5rem;
+/* ── Role and status chips ───────────────────────────────────────────────── */
+
+/**
+ * HeroUI's Chip wraps its text in `.chip__label`, so the padding is reset
+ * there rather than only on the chip.
+ */
+.users-role,
+.users-tag {
+  height: 22px;
+  padding: 0 10px;
   border-radius: 999px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-size: 0.7188rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.proj-more {
-  font-size: 0.6875rem;
-  color: var(--text-4);
-  font-family: var(--font-mono);
+  font-size: 0.75rem;
   font-weight: 600;
-}
-
-.users-table-foot {
-  display: flex;
-  align-items: center;
-  padding: 0.625rem 0.875rem;
-  background: var(--bg-subtle);
-  border-top: 1px solid var(--border);
-}
-
-/* Sort head */
-.sort-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  padding: 0;
-  text-transform: inherit;
-  letter-spacing: inherit;
-}
-.sort-arrow {
-  opacity: 0.4;
-}
-.sort-arrow.on {
-  opacity: 1;
-  color: var(--pri-fg);
-}
-
-/* Tone badges (workspace user roles + statuses) */
-.badge-tone-teal,
-.badge-tone-amber,
-.badge-tone-red,
-.badge-tone-slate,
-.badge-tone-violet {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.125rem 0.4375rem;
-  border-radius: 999px;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0;
+  white-space: nowrap;
   border: 1px solid transparent;
 }
-.badge-tone-teal {
-  background: var(--pri-soft);
-  border-color: var(--pri-soft-border);
+.users-role .chip__label,
+.users-tag .chip__label {
+  padding: 0;
+}
+
+.users-role--owner {
+  background-color: var(--danger-soft);
+  color: var(--danger-fg);
+  border-color: var(--danger-soft-border);
+}
+.theme-dark .users-role--owner {
+  /* Let variables handle dark mode natively if they do, but we can keep it simple. */
+  background-color: var(--danger-soft);
+  color: var(--danger-fg);
+  border-color: var(--danger-soft-border);
+}
+
+.users-role--admin {
+  background-color: var(--pri-soft);
   color: var(--pri-fg);
+  border-color: var(--pri-soft-border);
 }
-.badge-tone-amber {
-  background: var(--acc-soft);
-  border-color: var(--acc-soft-border);
+.theme-dark .users-role--admin {
+  background-color: var(--pri-soft);
+  color: var(--pri-fg);
+  border-color: var(--pri-soft-border);
+}
+
+.users-role--editor {
+  background-color: var(--acc-soft);
   color: var(--acc-fg);
+  border-color: var(--acc-soft-border);
 }
-.badge-tone-red {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #b91c1c;
+.theme-dark .users-role--editor {
+  background-color: var(--acc-soft);
+  color: var(--acc-fg);
+  border-color: var(--acc-soft-border);
 }
-.theme-dark .badge-tone-red {
-  color: #fca5a5;
-}
-.badge-tone-slate {
-  background: var(--bg-subtle);
+
+.users-role--viewer {
+  background-color: var(--bg-subtle);
+  color: var(--text-2);
   border-color: var(--border);
+}
+
+.users-tag--slate {
+  background: var(--bg-subtle);
   color: var(--text-3);
 }
-.badge-tone-violet {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.3);
-  color: #7c3aed;
+.users-tag--amber {
+  background: color-mix(in srgb, var(--acc) 15%, transparent);
+  color: var(--acc);
+}
+.users-tag--red {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+.users-tag--teal {
+  background: color-mix(in srgb, var(--pri) 12%, transparent);
+  color: var(--pri);
+}
+
+/** Destructive entries in the row's "…" menu. */
+.users-menu-danger {
+  color: var(--danger);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+
+.users-empty h3 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.9375rem;
+  color: var(--text-1);
+}
+.users-empty p {
+  margin: 0 0 0.75rem;
+}
+.users-empty-icon {
+  color: var(--text-3);
 }
 
 /* Settings link inside subtitle */
 .users-settings-link {
-  color: var(--pri-fg);
+  color: var(--pri);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -384,91 +294,90 @@
   color: var(--pri);
 }
 
-/* Dot prefix inside role badges */
-.role-dot {
-  display: inline-block;
-  width: 0.375rem;
-  height: 0.375rem;
-  border-radius: 999px;
-  background: currentColor;
-  flex-shrink: 0;
-}
+/* ── Avatars ─────────────────────────────────────────────────────────────── */
 
-/* Avatar (small + large) */
 .avatar {
   display: inline-grid;
   place-items: center;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: #fff;
-  background: var(--text-3);
-  border-radius: 0.5rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--teal-100);
+  color: var(--teal-700);
+}
+.theme-dark .avatar {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal-300);
 }
 .avatar.sm {
   width: 2rem;
   height: 2rem;
   font-size: 0.75rem;
-  border-radius: 0.5625rem;
 }
 .avatar.lg {
   width: 3.5rem;
   height: 3.5rem;
   font-size: 1.0625rem;
-  border-radius: 0.875rem;
-}
-.avatar.color-teal {
-  background: linear-gradient(135deg, #2dd4bf, #0d9488);
-}
-.avatar.color-amber {
-  background: linear-gradient(135deg, #fbbf24, #d97706);
-}
-.avatar.color-violet {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-}
-.avatar.color-slate {
-  background: linear-gradient(135deg, #94a3b8, #475569);
 }
 
 .proj-avatar {
   display: inline-grid;
   place-items: center;
-  background: linear-gradient(135deg, #2dd4bf, #0d9488);
-  color: #052321;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.6875rem;
+  background: var(--teal-100);
+  color: var(--teal-700);
   font-weight: 700;
 }
+.theme-dark .proj-avatar {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal-300);
+}
+.proj-avatar-sm {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 0.375rem;
+  font-size: 0.5938rem;
+}
 
-/* Drawer */
-.drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.35);
-  backdrop-filter: blur(2px);
-  z-index: 90;
-  display: flex;
-  justify-content: flex-end;
-  animation: fadein 0.12s ease;
-}
-.theme-dark .drawer-backdrop {
-  background: rgba(2, 6, 23, 0.6);
-}
+/* ── Detail drawer ───────────────────────────────────────────────────────── */
+
+/**
+ * HeroUI's Drawer supplies the overlay, the slide-in and the focus trap; this
+ * only sizes it and dresses the three bands inside.
+ */
 .user-drawer {
   width: 100%;
   max-width: 30rem;
-  height: 100%;
   background: var(--bg-elev);
-  border-left: 1px solid var(--border);
-  box-shadow: -16px 0 40px rgba(15, 23, 42, 0.18);
+  border-left: 2px solid var(--border);
+  color: var(--text-1);
+  display: flex;
+  flex-direction: column;
+}
+.user-drawer > [role='dialog'],
+.user-drawer .drawer__dialog,
+.user-drawer [data-slot='base'] {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  animation: drawerIn 0.18s ease;
-  overflow: hidden;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
 }
 .user-drawer-head {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: flex-end;
   padding: 0.625rem 0.875rem;
   border-bottom: 1px solid var(--border);
+}
+.user-drawer-body {
+  padding: 0;
+  overflow: auto;
+  min-height: 0;
 }
 .user-drawer-hero {
   display: flex;
@@ -476,9 +385,13 @@
   gap: 1rem;
   padding: 1.125rem 1.375rem;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-muted);
+  background: var(--bg-subtle);
 }
-.user-drawer-hero h2 {
+.user-drawer-ident {
+  flex: 1;
+  min-width: 0;
+}
+.user-drawer-name {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
@@ -489,22 +402,25 @@
   color: var(--text-3);
   margin-top: 0.125rem;
 }
-.user-drawer-body {
-  padding: 1rem 1.375rem 1.375rem;
-  overflow: auto;
+.user-drawer-tags {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  margin-top: 0.625rem;
 }
+
 .user-section {
-  margin-bottom: 1.375rem;
+  padding: 1rem 1.375rem 0;
 }
 .user-section:last-child {
-  margin-bottom: 0;
+  padding-bottom: 1.375rem;
 }
 .user-section h3 {
   margin: 0 0 0.625rem;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--text-4);
+  color: var(--text-3);
   font-weight: 600;
 }
 
@@ -539,17 +455,28 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md, 0.5rem);
-  background: var(--bg-muted);
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-subtle);
+}
+.user-project-text {
+  flex: 1;
+  min-width: 0;
+}
+.user-project-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.user-project-role {
+  font-size: 0.6875rem;
 }
 .user-add-project {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   padding: 0.625rem 0.75rem;
-  border: 1px dashed var(--border-strong, var(--border));
-  border-radius: var(--r-md, 0.5rem);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--dc-r);
   background: transparent;
   color: var(--text-3);
   font-size: 0.7812rem;
@@ -557,22 +484,24 @@
   cursor: pointer;
 }
 .user-add-project:hover {
-  background: var(--pri-soft);
-  border-color: var(--pri-soft-border);
-  color: var(--pri-fg);
+  border-color: color-mix(in srgb, var(--pri) 40%, transparent);
+  color: var(--pri);
 }
 .user-add-project-picker {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  border: 1px dashed var(--border-strong, var(--border));
-  border-radius: var(--r-md, 0.5rem);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--dc-r);
 }
 .user-add-project-picker .select {
   flex: 1;
   min-width: 0;
-  height: 2.125rem;
+}
+.user-activity-empty {
+  font-size: 0.7812rem;
+  margin: 0;
 }
 
 .user-drawer-foot {
@@ -581,75 +510,33 @@
   gap: 0.5rem;
   padding: 0.875rem 1.375rem;
   border-top: 1px solid var(--border);
-  background: var(--bg-muted);
+  background: var(--bg-subtle);
+}
+.user-drawer-foot .spacer {
+  flex: 1;
 }
 
-/* User activity feed in drawer */
-.user-activity {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md, 0.5rem);
-  overflow: hidden;
-}
-.user-activity li {
-  display: grid;
-  grid-template-columns: 6.25rem 1fr;
-  gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.7812rem;
-  color: var(--text-2);
-}
-.user-activity li:last-child {
-  border-bottom: none;
-}
-.user-activity .when {
-  color: var(--text-4);
-  font-size: 0.7188rem;
-}
+/* ── Invite dialogs ──────────────────────────────────────────────────────── */
 
-/* Form layout */
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-.field {
-  display: flex;
-  flex-direction: column;
-}
 .form-msg {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.625rem 0.75rem;
-  border-radius: var(--r-md, 0.5rem);
+  border-radius: var(--dc-r);
   font-size: 0.7812rem;
 }
 .form-msg.info {
-  background: var(--pri-soft);
-  border: 1px solid var(--pri-soft-border);
-  color: var(--pri-fg);
+  background: color-mix(in srgb, var(--pri) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pri) 25%, transparent);
+  color: var(--pri);
 }
 
-/* Invite modal */
-.invite-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.125rem;
-}
-.invite-form .text-field-textarea {
-  resize: vertical;
-  min-height: 4.75rem;
-  line-height: 1.5;
-}
 .invite-count {
   margin-left: 0.5rem;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--text-4);
+  color: var(--text-3);
   font-family: var(--font-mono);
 }
 .invite-chips {
@@ -671,12 +558,9 @@
   font-family: var(--font-mono);
 }
 .invite-chip.invalid {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #b91c1c;
-}
-.theme-dark .invite-chip.invalid {
-  color: #fca5a5;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger);
 }
 .invite-projects {
   display: flex;
@@ -692,8 +576,8 @@
   gap: 0.625rem;
 }
 .invite-result {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md, 0.5rem);
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
   padding: 0.625rem 0.75rem;
   background: var(--bg-subtle);
 }
@@ -719,14 +603,12 @@
   font-weight: 500;
 }
 .invite-result-badge.ok {
-  background: var(--pri-soft);
-  border: 1px solid var(--pri-soft-border);
-  color: var(--pri-fg);
+  background: color-mix(in srgb, var(--pri) 12%, transparent);
+  color: var(--pri);
 }
 .invite-result-badge.manual {
-  background: var(--acc-soft);
-  border: 1px solid var(--acc-soft-border);
-  color: var(--acc-fg);
+  background: color-mix(in srgb, var(--acc) 15%, transparent);
+  color: var(--acc);
 }
 .invite-result-link {
   display: flex;
@@ -743,7 +625,7 @@
   color: var(--text-3);
   background: var(--bg-elev);
   border: 1px solid var(--border);
-  border-radius: var(--r-md, 0.5rem);
+  border-radius: var(--dc-r);
   padding: 0.375rem 0.625rem;
 }
 .invite-proj-chip {
@@ -752,7 +634,7 @@
   gap: 0.5rem;
   padding: 0.375rem 0.625rem 0.375rem 0.375rem;
   background: var(--bg-subtle);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 999px;
   font-size: 0.7812rem;
   font-weight: 500;
@@ -760,16 +642,17 @@
   cursor: pointer;
 }
 .invite-proj-chip:hover {
-  background: var(--bg-hover);
   color: var(--text-1);
+  border-color: var(--border-strong);
 }
 .invite-proj-chip[aria-pressed='true'] {
-  background: var(--pri-soft);
-  border-color: var(--pri-soft-border);
-  color: var(--pri-fg);
+  background: color-mix(in srgb, var(--pri) 10%, transparent);
+  border-color: color-mix(in srgb, var(--pri) 35%, transparent);
+  color: var(--pri);
 }
 
-/* Bulk action bar — floating pill, appears when rows are selected */
+/* ── Bulk action bar — floating pill, appears when rows are selected ─────── */
+
 .bulk-bar {
   position: fixed;
   bottom: 1.5rem;
@@ -786,6 +669,28 @@
   box-shadow: var(--shadow-3);
   animation: bulkup 0.18s ease;
 }
+/**
+ * The bar floats outside `.dc-toolbar`, so HeroUI's select triggers inside it
+ * get no sizing from there and would wrap their placeholder onto two lines.
+ */
+.bulk-bar .select__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  box-shadow: none;
+}
+.bulk-bar .select__value {
+  white-space: nowrap;
+}
+
 .bulk-count {
   font-size: 0.8125rem;
   color: var(--text-2);
@@ -825,25 +730,6 @@
   color: var(--text-1);
 }
 
-/* Keyframes */
-@keyframes drawerIn {
-  from {
-    transform: translateX(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-@keyframes fadein {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 @keyframes bulkup {
   from {
     transform: translateX(-50%) translateY(16px);

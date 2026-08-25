@@ -1,5 +1,6 @@
-import { Icon } from '../primitives/Icon'
+import { SearchField } from '@heroui/react'
 import { Kbd } from '../primitives/Kbd'
+import { Icon } from '../primitives/Icon'
 import type { StateFilter } from '../../lib/types'
 
 interface FilterBarProps {
@@ -12,9 +13,10 @@ interface FilterBarProps {
   onClearAll: () => void
 }
 
-const STATE_OPTIONS: { value: Exclude<StateFilter, null>; label: string }[] = [
-  { value: 'on', label: 'on' },
-  { value: 'off', label: 'off' },
+const STATE_OPTIONS: { value: StateFilter; label: string }[] = [
+  { value: null, label: 'All' },
+  { value: 'on', label: 'Enabled' },
+  { value: 'off', label: 'Disabled' },
 ]
 
 export function FilterBar({
@@ -28,29 +30,32 @@ export function FilterBar({
   const anyFilters = search.trim() !== '' || stateFilter !== null
 
   return (
-    <div className="filters-bar">
-      <div className="search-input">
-        <Icon name="search" size={14} className="search-ico" />
-        <input
-          className="filter-search"
-          placeholder="Search by name, key, description…"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-        <span className="kbd-hint">
-          <Kbd keys={['/']} />
-        </span>
-      </div>
+    <div className="filters-bar dc-toolbar">
+      <SearchField
+        aria-label="Search flags"
+        value={search}
+        onChange={onSearchChange}
+        className="search-pill"
+      >
+        <SearchField.Group>
+          <SearchField.SearchIcon />
+          <SearchField.Input placeholder="Filter by name or key..." />
+          <span className="kbd-hint">
+            <Kbd keys={['/']} />
+          </span>
+        </SearchField.Group>
+      </SearchField>
 
-      <div className="chip-group" role="group" aria-label={`State filter for ${envName}`}>
+      <div className="dc-chip-group" role="group" aria-label={`State filter for ${envName}`}>
         {STATE_OPTIONS.map(({ value, label }) => (
           <button
-            key={value}
-            className="chip"
+            key={value ?? 'all'}
+            type="button"
+            className="dc-chip"
             aria-pressed={stateFilter === value}
-            onClick={() => onStateFilterChange(stateFilter === value ? null : value)}
+            onClick={() => onStateFilterChange(value)}
           >
-            {label} in {envName}
+            {label}
           </button>
         ))}
       </div>
@@ -58,7 +63,7 @@ export function FilterBar({
       <span className="filters-spacer" />
 
       {anyFilters && (
-        <button className="btn ghost sm filters-clear" onClick={onClearAll}>
+        <button type="button" className="filters-clear" onClick={onClearAll}>
           Clear all <Icon name="x" size={11} />
         </button>
       )}

@@ -1,157 +1,263 @@
-/* StatePill */
-/* ===== Flags list — grid layout (redesigned V2) ===== */
-/* Shared grid template applied to the header row and every flag row. */
-.flags-row {
-  display: grid;
-  grid-template-columns: 2.25rem minmax(13.75rem, 1.6fr) 9.375rem 10.5rem 10.5rem;
-  align-items: center;
-  gap: var(--s-3);
-  padding: 0 var(--s-4);
-  min-height: 3.75rem;
-  background: var(--bg-elev);
-  border-bottom: 1px solid var(--border);
-}
-.flags-row.flags-head {
-  min-height: 2.375rem;
-  background: var(--bg-subtle);
-}
-.flags-row.body {
-  transition: background 0.1s;
-}
-.flags-row.body:hover {
-  background: var(--bg-hover);
-}
-.flags-row[data-selected] {
-  background: var(--pri-soft);
+/**
+ * Flags list screen, drawn to the HeroUI design comp.
+ *
+ * Everything the comp shares with the other converted screens -- tokens,
+ * buttons, toolbar controls, table card, dialog chrome -- lives in `dc.css`
+ * behind a `dc` class. This file holds only what is specific to flags.
+ *
+ * `.flags-dialog` appears alongside `.flags-screen` because modals render in a
+ * portal at the end of <body>, outside the screen element.
+ */
+
+.flags-screen {
+  padding: var(--s-6);
+  color: var(--text-1);
 }
 
-.flags-head .env-label {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
+.flags-empty-project,
+.flags-loading {
+  padding: var(--s-6);
   color: var(--text-3);
+  font-size: 0.75rem;
+}
+
+/* ── Filter bar ──────────────────────────────────────────────────────────── */
+
+/** Extends `.dc-toolbar`: same bare row, plus the state chips and clear-all. */
+.filters-bar .search-field {
+  width: 320px;
+}
+.filters-bar .search-pill [data-slot='input-wrapper'],
+.filters-bar .search-pill .react-aria-SearchField,
+.filters-bar .search-pill [class*='group'],
+.filters-bar .search-pill {
+  border-radius: 999px !important;
+}
+.filters-bar .kbd-hint {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--text-3);
+}
+
+.filters-spacer {
+  flex: 1;
+  min-width: 0;
+}
+.filters-clear {
   display: inline-flex;
   align-items: center;
-  gap: 0.3125rem;
-}
-.flags-head .head-label {
-  font-size: 0.6875rem;
+  gap: 5px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--dc-r);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.8125rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-4);
+  cursor: pointer;
 }
-.flags-head .cell-edited {
-  justify-content: flex-end;
+.filters-clear:hover {
+  background: color-mix(in srgb, var(--text-3) 14%, transparent);
+  color: var(--text-1);
+}
+
+/* ── Inline toggle error ─────────────────────────────────────────────────── */
+
+.flags-toggle-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: color-mix(in srgb, var(--danger) 9%, var(--bg-elev));
+  border: 2px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: var(--dc-r);
+  color: var(--danger);
+  font-size: 0.8125rem;
+}
+.flags-toggle-error button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1rem;
+  padding: 0 var(--s-1);
+}
+
+/* ── Table column widths ─────────────────────────────────────────────────── */
+
+/**
+ * Reproduces the comp's `2.25rem 1.6fr 9.4rem 10.5rem 10.5rem` track sizing.
+ * The card sets `table-layout: fixed`, so these are the whole story.
+ */
+.flags-list .table__column:nth-child(1) {
+  width: 46px;
+}
+.flags-list .table__column:nth-child(2) {
+  width: 40%;
+}
+.flags-list .table__column:nth-child(3),
+.flags-list .table__column:nth-child(4) {
+  width: 17%;
+}
+.flags-list .table__column:nth-child(5) {
+  width: 20%;
+}
+
+/* The checkbox column has no label, so it does not need the 18px text inset. */
+.flags-list .table__column.cell-check,
+.flags-list .table__cell.cell-check {
+  padding-left: 14px;
+  padding-right: 0;
+}
+
+/* ── Environment column headers ──────────────────────────────────────────── */
+
+.flags-list .env-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
 }
 .live-dot {
-  width: 0.375rem;
-  height: 0.375rem;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
-  background: var(--red-500);
+  background: var(--danger);
   animation: livePulse 2s infinite;
 }
 @keyframes livePulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 5px transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
-.cell-check {
-  display: flex;
-  align-items: center;
-}
-.cell-name {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  min-width: 0;
-  cursor: pointer;
-}
-.name-stack {
+/* ── Name cell ───────────────────────────────────────────────────────────── */
+
+/** The whole stack is the link to the flag, so it is a button stripped bare. */
+.flags-list .name-stack {
   display: flex;
   flex-direction: column;
-  gap: 0.0625rem;
+  gap: 1px;
+  align-items: flex-start;
   min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
 }
 .flag-name {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   min-width: 0;
+  max-width: 100%;
   font-weight: 600;
   color: var(--text-1);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 .flag-name-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.flags-list .name-stack:hover .flag-name-text {
+  color: var(--pri);
+}
 .flag-stale-badge {
   flex-shrink: 0;
   display: inline-flex;
 }
 .flag-key {
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.cell-env {
-  display: flex;
-  align-items: center;
-  border-radius: var(--r-md);
+  max-width: 100%;
 }
 
-/* ===== Edited cell (author avatar + relative time) ===== */
-.cell-edited {
+/* ── Chips: stale and pending ────────────────────────────────────────────── */
+
+/** HeroUI's Chip wraps its children in `.chip__label`, hence the inner reset. */
+.flags-stale,
+.flags-pending {
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--acc) 15%, transparent);
+  color: var(--acc);
+  font-size: 0.6562rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.flags-stale .chip__label,
+.flags-pending .chip__label {
+  padding: 0;
+}
+
+/* ── Environment cells ───────────────────────────────────────────────────── */
+
+.cell-env .state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.state-label {
+  font-family: var(--font-mono);
+  font-size: 0.7188rem;
+  font-weight: 600;
+  color: var(--text-3);
+  width: 1.25rem;
+}
+.state-pill-on .state-label {
+  color: var(--pri);
+}
+/** Production reads as the riskier column: its live switch takes the danger tint. */
+.cell-env-prod .state-pill-on .state-label {
+  color: var(--danger);
+}
+.cell-env-prod .state-pill-on .switch__control {
+  background: var(--danger);
+}
+/* ── Last-edited cell ────────────────────────────────────────────────────── */
+
+.cell-edited-inner {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--s-2);
+  gap: 8px;
   min-width: 0;
 }
-.avatar {
+.flag-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   font-weight: 700;
   flex-shrink: 0;
-  background: var(--pri-soft);
-  color: var(--pri-fg);
-}
-.avatar-sm {
-  width: 1.625rem;
-  height: 1.625rem;
-  font-size: 0.6562rem;
-}
-.avatar-teal {
   background: var(--teal-100);
   color: var(--teal-700);
 }
-.avatar-violet {
-  background: #ede9fe;
-  color: #6d28d9;
+.theme-dark .flag-avatar {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal-300);
 }
-.avatar-amber {
-  background: var(--amber-100);
-  color: var(--amber-700);
-}
-.avatar-rose {
-  background: #ffe4e6;
-  color: #be123c;
-}
-.avatar-slate {
-  background: var(--ink-200);
-  color: var(--ink-700);
+.flag-avatar-sm {
+  width: 1.625rem;
+  height: 1.625rem;
+  font-size: 0.6562rem;
 }
 .edited-stack {
   display: flex;
@@ -159,7 +265,7 @@
   min-width: 0;
 }
 .edited-author {
-  font-size: 0.7812rem;
+  font-size: 0.75rem;
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
@@ -170,414 +276,43 @@
   color: var(--text-3);
 }
 
-/* ===== State pill (per-env toggle unit) ===== */
-.state-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-.state-pill .toggle-label {
-  position: absolute;
-  width: 0.0625rem;
-  height: 0.0625rem;
-  padding: 0;
-  margin: -0.0625rem;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-.state-label {
-  font-family: var(--font-mono);
-  font-size: 0.7188rem;
-  font-weight: 600;
-  color: var(--text-3);
-  width: 1.25rem;
-}
-.state-pill-on .state-label {
-  color: var(--pri-fg);
-}
-.state-pill-overrides {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.125rem;
-  padding: 0.0625rem 0.375rem 0.0625rem 0.3125rem;
-  border-radius: var(--r-pill);
-  background: var(--acc-soft);
-  color: var(--acc-fg);
-  border: 1px solid var(--acc-soft-border);
-  font-size: 0.6562rem;
-  font-weight: 700;
-}
-.cell-env-prod .state-pill.has-overrides .state-pill-overrides {
-  background: var(--danger-soft);
-  color: var(--danger-fg);
-  border-color: var(--danger-soft-border);
-}
+/* ── Empty states ────────────────────────────────────────────────────────── */
 
-/* ===== Tag cluster (dots + hover popover) ===== */
-
-.tag-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.1875rem;
-}
-.tag-dot {
-  width: 0.4375rem;
-  height: 0.4375rem;
-  border-radius: 999px;
-  background: var(--ink-400);
-}
-.tag-checkout {
-  background: var(--teal-500);
-}
-.tag-payments,
-.tag-beta {
-  background: var(--amber-500);
-}
-.tag-experiment {
-  background: #8b5cf6;
-}
-.tag-killswitch {
-  background: var(--red-500);
-}
-.tag-mobile {
-  background: #38bdf8;
-}
-.tag-infra {
-  background: var(--ink-400);
-}
-
-/* FlagBulkActionBar */
-.bulk-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--bg-elev);
-  border-radius: var(--r-lg, 0.75rem);
-  margin-top: 0.5rem;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-1);
-}
-.bulk-count {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-1);
-  padding-right: 0.125rem;
-}
-.bulk-sep {
-  width: 0.0625rem;
-  height: 1.125rem;
-  background: var(--border);
-  flex-shrink: 0;
-  margin: 0 0.125rem;
-}
-.bulk-section-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-4);
-  padding: 0 0.125rem;
-}
-.bulk-close {
-  width: 1.625rem;
-  height: 1.625rem;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  border: none;
-  background: transparent;
-  color: var(--text-3);
-  cursor: pointer;
-  margin-left: 0.125rem;
-}
-.bulk-close:hover {
-  background: var(--bg-hover);
-  color: var(--text-1);
-}
-
-/* FlagsScreen */
-.flags-screen {
-  padding: var(--s-6);
-}
-/* Page header (title + subtitle + actions) */
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s-4);
-  margin-bottom: var(--s-5);
-}
-.page-header h1 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text-1);
-}
-.page-header-sub {
-  margin: 0.25rem 0 0;
-  font-size: 0.8125rem;
-  color: var(--text-3);
-}
-.page-header-sub .mono {
-  color: var(--text-1);
-}
-.page-header-sub .page-header-prod {
-  color: var(--danger-fg);
-}
-.page-header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  flex-shrink: 0;
-}
-
-/* Sortable column header */
-.sort-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-4);
-}
-.sort-head:hover,
-.sort-head.active {
-  color: var(--text-2);
-}
-.sort-head-right {
-  justify-content: flex-end;
-}
-.sort-arrow {
-  opacity: 0;
-  transition:
-    opacity 0.1s ease,
-    transform 0.1s ease;
-}
-.sort-head.active .sort-arrow {
-  opacity: 1;
-}
-.sort-arrow-up {
-  transform: rotate(180deg);
-}
-.flags-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-1);
-  overflow: hidden;
-}
-.flags-list-foot {
-  display: flex;
-  align-items: center;
-  padding: 0.625rem 0.875rem;
-  background: var(--bg-subtle);
-}
-.flags-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--s-16);
-  color: var(--text-3);
-}
-.flags-error {
-  padding: var(--s-6);
-  color: var(--danger);
-  background: var(--bg-elev);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border);
-}
-.flags-empty-project {
-  padding: var(--s-6);
-  color: var(--text-3);
-}
+/** Extends `.dc-empty` with the icon-and-copy stack. */
 .flags-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: var(--s-16) var(--s-8);
-  gap: var(--s-3);
-  text-align: center;
-  color: var(--text-3);
+  gap: 6px;
 }
 .flags-empty-icon {
   color: var(--text-4);
-  margin-bottom: var(--s-2);
+  margin-bottom: 4px;
 }
 .flags-empty-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-1);
   margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-1);
 }
 .flags-empty-message {
-  font-size: 0.875rem;
   margin: 0;
-  max-width: 22.5rem;
-}
-
-/* FilterBar — integrated filters bar (search + chips + count) */
-.filters-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem 0.75rem;
-  margin-bottom: var(--s-4);
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-1);
-}
-.search-input {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 15rem;
-  max-width: 22.5rem;
-}
-.search-input .search-ico {
-  position: absolute;
-  left: 0.625rem;
-  color: var(--text-4);
-  pointer-events: none;
-}
-.search-input .filter-search {
-  width: 100%;
-  height: 2rem;
-  padding: 0 2.375rem 0 2rem;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--bg-subtle);
-  color: var(--text-1);
   font-size: 0.8125rem;
-  outline: none;
-}
-.search-input .filter-search:focus {
-  border-color: var(--pri);
-  box-shadow: var(--focus);
-}
-.search-input .kbd-hint {
-  position: absolute;
-  right: 0.5rem;
-  pointer-events: none;
-}
-
-.chip-group {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  align-items: center;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3125rem;
-  height: 1.75rem;
-  padding: 0 0.625rem;
-  border: 1px solid var(--border);
-  border-radius: var(--r-pill);
-  background: var(--bg-elev);
-  color: var(--text-2);
-  font-size: 0.7812rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.chip:hover {
-  background: var(--bg-hover);
-}
-.chip[aria-pressed='true'] {
-  background: var(--pri-soft);
-  border-color: var(--pri-soft-border);
-  color: var(--pri-fg);
-}
-.chip[data-tone='amber'][aria-pressed='true'] {
-  background: var(--acc-soft);
-  border-color: var(--acc-soft-border);
-  color: var(--acc-fg);
-}
-.chip[data-tone='red'][aria-pressed='true'] {
-  background: var(--danger-soft);
-  border-color: var(--danger-soft-border);
-  color: var(--danger-fg);
-}
-.chip-n {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text-4);
-}
-.chip[aria-pressed='true'] .chip-n {
-  color: inherit;
-}
-.filters-spacer {
-  flex: 1;
-  min-width: 0;
-}
-.filters-clear {
-  color: var(--text-2);
-}
-.filters-count {
-  font-size: 0.75rem;
   color: var(--text-3);
-  white-space: nowrap;
 }
-.flags-toggle-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--s-3) var(--s-4);
-  margin-bottom: var(--s-3);
-  background: var(--red-50);
-  border: 1px solid var(--red-300);
-  border-radius: var(--r-md);
-  color: var(--red-700);
-  font-size: 0.8125rem;
-}
-.flags-toggle-error button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--red-700);
-  font-size: 1rem;
-  padding: 0 var(--s-1);
-}
-/* Create flag modal */
-.create-flag-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-}
-.create-flag-textarea {
-  min-height: 4.75rem;
-  resize: vertical;
-  font-family: inherit;
-  line-height: 1.5;
-}
+
+/* ── Create flag dialog ──────────────────────────────────────────────────── */
+
 .snippet-preview {
   background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 0.75rem 0.875rem;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  padding: 12px 14px;
 }
 .snippet-label {
-  font-size: 0.75rem;
+  font-size: 0.71875rem;
   color: var(--text-3);
-  margin-bottom: 0.5rem;
+  margin-bottom: 6px;
 }
 .snippet-code {
   margin: 0;
@@ -591,7 +326,7 @@
 .create-flag-kbd-hint {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 4px;
   font-size: 0.75rem;
   margin-right: var(--s-2);
 }

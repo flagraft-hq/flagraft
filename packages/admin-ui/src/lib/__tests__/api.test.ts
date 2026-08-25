@@ -12,9 +12,10 @@ import {
   ApiError,
 } from '../api'
 
-/** Builds a minimal AxiosError with the given status and response body. */
-function makeAxiosError(status: number, data?: unknown): AxiosError {
+/** Builds a minimal AxiosError with the given status, response body, and request URL. */
+function makeAxiosError(status: number, data?: unknown, url = '/api/v1/admin/flags'): AxiosError {
   const err = new AxiosError(`Request failed with status code ${status}`)
+  err.config = { url } as InternalAxiosRequestConfig
   err.response = {
     status,
     data,
@@ -52,7 +53,7 @@ describe('response interceptor', () => {
 
   beforeEach(() => {
     handle = getInterceptorErrorHandler()
-    vi.stubGlobal('location', { pathname: '/flags', href: '' })
+    vi.stubGlobal('location', { pathname: '/flags', search: '', href: '' })
   })
 
   afterEach(() => {
@@ -102,18 +103,39 @@ describe('response interceptor', () => {
     expect((caught as ApiError).status).toBe(0)
   })
 
-  it('redirects to /login on 401 when not already on login page', async () => {
-    vi.stubGlobal('location', { pathname: '/flags', href: '' })
+  it('redirects to /login on 401, carrying the current location as next', async () => {
+    vi.stubGlobal('location', { pathname: '/flags/checkout-v2', search: '?tab=activity', href: '' })
+    const err = makeAxiosError(401, { message: 'Unauthorized' })
+    await handle(err).catch(() => {})
+    expect(window.location.href).toBe('/login?next=%2Fflags%2Fcheckout-v2%3Ftab%3Dactivity')
+  })
+
+  it('does not redirect on 401 when already on /login', async () => {
+    vi.stubGlobal('location', { pathname: '/login', search: '', href: '/login' })
     const err = makeAxiosError(401, { message: 'Unauthorized' })
     await handle(err).catch(() => {})
     expect(window.location.href).toBe('/login')
   })
 
-  it('does not redirect on 401 when already on /login', async () => {
-    vi.stubGlobal('location', { pathname: '/login', href: '/login' })
-    const err = makeAxiosError(401, { message: 'Unauthorized' })
+  it('does not redirect on 401 from the boot session check', async () => {
+    vi.stubGlobal('location', { pathname: '/nope', search: '', href: '' })
+    const err = makeAxiosError(401, { message: 'Unauthorized' }, '/api/v1/admin/auth/me')
     await handle(err).catch(() => {})
-    expect(window.location.href).toBe('/login')
+    expect(window.location.href).toBe('')
+  })
+
+  it('does not redirect on 401 from a failed sign-in', async () => {
+    vi.stubGlobal('location', { pathname: '/login', search: '', href: '' })
+    const err = makeAxiosError(401, { message: 'Bad credentials' }, '/api/v1/admin/auth/login')
+    await handle(err).catch(() => {})
+    expect(window.location.href).toBe('')
+  })
+
+  it('does not redirect on 401 from the public invite flow', async () => {
+    vi.stubGlobal('location', { pathname: '/invite/abc', search: '', href: '' })
+    const err = makeAxiosError(401, { message: 'Expired' }, '/api/v1/public/invite/abc')
+    await handle(err).catch(() => {})
+    expect(window.location.href).toBe('')
   })
 
   it('passes non-axios errors through unchanged', async () => {

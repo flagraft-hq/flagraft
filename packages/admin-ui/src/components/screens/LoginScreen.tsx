@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { safeNext } from '../../lib/nextPath'
 import { Icon } from '../primitives/Icon'
 import { Button } from '../primitives/Button'
+import logoImg from '../../assets/logo.png'
 
 /** Illustrative rows for the brand panel's product preview card. */
 const PREVIEW_FLAGS = [
@@ -18,6 +20,7 @@ const PREVIEW_FLAGS = [
  */
 export function LoginScreen() {
   const navigate = useNavigate()
+  const { search } = useLocation()
   const { login } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -34,7 +37,7 @@ export function LoginScreen() {
     setSubmitting(true)
     try {
       await login(email, password)
-      navigate('/flags', { replace: true })
+      navigate(safeNext(search), { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed.')
     } finally {
@@ -48,17 +51,12 @@ export function LoginScreen() {
       <aside className="auth-brand">
         <div className="auth-brand-inner">
           <div className="auth-brand-mark">
-            <span
-              className="brand-mark"
-              style={{
-                width: '2.25rem',
-                height: '2.25rem',
-                borderRadius: '0.6875rem',
-                fontSize: '0.875rem',
-              }}
-            >
-              FR
-            </span>
+            <img
+              src={logoImg}
+              alt="Flagraft Logo"
+              className="brand-logo"
+              style={{ height: '4rem', marginLeft: '-0.875rem', marginRight: '-0.625rem' }}
+            />
             <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
               Flagraft
             </span>

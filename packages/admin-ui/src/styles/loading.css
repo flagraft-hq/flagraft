@@ -1,0 +1,145 @@
+/* ============================================================
+   Table loading states
+
+   Two different situations, deliberately handled differently:
+
+   - First load, nothing on screen yet -> skeleton rows shaped like the real
+     table, so the page does not jump when data lands.
+   - Any later load (filter, sort, search, page) -> the previous rows stay put
+     and are dimmed under a progress bar. Replacing them with a skeleton would
+     throw away what someone is already reading, and make every keystroke
+     flash the whole table.
+   ============================================================ */
+
+/* ---------- First load: skeleton rows ---------- */
+.table-skeleton {
+  padding: 0;
+}
+
+.table-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 54px;
+  padding: 0 18px;
+  border-bottom: 2px solid var(--border);
+}
+
+.table-skeleton-row:last-child {
+  border-bottom: none;
+}
+
+.table-skeleton-cell {
+  display: block;
+  height: 0.75rem;
+  border-radius: var(--r-md);
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 0%,
+    var(--bg-hover) 40%,
+    var(--bg-subtle) 80%
+  );
+  background-size: 200% 100%;
+  animation: table-skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+/* Staggered so the shimmer reads as one sweep across the table. */
+.table-skeleton-cell[data-delay='1'] {
+  animation-delay: 0.08s;
+}
+.table-skeleton-cell[data-delay='2'] {
+  animation-delay: 0.16s;
+}
+.table-skeleton-cell[data-delay='3'] {
+  animation-delay: 0.24s;
+}
+.table-skeleton-cell[data-delay='4'] {
+  animation-delay: 0.32s;
+}
+
+@keyframes table-skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- Later loads: dim the rows, run a bar on top ---------- */
+.is-refreshing {
+  position: relative;
+}
+
+/* Indeterminate bar pinned to the top edge of the card. */
+.is-refreshing::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 2;
+  background: linear-gradient(90deg, transparent, var(--pri), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: table-refresh-bar 1.1s ease-in-out infinite;
+}
+
+/*
+ * The rows fade back rather than disappear, and stop taking clicks so a stale
+ * row cannot be toggled a moment before it is replaced.
+ */
+.is-refreshing .table-root,
+.is-refreshing .dc-table-foot {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out;
+}
+
+@keyframes table-refresh-bar {
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
+}
+
+/*
+ * Both animations are decoration. Anyone who asked for less motion still gets
+ * the dim and the bar, just held still.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .table-skeleton-cell,
+  .is-refreshing::before {
+    animation: none;
+  }
+  .table-skeleton-cell {
+    background: var(--bg-subtle);
+  }
+}
+
+/* Stat tiles above the users table: the number is a bar until it is known. */
+.users-stat-pending {
+  display: inline-block;
+  width: 1.75rem;
+  height: 1.25rem;
+  vertical-align: middle;
+  border-radius: var(--r-md);
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 0%,
+    var(--bg-hover) 40%,
+    var(--bg-subtle) 80%
+  );
+  background-size: 200% 100%;
+  animation: table-skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .users-stat-pending {
+    animation: none;
+    background: var(--bg-subtle);
+  }
+}

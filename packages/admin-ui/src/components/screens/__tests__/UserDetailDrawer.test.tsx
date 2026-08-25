@@ -3,6 +3,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UserDetailDrawer } from '../UserDetailDrawer'
 import type { WorkspaceUser } from '../../../lib/api'
 
+/** usePermissions reads two contexts; mocking it directly keeps the tests flat. */
+const perms = vi.hoisted(() => ({ canManage: true }))
+
+vi.mock('../../../hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: perms.canManage ? 'admin' : 'viewer',
+    canWrite: perms.canManage,
+    canProjectAdmin: perms.canManage,
+    canOwnerAct: false,
+    canWriteEnv: () => perms.canManage,
+  }),
+}))
+
 vi.mock('../../../lib/api', () => ({
   usersApi: {
     resetPassword: vi.fn(),
@@ -31,18 +44,6 @@ const mockToastPush = vi.fn()
 
 vi.mock('../../../hooks/useToast', () => ({
   useToast: () => ({ push: mockToastPush, dismiss: vi.fn(), toasts: [] }),
-}))
-
-/**
- * Capture the handlers object passed to useKeyboardShortcuts so tests
- * can invoke them directly without relying on DOM keyboard events.
- */
-let capturedHandlers: Record<string, () => void> = {}
-
-vi.mock('../../../hooks/useKeyboardShortcuts', () => ({
-  useKeyboardShortcuts: (handlers: Record<string, () => void>) => {
-    capturedHandlers = handlers
-  },
 }))
 
 import { usersApi } from '../../../lib/api'
@@ -84,9 +85,24 @@ function renderDrawer(user: WorkspaceUser = activeUser, onClose = vi.fn(), onUpd
 }
 
 beforeEach(() => {
+  perms.canManage = true
   vi.clearAllMocks()
-  capturedHandlers = {}
 })
+
+/** React Aria owns Escape now; it listens on the open overlay itself. */
+function pressEscape() {
+  const dialogs = screen.getAllByRole('dialog')
+  fireEvent.keyDown(dialogs[dialogs.length - 1], { key: 'Escape' })
+}
+
+/**
+ * HeroUI's Select is a button plus a listbox, not a native `<select>`, so a
+ * value cannot be set with `fireEvent.change`.
+ */
+function chooseOption(selectLabel: RegExp, optionLabel: string) {
+  fireEvent.click(screen.getByRole('button', { name: selectLabel }))
+  fireEvent.click(screen.getByRole('option', { name: optionLabel }))
+}
 
 describe('UserDetailDrawer', () => {
   it('renders user name, email, role badge, and status badge', () => {
@@ -95,6 +111,19 @@ describe('UserDetailDrawer', () => {
     expect(screen.getByText('alice@example.com')).toBeInTheDocument()
     expect(screen.getAllByText('admin').length).toBeGreaterThan(0)
     expect(screen.getByText('active')).toBeInTheDocument()
+  })
+
+  /**
+   * "Joined" used to print the raw DB timestamp, and a hardcoded
+   * "scim · okta" claimed a provider this app has no column for.
+   */
+  it('formats the joined date and claims no identity provider', () => {
+    renderDrawer()
+    /** Locale-independent: the date is formatted, not the raw `2026-01-01`. */
+    expect(screen.getByText(/Jan.*2026|2026.*Jan/)).toBeInTheDocument()
+    expect(screen.queryByText('2026-01-01')).not.toBeInTheDocument()
+    expect(screen.queryByText(/scim/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Source')).not.toBeInTheDocument()
   })
 
   it('shows "Reset password" button', () => {
@@ -119,7 +148,11 @@ describe('UserDetailDrawer', () => {
     fireEvent.change(screen.getByLabelText(/confirm password/i, { selector: 'input' }), {
       target: { value: 'brand-new-pass' },
     })
-    fireEvent.click(screen.getAllByRole('button', { name: /^reset password$/i })[1])
+    /**
+     * While the modal is open React Aria hides the drawer behind it, so the
+     * only "Reset password" button left is the modal's own submit.
+     */
+    fireEvent.click(screen.getByRole('button', { name: /^reset password$/i }))
     await waitFor(() =>
       expect(mockUsersApi.resetPassword).toHaveBeenCalledWith('u1', 'brand-new-pass'),
     )
@@ -134,7 +167,7 @@ describe('UserDetailDrawer', () => {
     const mockOnClose = vi.fn()
     renderDrawer(activeUser, mockOnClose)
     fireEvent.click(screen.getByRole('button', { name: /reset password/i }))
-    act(() => capturedHandlers.Escape?.())
+    act(() => pressEscape())
     expect(mockOnClose).not.toHaveBeenCalled()
     expect(screen.queryByLabelText(/new password/i, { selector: 'input' })).not.toBeInTheDocument()
   })
@@ -209,7 +242,7 @@ describe('UserDetailDrawer', () => {
     const userNoProjects = { ...activeUser, projects: [] }
     renderDrawer(userNoProjects, vi.fn(), mockOnUpdated)
     fireEvent.click(screen.getByRole('button', { name: /add to project/i }))
-    fireEvent.change(screen.getByLabelText(/choose project/i), { target: { value: 'p1' } })
+    chooseOption(/Choose project/, 'Demo')
     await waitFor(() => expect(mockUsersApi.addToProject).toHaveBeenCalledWith('u1', 'p1'))
     await waitFor(() =>
       expect(mockOnUpdated).toHaveBeenCalledWith(expect.objectContaining({ projects: ['Demo'] })),
@@ -232,16 +265,18 @@ describe('UserDetailDrawer', () => {
   it('pressing Escape calls onClose', () => {
     const mockOnClose = vi.fn()
     renderDrawer(activeUser, mockOnClose)
-    capturedHandlers.Escape?.()
+    act(() => pressEscape())
     expect(mockOnClose).toHaveBeenCalled()
   })
 
   it('clicking the backdrop calls onClose', () => {
     const mockOnClose = vi.fn()
-    const { container } = renderDrawer(activeUser, mockOnClose)
-    const backdrop = container.querySelector('.drawer-backdrop')
+    renderDrawer(activeUser, mockOnClose)
+    const backdrop = document.querySelector('.dc-backdrop') as HTMLElement
     expect(backdrop).not.toBeNull()
-    fireEvent.click(backdrop!)
+    fireEvent.mouseDown(backdrop)
+    fireEvent.mouseUp(backdrop)
+    fireEvent.click(backdrop)
     expect(mockOnClose).toHaveBeenCalled()
   })
 
@@ -251,5 +286,29 @@ describe('UserDetailDrawer', () => {
     const dialog = screen.getByRole('dialog')
     fireEvent.click(dialog)
     expect(mockOnClose).not.toHaveBeenCalled()
+  })
+})
+
+describe('UserDetailDrawer without member-management rights', () => {
+  beforeEach(() => {
+    perms.canManage = false
+  })
+
+  it('still shows who the person is and what they can reach', () => {
+    renderDrawer()
+    expect(screen.getByText(activeUser.name)).toBeInTheDocument()
+    expect(screen.getByText(/project access/i)).toBeInTheDocument()
+  })
+
+  it('drops the footer actions instead of showing them greyed out', () => {
+    renderDrawer()
+    expect(screen.queryByRole('button', { name: /reset password/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^suspend$/i })).not.toBeInTheDocument()
+  })
+
+  it('offers no way to change project access', () => {
+    renderDrawer()
+    expect(screen.queryByRole('button', { name: /add to project/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /remove from/i })).not.toBeInTheDocument()
   })
 })

@@ -1,0 +1,721 @@
+/**
+ * Design-comp chrome shared by every screen converted to HeroUI.
+ *
+ * Phase 2b drew the API keys screen to the `Flagraft HeroUI` comp and scoped
+ * the whole thing to `.keys-screen`. The flags screen is the second one, and it
+ * needs the same buttons, filters, table and dialogs -- so the shared half
+ * moved here and is keyed on a single `dc` class instead. A screen (or a modal,
+ * which portals out of the screen element) opts in by carrying `dc`.
+ *
+ * Screen-specific rules stay in that screen's own file. This file holds only
+ * what two or more converted screens need.
+ *
+ * When the comp goes app-wide the token block moves to `:root` / `.theme-dark`
+ * in base.css and the `dc` class stops being needed -- nothing else here has to
+ * change.
+ */
+
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+
+/**
+ * The comp uses a zinc neutral ramp and a pink-red danger, where the
+ * unconverted screens still use slate and a brick red. Rather than fork a
+ * second set of names, this re-points the app's own tokens at the comp's
+ * values.
+ */
+.dc {
+  /* The app's own token names, used by the rules further down. */
+  --bg-app: #f4f4f5;
+  --bg-elev: #ffffff;
+  --bg-subtle: #fafafa;
+  --bg-hover: #fafafa;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text-1: #18181b;
+  --text-2: #52525b;
+  --text-3: #a1a1aa;
+  --text-4: #a1a1aa;
+  --danger: #f31260;
+  --acc: #f5a524;
+
+  /**
+   * HeroUI's own token names, restated with literal values rather than
+   * `var(--bg-elev)` and friends.
+   *
+   * This is not duplication for its own sake. theme.css bridges these at
+   * `:root` as `--surface: var(--bg-elev)`, and a custom property is
+   * substituted where it is DECLARED, not where it is used -- so `:root`
+   * resolves `--surface` to the slate value once and every descendant inherits
+   * that answer. Re-pointing `--bg-elev` further down the tree cannot reach it.
+   * Restating the values here is what makes a scoped theme work at all.
+   */
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --surface: #ffffff;
+  --surface-foreground: #18181b;
+  --surface-secondary: #fafafa;
+  --surface-secondary-foreground: #18181b;
+  --surface-tertiary: #f4f4f5;
+  --surface-tertiary-foreground: #18181b;
+  --overlay: #ffffff;
+  --overlay-foreground: #18181b;
+  --muted: #a1a1aa;
+  --separator: #e4e4e7;
+  --default: #fafafa;
+  --default-foreground: #18181b;
+  --accent-foreground: #ffffff;
+  --field-background: #fafafa;
+  --field-foreground: #18181b;
+  --field-placeholder: #a1a1aa;
+  --field-border: #e4e4e7;
+  --warning: #f5a524;
+  --focus: var(--pri);
+  --link: var(--pri);
+
+  /* The comp's own radii and shadows, which our scale has no equivalent for. */
+  --dc-r: 12px;
+  --dc-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --dc-shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.22);
+}
+
+.theme-dark .dc {
+  --bg-app: #09090b;
+  --bg-elev: #18181b;
+  --bg-subtle: #1f1f23;
+  --bg-hover: #1f1f23;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --text-1: #fafafa;
+  --text-2: #a1a1aa;
+  --text-3: #71717a;
+  --text-4: #71717a;
+
+  --background: #09090b;
+  --foreground: #fafafa;
+  --surface: #18181b;
+  --surface-foreground: #fafafa;
+  --surface-secondary: #1f1f23;
+  --surface-secondary-foreground: #fafafa;
+  --surface-tertiary: #27272a;
+  --surface-tertiary-foreground: #fafafa;
+  --overlay: #18181b;
+  --overlay-foreground: #fafafa;
+  --muted: #71717a;
+  --separator: #27272a;
+  --default: #1f1f23;
+  --default-foreground: #fafafa;
+  --field-background: #1f1f23;
+  --field-foreground: #fafafa;
+  --field-placeholder: #71717a;
+  --field-border: #27272a;
+
+  --dc-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --dc-shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+
+.dc .page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.dc .page-header-text {
+  flex: 1;
+}
+.dc .page-header h1 {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+.dc .page-header-sub {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+}
+.dc .page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+/**
+ * The comp's button shapes. Applied over HeroUI's `.button`, which is layered,
+ * so these win without `!important`.
+ */
+.dc .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--r-pill);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+}
+.dc .button--primary {
+  background: var(--pri);
+  color: #ffffff;
+  box-shadow: var(--dc-shadow);
+}
+.dc .button--primary:hover {
+  filter: brightness(1.1);
+  background: var(--pri);
+}
+.dc .button--ghost {
+  padding: 0 20px;
+  background: transparent;
+  color: var(--text-2);
+}
+.dc .button--ghost:hover {
+  background: color-mix(in srgb, var(--text-3) 14%, transparent);
+  color: var(--text-1);
+}
+.dc .button--secondary {
+  background: var(--bg-subtle);
+  border: 2px solid var(--border);
+  color: var(--text-2);
+}
+.dc .button--secondary:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+.dc .button--danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+.dc .button--danger:hover {
+  filter: brightness(1.1);
+  background: var(--danger);
+}
+.dc .button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* Icon-only ghost square, used for row actions. */
+.dc .dc-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  box-shadow: none;
+}
+.dc .dc-icon-btn:hover:not([disabled]) {
+  background: var(--border);
+  color: var(--text-1);
+  filter: none;
+}
+
+/* ── Toolbar: search + filters above the card ────────────────────────────── */
+
+/**
+ * Bare controls above the card, no surrounding panel. The comp has no toolbar
+ * on the keys screen, so the flags screen's filter row is the reference.
+ */
+.dc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.dc-toolbar .search-field {
+  width: 280px;
+}
+.dc-toolbar .search-field__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-elev);
+  box-shadow: none;
+}
+/* HeroUI pins the icon absolutely; the comp has it in the flow. */
+.dc-toolbar .search-field__search-icon {
+  position: static;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  color: var(--text-3);
+}
+.dc-toolbar .search-field__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  box-shadow: none;
+}
+
+/**
+ * `.select` is a name collision, not a HeroUI style: primitives.css dresses our
+ * own native-<select> primitive with that class, HeroUI uses it for the wrapper
+ * div around its trigger, and our file is unlayered so it wins. Left alone it
+ * paints a second bordered box around every HeroUI select, complete with the
+ * background-image dropdown arrow. Stripped back to nothing here.
+ */
+.dc .select {
+  display: block;
+  appearance: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  background-image: none;
+  box-shadow: none;
+  gap: 0;
+}
+.dc-toolbar .select__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-elev);
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: none;
+}
+.dc-toolbar .select__trigger:hover {
+  background: var(--bg-subtle);
+}
+.dc-toolbar .select__value {
+  flex: 0 1 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.8125rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+/* HeroUI pins the chevron absolutely to the trigger's edge; the comp has it
+   sitting in the flow after the label, like the search icon. */
+.dc .select__indicator {
+  position: static;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  inset: auto;
+  color: var(--text-3);
+}
+
+/* The listbox renders in a portal, so it carries `dc-popover` of its own. */
+.dc-popover.popover,
+.dc-popover .popover__dialog {
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-elev);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  padding: 4px;
+}
+.dc-popover .list-box-item {
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.8125rem;
+  color: var(--text-1);
+}
+.dc-popover .list-box-item[data-focused],
+.dc-popover .list-box-item[data-hovered] {
+  background: var(--bg-subtle);
+}
+
+/* ── Filter chips ────────────────────────────────────────────────────────── */
+
+/**
+ * The toolbar's on/off style filter chips, shared by the flags and users
+ * screens. Deliberately not named `.chip`: HeroUI owns that name for its own
+ * Chip component and both screens render one.
+ *
+ * `.dc-chip-n` is the optional count badge; `data-tone` recolours the pressed
+ * state for chips that mean something other than "normal".
+ */
+.dc-chip-group {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.dc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.dc-chip:hover {
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+.dc-chip[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--pri) 10%, transparent);
+  border-color: color-mix(in srgb, var(--pri) 35%, transparent);
+  color: var(--pri);
+}
+.dc-chip-n {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.dc-chip[aria-pressed='true'] .dc-chip-n {
+  color: inherit;
+}
+.dc-chip[data-tone='amber'][aria-pressed='true'] {
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+  border-color: color-mix(in srgb, var(--acc) 35%, transparent);
+  color: var(--acc);
+}
+.dc-chip[data-tone='red'][aria-pressed='true'] {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger);
+}
+
+/* ── Table card ──────────────────────────────────────────────────────────── */
+
+/**
+ * The comp draws its rows as a CSS grid. These stay real tables so HeroUI's
+ * grid semantics and keyboard navigation survive; `table-layout: fixed` plus
+ * per-screen column widths reproduce the comp's track sizing.
+ */
+.dc-card {
+  background: var(--bg-elev);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 4px);
+  box-shadow: var(--dc-shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.dc-card .table-root {
+  display: block;
+  overflow: visible;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.dc-card .table__content {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.dc-card .table__header .table__column {
+  box-sizing: border-box;
+  height: 54px;
+  padding: 0 0 0 18px;
+  text-align: left;
+  vertical-align: middle;
+  background: var(--pri-soft);
+  border-bottom: 2px solid var(--border);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pri-fg);
+}
+.dc-card .table__header .table__column:last-child {
+  padding-right: 18px;
+}
+/* HeroUI draws a short vertical rule after each header cell. The comp doesn't. */
+.dc-card .table__column::after {
+  content: none;
+}
+
+/* Sortable headers keep the uppercase strip look and gain a hover affordance. */
+.dc-card .table__column[data-allows-sorting] {
+  cursor: pointer;
+}
+.dc-card .table__column[data-allows-sorting]:hover {
+  color: var(--text-2);
+}
+.dc-card .table__sortable-column-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.dc-card .table__sortable-column-header svg {
+  width: 12px;
+  height: 12px;
+}
+.dc-card .table__sortable-column-header:not([data-direction])::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E")
+    center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E")
+    center/contain no-repeat;
+}
+
+.dc-card .table__cell {
+  height: 54px;
+  padding: 8px 0 8px 18px;
+  vertical-align: middle;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+  color: var(--text-1);
+  font-size: 0.8125rem;
+}
+.dc-card .table__cell:last-child {
+  padding-right: 18px;
+}
+.dc-card .table__row:hover .table__cell,
+.dc-card .table__row[data-hovered='true'] .table__cell {
+  background: var(--bg-subtle);
+}
+.dc-card .table__row[data-selected='true'] .table__cell {
+  background: color-mix(in srgb, var(--pri) 6%, var(--bg-elev));
+}
+/* The last row sits on the card's own edge, so it needs no rule of its own. */
+.dc-card .table__body .table__row:last-child .table__cell {
+  border-bottom: none;
+}
+
+.dc-table-foot {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 54px;
+  padding: 0 18px;
+  /* background: transparent; */
+  border-top: 2px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-1);
+}
+
+/* ── Checkbox and switch inside a card ───────────────────────────────────── */
+
+.dc .checkbox__control {
+  border-radius: 5px;
+  border-width: 2px;
+}
+
+.dc-card .table__column .checkbox,
+.dc-card .table__cell .checkbox {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+/* ── Empty state card ────────────────────────────────────────────────────── */
+
+.dc-empty {
+  padding: 40px var(--s-6);
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.8125rem;
+  background: var(--bg-elev);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 4px);
+  box-shadow: var(--dc-shadow);
+  margin-bottom: 16px;
+}
+
+/* ── Dialogs ─────────────────────────────────────────────────────────────── */
+
+.dc-backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+}
+/**
+ * HeroUI pads the dialog itself (`p-6`), which leaves the footer's tinted band
+ * and its divider floating inside a white gutter. Padding moves onto the
+ * header, body and footer instead so all three share one left edge and the
+ * footer band runs the full width; `overflow: hidden` clips it to the corners.
+ */
+.dc-dialog.modal__dialog {
+  width: 480px;
+  max-width: calc(100vw - 48px);
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg-elev);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 6px);
+  box-shadow: var(--dc-shadow-modal);
+  color: var(--text-1);
+}
+.dc-dialog--lg.modal__dialog {
+  width: 560px;
+}
+
+/** Sits against the dialog's own padding, clear of the header row. */
+.dc-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.dc-dialog-close:hover {
+  background: var(--bg-subtle);
+  color: var(--text-1);
+}
+
+.dc-dialog .modal__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 52px 12px 20px;
+  margin: 0;
+  border: none;
+}
+/** Destructive confirms get a tinted badge to the left of the title. */
+.dc-dialog-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-pill);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.dc-dialog .modal__heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.dc-dialog .modal__header .description {
+  display: block;
+  margin: 5px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+.dc-dialog .modal__body {
+  margin: 0;
+  padding: 0 20px 18px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+.dc-dialog .modal__body strong {
+  color: var(--text-1);
+}
+.dc-dialog .modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 20px;
+  border-top: 2px solid var(--border);
+  background: var(--bg-subtle);
+}
+.dc-dialog .modal__footer .button {
+  height: 36px;
+  font-size: 0.8125rem;
+}
+.dc-dialog .spacer {
+  flex: 1;
+}
+
+/* ── Dialog form fields ──────────────────────────────────────────────────── */
+
+.dc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dc-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dc-form-label,
+.dc-dialog .label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.dc-dialog .textfield {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dc-dialog .input,
+.dc-dialog .textarea {
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-subtle);
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+  box-shadow: none;
+}
+.dc-dialog .input {
+  height: 38px;
+}
+.dc-dialog .textarea {
+  padding: 10px 12px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.dc-dialog .description,
+.dc-form-hint {
+  font-size: 0.71875rem;
+  color: var(--text-3);
+}
+.dc-dialog .dc-form-field .select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--dc-r);
+  background: var(--bg-subtle);
+  color: var(--text-1);
+  font-size: 0.8125rem;
+  box-shadow: none;
+}

@@ -23,7 +23,6 @@ type TabId = 'environments' | 'usage' | 'history'
 /** Maps an environment to its accent color (matches the env dots elsewhere). */
 function envColor(env: string): string {
   if (env === 'production' || env.endsWith('production')) return 'red'
-  if (env === 'staging' || env.endsWith('staging')) return 'amber'
   if (env === 'development' || env.endsWith('development')) return 'teal'
   return 'slate'
 }
@@ -334,7 +333,6 @@ function EnvironmentsTab({
                 <Denied when={!canWriteEnv(env)} reason={`Your role can’t change flags in ${env}`}>
                   <Toggle
                     checked={isOn}
-                    size="lg"
                     disabled={!canWriteEnv(env)}
                     onChange={(newValue) => handleToggle(env, newValue)}
                   />
@@ -498,7 +496,7 @@ export function FlagDetailScreen() {
           </Button>
           <Denied when={!canWrite} reason="Your role is read-only">
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
               leftIcon="edit"
               disabled={!canWrite}
@@ -526,29 +524,32 @@ export function FlagDetailScreen() {
           <span className="detail-flag-key">
             <Icon name="flag" size={12} />
             <span className="mono">{flag.key}</span>
-            <CopyButton
-              value={flag.key}
-              iconOnly
-              tip="Copy key"
-              iconSize={11}
-              className="detail-key-copy"
-            />
           </span>
           {flag.description && <p className="detail-desc">{flag.description}</p>}
           <div className="meta-row">
             <span className="meta-item">
-              <Icon name="user" size={12} />
-              Owner <b className="mono">{flag.author || 'System'}</b>
+              Owner <b>{flag.author || 'System'}</b>
             </span>
             <span className="meta-item">
-              <Icon name="history" size={12} />
-              Created <b>{new Date(flag.created).toLocaleDateString()}</b>
+              Created{' '}
+              <b>
+                {new Date(flag.created).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </b>
             </span>
           </div>
         </div>
         <div className="detail-header-aside">
           <span className="muted mono detail-updated">
-            updated {new Date(flag.updated).toLocaleDateString()}
+            updated{' '}
+            {new Date(flag.updated).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
           </span>
         </div>
       </div>

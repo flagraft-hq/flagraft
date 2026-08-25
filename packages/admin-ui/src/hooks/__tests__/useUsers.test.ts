@@ -49,6 +49,24 @@ describe('useUsers', () => {
     expect(result.current.loading).toBe(true)
   })
 
+  it('separates the first load from later refreshes', async () => {
+    listMock().mockResolvedValue(page(mockUsers))
+    const { result, rerender } = renderHook(
+      (props: { search: string }) => useUsers({ limit: 25, offset: 0, search: props.search }),
+      { initialProps: { search: '' } },
+    )
+    expect(result.current.loading).toBe(true)
+    expect(result.current.refreshing).toBe(false)
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    /** A filter change keeps the current rows and only flags a refresh. */
+    listMock().mockReturnValue(new Promise(() => {}))
+    rerender({ search: 'ali' })
+    await waitFor(() => expect(result.current.refreshing).toBe(true))
+    expect(result.current.loading).toBe(false)
+    expect(result.current.users.length).toBeGreaterThan(0)
+  })
+
   it('returns the page, the total and the workspace counts', async () => {
     listMock().mockResolvedValue(page(mockUsers, { all: 42, admins: 3 }))
     const { result } = renderHook(() => useUsers({ limit: 25, offset: 0 }))

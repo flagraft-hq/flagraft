@@ -5,6 +5,7 @@ import { inviteApi } from '../../lib/api'
 import { Icon } from '../primitives/Icon'
 import { Button } from '../primitives/Button'
 import { PasswordStrength } from '../primitives/PasswordStrength'
+import logoImg from '../../assets/logo.png'
 
 type LinkState =
   | { status: 'loading' }
@@ -71,17 +72,12 @@ export function AcceptInviteScreen() {
       <aside className="auth-brand">
         <div className="auth-brand-inner">
           <div className="auth-brand-mark">
-            <span
-              className="brand-mark"
-              style={{
-                width: '2.5rem',
-                height: '2.5rem',
-                borderRadius: '0.75rem',
-                fontSize: '0.9375rem',
-              }}
-            >
-              FR
-            </span>
+            <img
+              src={logoImg}
+              alt="Flagraft Logo"
+              className="brand-logo"
+              style={{ height: '4rem', marginLeft: '-0.875rem', marginRight: '-0.625rem' }}
+            />
             <span style={{ fontSize: '1.0625rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
               Flagraft
             </span>

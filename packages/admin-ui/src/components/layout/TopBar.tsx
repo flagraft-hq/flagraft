@@ -2,9 +2,11 @@ import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
 import { GlobalSearch } from './GlobalSearch'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useAuth } from '../../contexts/AuthContext'
 import type { Env } from '../../lib/types'
 
-/** Environment slugs are project-defined, so this is just a string. */
+import logoImg from '../../assets/logo.png'
+
 export type EnvSlug = string
 
 export interface ProjectInfo {
@@ -31,6 +33,7 @@ export function TopBar({
   onShowHelp,
 }: TopBarProps) {
   const { theme, setTheme } = useTheme()
+  const { user } = useAuth()
 
   function handleToggleTheme() {
     setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -40,7 +43,7 @@ export function TopBar({
     <header className="topbar">
       {/* Brand */}
       <div className="brand">
-        <span className="brand-mark">FR</span>
+        <img src={logoImg} alt="Flagraft Logo" className="brand-logo" />
         <span>Flagraft</span>
       </div>
 
@@ -70,24 +73,28 @@ export function TopBar({
         ))}
       </div>
 
+      {/* spacer to push everything else to the right */}
+      <div style={{ flex: 1 }} />
+
       <GlobalSearch />
 
-      {/* Right panel */}
-      <div className="topbar-right">
-        <span className="key-indicator" title="Acting key">
-          <span className="dot" />
-          <span>ff_ad_a91c</span>
-          <span className="muted">· admin</span>
-        </span>
-        <Tip tip="Keyboard shortcuts (?)" position="bottom">
-          <button className="icon-btn" onClick={onShowHelp} aria-label="Keyboard shortcuts">
-            <Icon name="keyboard" size={16} />
-          </button>
-        </Tip>
-        <button className="icon-btn" onClick={handleToggleTheme} aria-label="Toggle theme">
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
+      <Tip tip="Keyboard shortcuts (?)" position="bottom">
+        <button className="icon-btn" onClick={onShowHelp} aria-label="Keyboard shortcuts">
+          <Icon name="keyboard" size={16} />
         </button>
-      </div>
+      </Tip>
+
+      <button className="icon-btn" onClick={handleToggleTheme} aria-label="Toggle theme">
+        <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
+      </button>
+
+      {user && (
+        <span className="key-indicator" title={user.email}>
+          <span className="dot" />
+          <span>{user.name}</span>
+          <span className="muted">· {user.role}</span>
+        </span>
+      )}
     </header>
   )
 }

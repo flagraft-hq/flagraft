@@ -6,10 +6,10 @@ import { useProject } from '../../contexts/ProjectContext'
 import { useToast } from '../../hooks/useToast'
 import { useResendInvite } from '../../hooks/useResendInvite'
 import { InviteLinksModal } from './InviteLinksModal'
+import { Button } from '@heroui/react'
 import { BulkBar, BulkSep } from '../primitives/BulkBar'
-import { Button } from '../primitives/Button'
-import { Modal } from '../primitives/Modal'
-import { Select } from '../primitives/Select'
+import { Dialog } from '../primitives/Dialog'
+import { FilterSelect } from '../primitives/FilterSelect'
 
 interface UserBulkActionBarProps {
   selectedUsers: WorkspaceUser[]
@@ -117,44 +117,42 @@ export function UserBulkActionBar({ selectedUsers, onDone, onCancel }: UserBulkA
       <BulkBar count={selectedUsers.length} onClear={onCancel} busy={busy}>
         <BulkSep />
         <span className="bulk-section-label">Role</span>
-        <Select
-          className="select-sm"
-          aria-label="Change role"
+        <FilterSelect
+          label="Change role"
           placeholder="Change role…"
           value=""
           onChange={(v) => {
             if (v) handleRole(v as InvitableRole)
           }}
-          disabled={busy || editable.length === 0}
-          title={editable.length === 0 ? 'Owners and service accounts keep their role' : ''}
+          isDisabled={busy || editable.length === 0}
           options={INVITABLE_ROLES.map((r) => ({ value: r, label: r }))}
         />
         <BulkSep />
         <span className="bulk-section-label">Access</span>
-        <Select
-          className="select-sm"
-          aria-label="Add to project"
+        <FilterSelect
+          label="Add to project"
           placeholder="Add to project…"
           value=""
           onChange={(v) => {
             if (v) handleAddToProject(v)
           }}
-          disabled={busy}
+          isDisabled={busy}
           options={projects.map((p) => ({ value: p.id, label: p.name }))}
         />
         <BulkSep />
         <Button
           size="sm"
+          variant="secondary"
           onClick={() => void handleResendInvites()}
-          disabled={busy || inviteTargets.length === 0}
-          title={inviteTargets.length === 0 ? 'Only invited users can be re-invited' : ''}
+          isDisabled={busy || inviteTargets.length === 0}
         >
           Resend invites
         </Button>
         <Button
           size="sm"
+          variant="secondary"
           onClick={handleReinstate}
-          disabled={busy || reinstateTargets.length === 0}
+          isDisabled={busy || reinstateTargets.length === 0}
         >
           Reinstate
         </Button>
@@ -162,33 +160,30 @@ export function UserBulkActionBar({ selectedUsers, onDone, onCancel }: UserBulkA
           size="sm"
           variant="danger"
           onClick={() => setShowSuspendConfirm(true)}
-          disabled={busy || suspendTargets.length === 0}
+          isDisabled={busy || suspendTargets.length === 0}
         >
           Suspend
         </Button>
       </BulkBar>
 
-      <Modal
+      <Dialog
+        className="users-dialog"
         open={showSuspendConfirm}
         onClose={() => setShowSuspendConfirm(false)}
-        titleId="bulk-suspend-title"
-      >
-        <Modal.Header
-          id="bulk-suspend-title"
-          subtitle={`Suspended users are signed out immediately and can no longer log in. You can reinstate them later.${skippedNote}`}
-        >
-          Suspend {suspendTargets.length === 1 ? 'this user' : `${suspendTargets.length} users`}?
-        </Modal.Header>
-        <Modal.Footer>
-          <span style={{ flex: 1 }} />
-          <Button variant="ghost" onClick={() => setShowSuspendConfirm(false)} disabled={busy}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleSuspend} disabled={busy}>
-            {busy ? 'Suspending…' : `Suspend ${suspendTargets.length === 1 ? 'user' : 'users'}`}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        title={`Suspend ${suspendTargets.length === 1 ? 'this user' : `${suspendTargets.length} users`}?`}
+        subtitle={`Suspended users are signed out immediately and can no longer log in. You can reinstate them later.${skippedNote}`}
+        footer={
+          <>
+            <span className="spacer" />
+            <Button variant="ghost" onClick={() => setShowSuspendConfirm(false)} isDisabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleSuspend} isDisabled={busy} isPending={busy}>
+              {busy ? 'Suspending…' : `Suspend ${suspendTargets.length === 1 ? 'user' : 'users'}`}
+            </Button>
+          </>
+        }
+      />
 
       <InviteLinksModal links={fallbackLinks} onClose={dismissFallback} />
     </>

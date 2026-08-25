@@ -1,6 +1,6 @@
-import { Button } from '../primitives/Button'
+import { Button } from '@heroui/react'
 import { CopyButton } from '../primitives/CopyButton'
-import { Modal } from '../primitives/Modal'
+import { Dialog } from '../primitives/Dialog'
 
 export interface InviteLink {
   email: string
@@ -20,40 +20,40 @@ interface InviteLinksModalProps {
  */
 export function InviteLinksModal({ links, onClose }: InviteLinksModalProps) {
   return (
-    <Modal open={!!links && links.length > 0} onClose={onClose} titleId="invite-links-title">
-      <Modal.Header
-        id="invite-links-title"
-        subtitle="Copying to the clipboard failed, share these links manually. Each expires in 24 hours."
-      >
-        Share invite links
-      </Modal.Header>
-      <Modal.Body>
-        <ul className="invite-results">
-          {(links ?? []).map((l) => (
-            <li key={l.email} className="invite-result">
-              <div className="invite-result-head">
-                <span className="invite-result-email mono">{l.email}</span>
-              </div>
-              <div className="invite-result-link">
-                <span className="mono" title={l.inviteUrl}>
-                  {l.inviteUrl}
-                </span>
-                <CopyButton
-                  value={l.inviteUrl}
-                  label="Copy link"
-                  ariaLabel={'Copy invite link for ' + l.email}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Modal.Body>
-      <Modal.Footer>
-        <span style={{ flex: 1 }} />
-        <Button variant="primary" onClick={onClose}>
-          Done
-        </Button>
-      </Modal.Footer>
-    </Modal>
+    <Dialog
+      className="users-dialog"
+      open={!!links && links.length > 0}
+      onClose={onClose}
+      title="Share invite links"
+      subtitle="Copying to the clipboard failed, share these links manually. Each expires in 24 hours."
+      footer={
+        <>
+          <span className="spacer" />
+          <Button variant="primary" onClick={onClose}>
+            Done
+          </Button>
+        </>
+      }
+    >
+      <ul className="invite-results">
+        {(links ?? []).map((l) => (
+          <li key={l.email} className="invite-result">
+            <div className="invite-result-head">
+              <span className="invite-result-email mono">{l.email}</span>
+            </div>
+            <div className="invite-result-link">
+              <span className="mono" title={l.inviteUrl}>
+                {l.inviteUrl}
+              </span>
+              <CopyButton
+                value={l.inviteUrl}
+                label="Copy link"
+                ariaLabel={'Copy invite link for ' + l.email}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Dialog>
   )
 }

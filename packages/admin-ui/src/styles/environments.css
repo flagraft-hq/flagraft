@@ -1,14 +1,14 @@
 /**
  * Environments screen: a two-column grid of environment cards with per-env
- * stats and the create/edit form. Mirrors the Claude Design prototype
- * (screens-mgmt.jsx → EnvironmentsScreen): colored soft-tint pills per
- * environment, filled stat boxes, and a base-URL footer. Reuses shared tokens,
- * .page-header, .icon-btn and the .env-card-foot separator from flag-detail.css.
+ * stats and the create/edit form. On HeroUI -- the screen carries `dc`, so the
+ * design-comp tokens, page header, buttons and dialog chrome all come from
+ * dc.css and only the card grid, pills and stat boxes live here.
  */
 
-/* Screen padding — matches .flags-screen / .flag-detail (24px all round) */
 .env-screen {
   padding: var(--s-6);
+  display: flex;
+  flex-direction: column;
 }
 
 .env-empty-project,
@@ -18,11 +18,12 @@
   font-size: 0.875rem;
 }
 
-/* Two-column card grid (collapses to one column on narrow viewports) */
+/* Three-column card grid since max cards is 3 */
 .env-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--s-4);
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-6);
+  margin-top: var(--s-8);
 }
 @media (max-width: 720px) {
   .env-grid {
@@ -32,9 +33,9 @@
 
 .env-card-lg {
   background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-1);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--dc-r) + 4px);
+  box-shadow: var(--dc-shadow);
   padding: var(--s-5);
 }
 
@@ -111,50 +112,84 @@
   gap: var(--s-2);
 }
 .env-stat {
-  padding: 0.625rem 0.75rem;
+  padding: 0.75rem 0.875rem;
   background: var(--bg-subtle);
-  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.env-stat:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
 }
 .env-stat-label {
-  font-size: 0.6875rem;
-  color: var(--text-3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-2);
 }
 .env-stat-value {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--text-1);
+  color: var(--pri-fg);
   font-variant-numeric: tabular-nums;
+  margin-top: 0.25rem;
 }
 
-/* Footer base-URL row (.env-card-foot supplies the top border + flex) */
-.env-card-lg .env-card-foot {
-  gap: var(--s-2);
+.env-card-url-section {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
 }
-.env-baseurl-label {
-  font-size: 0.75rem;
+.env-card-url-label {
+  font-size: 0.625rem;
+  color: var(--text-3);
+  line-height: 1.2;
 }
-.env-baseurl {
+.env-card-url-box {
+  flex: 1;
+  background: var(--bg-subtle);
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--dc-r);
   font-size: 0.75rem;
   color: var(--text-2);
 }
 
-/* Create / edit form */
-.env-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
+/* Protected marker: HeroUI's Chip in the danger tint, matching .flags-stale. */
+.chip.env-protected {
+  height: 28px;
+  padding: 0 8px;
+  gap: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent) !important;
+  color: var(--danger) !important;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
-.env-form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+.env-protected .chip__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
 }
-.env-form-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-2);
+
+/* Deleting is the destructive action of the pair, so it reddens on hover. */
+.dc .env-delete-btn:hover:not([disabled]) {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
 }
+
+/* Create / edit form (the rest of the fields come from .dc-form in dc.css) */
 .env-form-protected {
   display: flex;
   align-items: center;

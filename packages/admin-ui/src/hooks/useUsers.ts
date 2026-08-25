@@ -25,7 +25,14 @@ interface UseUsersResult {
   total: number
   /** Workspace-wide bucket counts; unaffected by the active filters. */
   counts: UserCounts
+  /** True only for the very first load, when there is nothing to show yet. */
   loading: boolean
+  /**
+   * True while a later request is in flight -- a filter, sort, search or page
+   * change. The previous page stays on screen, so this dims it rather than
+   * replacing it.
+   */
+  refreshing: boolean
   error: string | null
   refetch: () => void
 }
@@ -48,6 +55,9 @@ export function useUsers({
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<UserCounts>(EMPTY_COUNTS)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  /** Flips once the first response lands; every fetch after that is a refresh. */
+  const settled = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
 
@@ -59,7 +69,8 @@ export function useUsers({
 
   useEffect(() => {
     const id = ++requestId.current
-    setLoading(true)
+    if (settled.current) setRefreshing(true)
+    else setLoading(true)
     setError(null)
     usersApi
       .list({
@@ -77,7 +88,9 @@ export function useUsers({
         setUsers(res.data.data)
         setTotal(res.data.total)
         setCounts(res.data.counts)
+        settled.current = true
         setLoading(false)
+        setRefreshing(false)
       })
       .catch((err: unknown) => {
         if (id !== requestId.current) return
@@ -85,7 +98,9 @@ export function useUsers({
         setError(err instanceof Error ? err.message : 'Failed to load users')
         setUsers([])
         setTotal(0)
+        settled.current = true
         setLoading(false)
+        setRefreshing(false)
       })
   }, [search, status, role, projectId, sort, dir, limit, offset, tick])
 
@@ -93,5 +108,5 @@ export function useUsers({
     setTick((t) => t + 1)
   }
 
-  return { users, total, counts, loading, error, refetch }
+  return { users, total, counts, loading, refreshing, error, refetch }
 }

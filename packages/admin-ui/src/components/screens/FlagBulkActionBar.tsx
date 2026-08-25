@@ -1,8 +1,8 @@
 import { useState } from 'react'
+import { Button } from '@heroui/react'
 import { BulkBar } from '../primitives/BulkBar'
-import { Button } from '../primitives/Button'
 import { Denied } from '../primitives/Denied'
-import { Modal } from '../primitives/Modal'
+import { Dialog } from '../primitives/Dialog'
 import { flagsApi } from '../../lib/api'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useToast } from '../../hooks/useToast'
@@ -30,34 +30,17 @@ export function FlagBulkActionBar({
 
   if (selectedKeys.length === 0) return null
 
-  async function handleEnableAll() {
-    setLoading(true)
-    try {
-      await Promise.all(selectedKeys.map((key) => flagsApi.toggle(projectId, key, activeEnv, true)))
-      toast.push({ title: 'Flags enabled', variant: 'success' })
-      onDone()
-    } catch (err) {
-      toast.push({
-        title: 'Failed to enable flags',
-        msg: err instanceof Error ? err.message : 'Unknown error',
-        variant: 'error',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleDisableAll() {
+  async function handleToggleAll(enabled: boolean) {
     setLoading(true)
     try {
       await Promise.all(
-        selectedKeys.map((key) => flagsApi.toggle(projectId, key, activeEnv, false)),
+        selectedKeys.map((key) => flagsApi.toggle(projectId, key, activeEnv, enabled)),
       )
-      toast.push({ title: 'Flags disabled', variant: 'success' })
+      toast.push({ title: enabled ? 'Flags enabled' : 'Flags disabled', variant: 'success' })
       onDone()
     } catch (err) {
       toast.push({
-        title: 'Failed to disable flags',
+        title: enabled ? 'Failed to enable flags' : 'Failed to disable flags',
         msg: err instanceof Error ? err.message : 'Unknown error',
         variant: 'error',
       })
@@ -95,10 +78,8 @@ export function FlagBulkActionBar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
-            void handleEnableAll()
-          }}
-          disabled={loading || !canToggle}
+          onClick={() => void handleToggleAll(true)}
+          isDisabled={loading || !canToggle}
         >
           Enable All
         </Button>
@@ -107,10 +88,8 @@ export function FlagBulkActionBar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
-            void handleDisableAll()
-          }}
-          disabled={loading || !canToggle}
+          onClick={() => void handleToggleAll(false)}
+          isDisabled={loading || !canToggle}
         >
           Disable All
         </Button>
@@ -120,39 +99,38 @@ export function FlagBulkActionBar({
           variant="danger"
           size="sm"
           onClick={() => setShowDeleteConfirm(true)}
-          disabled={loading || !canProjectAdmin}
+          isDisabled={loading || !canProjectAdmin}
         >
           Delete
         </Button>
       </Denied>
 
-      <Modal
+      <Dialog
+        className="flags-dialog"
         open={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
-        titleId="bulk-delete-title"
-      >
-        <Modal.Header
-          id="bulk-delete-title"
-          subtitle={`The selected ${flagWord} will be permanently removed from all environments. This cannot be undone.`}
-        >
-          Delete {selectedKeys.length === 1 ? 'this flag' : `${selectedKeys.length} flags`}?
-        </Modal.Header>
-        <Modal.Footer>
-          <span style={{ flex: 1 }} />
-          <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              void handleConfirmDelete()
-            }}
-            disabled={loading}
-          >
-            {loading ? 'Deleting…' : `Delete ${flagWord}`}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        title={`Delete ${selectedKeys.length === 1 ? 'this flag' : `${selectedKeys.length} flags`}?`}
+        subtitle={`The selected ${flagWord} will be permanently removed from all environments. This cannot be undone.`}
+        footer={
+          <>
+            <span className="spacer" />
+            <Button
+              variant="ghost"
+              onClick={() => setShowDeleteConfirm(false)}
+              isDisabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => void handleConfirmDelete()}
+              isDisabled={loading}
+            >
+              {loading ? 'Deleting…' : `Delete ${flagWord}`}
+            </Button>
+          </>
+        }
+      />
     </BulkBar>
   )
 }

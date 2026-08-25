@@ -108,7 +108,7 @@
   --kbd-border: #d8dde6;
   --kbd-shadow: 0 1px 0 #cfd6e0;
 
-  --focus: 0 0 0 3px rgba(45, 212, 191, 0.35);
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.35);
 }
 
 .theme-dark {
@@ -144,7 +144,7 @@
   --kbd-border: #2a3855;
   --kbd-shadow: 0 1px 0 #0b1220;
 
-  --focus: 0 0 0 3px rgba(45, 212, 191, 0.45);
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.45);
 }
 
 /**
@@ -152,7 +152,6 @@
  * changing this one value scales the whole UI together. 16px is the
  * browser default; 19.2px is 20% larger.
  *
- * ponytail: border widths, shadows and pill radii stay in px on purpose —
  * a 1px hairline should stay 1px at any scale.
  */
 html {
@@ -195,10 +194,10 @@ textarea::placeholder {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0 0.75rem;
+  padding: 10px 20px;
   height: 2.125rem;
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   background: var(--bg-elev);
   color: var(--text-1);
   font-family: var(--font-sans);
@@ -207,10 +206,12 @@ textarea::placeholder {
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-1);
   transition:
     background 0.08s ease,
     border-color 0.08s ease,
-    transform 0.08s ease;
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
 }
 
 .btn:hover {
@@ -222,7 +223,7 @@ textarea::placeholder {
 }
 
 .btn:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 .btn[disabled] {
@@ -250,6 +251,7 @@ textarea::placeholder {
   background: transparent;
   border-color: transparent;
   color: var(--text-2);
+  box-shadow: none;
 }
 
 .btn.ghost:hover {
@@ -258,7 +260,7 @@ textarea::placeholder {
 }
 
 .btn.danger {
-  background: var(--bg-elev);
+  background: var(--danger-soft);
   color: var(--danger-fg);
   border-color: var(--danger-soft-border);
 }
@@ -281,12 +283,12 @@ textarea::placeholder {
 .btn.sm {
   height: 1.75rem;
   font-size: 0.75rem;
-  padding: 0 0.625rem;
+  padding: 0 0.875rem;
 }
 
 .btn.lg {
   height: 2.5rem;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
   font-size: 0.875rem;
 }
 
@@ -315,7 +317,7 @@ textarea::placeholder {
 }
 
 .toggle:focus-visible .toggle-track {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 /**
@@ -337,10 +339,11 @@ textarea::placeholder {
   cursor: not-allowed;
 }
 
+/** One size everywhere: 40x24 px track with a 20 px round thumb. */
 .toggle-track {
   display: inline-block;
-  width: 2.25rem;
-  height: 1.25rem;
+  width: 2.5rem;
+  height: 1.5rem;
   background-color: var(--ink-300);
   border-radius: var(--r-pill);
   position: relative;
@@ -350,33 +353,14 @@ textarea::placeholder {
   background-color: #2a3855;
 }
 
-/** Small size: 30x17 px, matches design .sm */
-.toggle-track.track-sm {
-  width: 1.875rem;
-  height: 1.0625rem;
-}
-
-/** Large size: 44x24 px, matches design .lg */
-.toggle-track.track-lg {
-  width: 2.75rem;
-  height: 1.5rem;
-}
-
 .toggle-on .toggle-track {
-  background-color: var(--teal-500);
-}
-.theme-dark .toggle-on .toggle-track {
-  background-color: var(--teal-400);
+  background-color: var(--pri);
 }
 
-/**
- * Thumb is sized to the track height minus 4px. Each size variant overrides
- * the dimensions so the thumb scales correctly for sm/default/lg.
- */
 .toggle-thumb {
   display: inline-block;
-  width: 1rem;
-  height: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
   background-color: white;
   border-radius: var(--r-pill);
   position: absolute;
@@ -387,28 +371,14 @@ textarea::placeholder {
     0 1px 1px rgba(0, 0, 0, 0.06);
   transition: transform 0.14s ease;
 }
-.toggle-track.track-sm .toggle-thumb {
-  width: 0.8125rem;
-  height: 0.8125rem;
-}
-.toggle-track.track-lg .toggle-thumb {
-  width: 1.25rem;
-  height: 1.25rem;
-}
 
 /**
  * Travel must be in rem like the track, or the thumb stops short of the
  * right edge once the global scale knob moves off 16px.
- * travel = track width - track height, for each size.
+ * travel = track width - track height.
  */
 .toggle-on .toggle-thumb {
   transform: translateX(1rem);
-}
-.toggle-on .toggle-track.track-sm .toggle-thumb {
-  transform: translateX(0.8125rem);
-}
-.toggle-on .toggle-track.track-lg .toggle-thumb {
-  transform: translateX(1.25rem);
 }
 
 .toggle-label {
@@ -473,7 +443,7 @@ textarea::placeholder {
 }
 
 .checkbox:focus-visible {
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
   border-radius: var(--r-sm);
 }
 

@@ -1,208 +1,248 @@
 /**
- * API keys screen: the key table, the security note, the issue dialog, and the
- * one-time plaintext reveal. Reuses shared tokens, .page-header, .icon-btn.
+ * API keys screen, drawn to the HeroUI design comp.
+ *
+ * Everything the comp shares with the other converted screens -- tokens,
+ * buttons, toolbar controls, table card, dialog chrome -- lives in `dc.css`
+ * behind a `dc` class. This file holds only what is specific to API keys.
+ *
+ * `.keys-dialog` appears alongside `.keys-screen` because modals render in a
+ * portal at the end of <body>, outside the screen element.
  */
 
 .keys-screen {
   padding: var(--s-6);
+  color: var(--text-1);
 }
 
 .keys-empty-project,
 .keys-loading {
   padding: var(--s-6);
   color: var(--text-3);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
-/* Table */
-/* Search + scope/environment filters above the keys table */
-.keys-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem 0.75rem;
-  margin-bottom: 0.75rem;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-1);
+/* ── Table column widths ─────────────────────────────────────────────────── */
+
+/** Reproduces the comp's `1.4fr .7fr 1.1fr .8fr .8fr .9fr 80px` track sizing. */
+.keys-card .table__column:nth-child(1) {
+  width: 22.7%;
 }
-.keys-toolbar .search-input {
-  flex: 1;
-  max-width: 22.5rem;
+.keys-card .table__column:nth-child(2) {
+  width: 11.4%;
+}
+.keys-card .table__column:nth-child(3) {
+  width: 17.8%;
+}
+.keys-card .table__column:nth-child(4) {
+  width: 13%;
+}
+.keys-card .table__column:nth-child(5) {
+  width: 13%;
+}
+.keys-card .table__column:nth-child(6) {
+  width: 14.5%;
+}
+.keys-card .table__column:nth-child(7) {
+  width: 7.6%;
 }
 
-.keys-table-foot {
-  display: flex;
-  align-items: center;
-  padding: 0.625rem 0.875rem;
-  background: var(--bg-subtle);
-  border-top: 1px solid var(--border);
-}
+/* ── Cells ───────────────────────────────────────────────────────────────── */
 
-.keys-card {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-1);
-  overflow: hidden;
-}
-.keys-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
-.keys-table th {
-  text-align: left;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-4);
-  padding: 0.625rem 1rem;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border);
-}
-.keys-table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-.keys-table tbody tr:last-child td {
-  border-bottom: none;
-}
 .keys-label {
   font-weight: 600;
+  font-size: 0.8125rem;
   color: var(--text-1);
 }
 .keys-label-sub {
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   color: var(--text-3);
-  margin-top: 0.125rem;
+  margin-top: 1px;
 }
-.keys-prefix {
-  font-size: 0.7812rem;
+.keys-card .table__cell .keys-prefix {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-1);
 }
-.keys-date {
+.keys-prefix .muted {
+  color: var(--text-3);
+}
+
+.keys-card .table__cell.keys-date {
+  font-size: 0.75rem;
   color: var(--text-2);
-  font-size: 0.7812rem;
   white-space: nowrap;
 }
-.keys-date.muted {
+.keys-card .table__cell.keys-date--soft {
   color: var(--text-3);
 }
-.keys-actions {
-  display: flex;
-  gap: 0.25rem;
-  justify-content: flex-end;
-}
-
-.keys-empty {
-  padding: var(--s-6);
-  text-align: center;
-  color: var(--text-3);
-  font-size: 0.875rem;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-1);
-}
-
-/* Security note */
-.keys-security-note {
-  margin-top: var(--s-4);
-  padding: 0.875rem;
-  background: var(--acc-soft);
-  border: 1px solid var(--acc-soft-border);
-  border-radius: var(--r-md);
-  display: grid;
-  grid-template-columns: 1.5rem 1fr;
-  gap: 0.75rem;
-  align-items: start;
-  font-size: 0.7812rem;
-  color: var(--acc-fg);
-}
-.keys-security-note strong {
-  color: var(--acc-fg);
-}
-
-/* Issue dialog form */
-.keys-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-}
-.keys-form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-.keys-form-label {
-  font-size: 0.8125rem;
+.keys-card .table__cell.keys-date--expired {
+  color: var(--danger);
   font-weight: 600;
+}
+
+/**
+ * Scope pill. HeroUI's Chip supplies the element and wraps its children in
+ * `.chip__label`, which is why the dot is aligned on that inner span.
+ */
+.keys-card .keys-scope {
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.keys-scope .chip__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+.keys-scope-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.keys-card .keys-scope--admin {
+  background: color-mix(in srgb, var(--pri) 12%, transparent);
+  color: var(--pri);
+}
+.keys-card .keys-scope--client {
+  background: color-mix(in srgb, var(--text-2) 12%, transparent);
   color: var(--text-2);
 }
-.keys-form-hint {
-  font-size: 0.75rem;
-}
-.keys-scope-seg {
+
+/* Row actions: ghost squares, red on hover for the destructive one. */
+.keys-actions {
   display: flex;
-  gap: 0.375rem;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.keys-card .keys-actions .icon-btn,
+.keys-card .keys-actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  box-shadow: none;
+}
+.keys-card .keys-actions .icon-btn:hover {
+  background: var(--border);
+  color: var(--text-1);
+}
+.keys-card .keys-actions .button:hover:not([disabled]) {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  filter: none;
 }
 
-/* One-time reveal */
+/* ── Security note ───────────────────────────────────────────────────────── */
+
+.keys-security-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--acc) 9%, var(--bg-elev));
+  border: 2px solid color-mix(in srgb, var(--acc) 35%, transparent);
+  border-radius: calc(var(--dc-r) + 2px);
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+.keys-security-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--acc) 18%, transparent);
+  color: var(--acc);
+  flex-shrink: 0;
+}
+.keys-security-note strong {
+  color: var(--text-1);
+}
+
+/* ── Issue dialog: scope segmented control ───────────────────────────────── */
+
+.keys-scope-seg {
+  display: flex;
+  gap: 8px;
+}
+.keys-dialog .keys-scope-seg .button {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 0.8125rem;
+}
+
+/* ── One-time reveal ─────────────────────────────────────────────────────── */
+
 .keys-reveal {
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
+  gap: 14px;
 }
 .keys-reveal-code {
-  background: #0b1220;
-  color: #e4f7f3;
-  padding: 0.875rem;
-  border-radius: var(--r-md);
-  border: 1px solid #1f2a40;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  word-break: break-all;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--dc-r);
+  background: #09090b;
+  border: 2px solid #27272a;
+  color: #e4f7f3;
   font-size: 0.8125rem;
+  word-break: break-all;
 }
 .keys-reveal-code .mono {
   flex: 1;
+  font-family: var(--font-mono);
 }
-/* Make the copy button legible on the dark reveal block */
-.btn.keys-reveal-copy {
-  background: #172238;
+.keys-dialog .btn.keys-reveal-copy {
+  background: #1f1f23;
   color: #e4f7f3;
-  border: 1px solid #2a3855;
+  border: 2px solid #3f3f46;
   flex-shrink: 0;
 }
-.btn.keys-reveal-copy:hover {
-  background: #1d2942;
+.keys-dialog .btn.keys-reveal-copy:hover {
+  background: #27272a;
 }
-.btn.keys-reveal-copy.is-copied {
+.keys-dialog .btn.keys-reveal-copy.is-copied {
   color: #5eead4;
 }
 .keys-reveal-usage {
   background: var(--bg-subtle);
-  border-radius: var(--r-md);
-  padding: 0.75rem;
+  border-radius: var(--dc-r);
+  padding: 12px;
 }
 .keys-reveal-usage-head {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.7812rem;
+  gap: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 0.375rem;
+  color: var(--text-1);
+  margin-bottom: 6px;
 }
 .keys-reveal-curl {
   background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 0.625rem 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   white-space: pre-wrap;
   word-break: break-all;
@@ -210,5 +250,6 @@
   color: var(--text-2);
 }
 .keys-reveal-foot {
-  font-size: 0.75rem;
+  font-size: 0.71875rem;
+  color: var(--text-3);
 }

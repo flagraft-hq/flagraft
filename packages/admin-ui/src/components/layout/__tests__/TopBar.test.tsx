@@ -11,6 +11,10 @@ vi.mock('../GlobalSearch', () => ({
   GlobalSearch: () => <div data-testid="global-search" />,
 }))
 
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { name: 'Test User', email: 'test@example.com' } }),
+}))
+
 const defaultProject: ProjectInfo = {
   id: 'proj-1',
   name: 'My Project',

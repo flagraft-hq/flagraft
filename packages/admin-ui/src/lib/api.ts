@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+import { loginUrlFor } from './nextPath'
+
 import type { UserRole } from './roles'
 import type {
   Flag,
@@ -27,23 +29,47 @@ export class ApiError extends Error {
   }
 }
 
+/** Where the API lives: VITE_API_URL when set, localhost otherwise. */
+const apiOrigin = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000'
+
+/**
+ * The base URL of this install's API, for the endpoints and snippets shown in
+ * the UI. There is no flagraft.io to hardcode: every install is self-hosted on
+ * its own domain, so this is whatever the admin UI is configured to talk to.
+ * SDKs use `<base>/client/...` and it is the same for every environment --
+ * which environment an SDK reads is decided by its client key, not the URL.
+ */
+export const apiBaseUrl = `${apiOrigin}/api/v1`
+
 /**
  * Axios instance for API calls.
- * Uses VITE_API_URL or defaults to localhost.
  * withCredentials ensures the flagraft_session cookie is sent on every request.
  */
 const http = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000',
+  baseURL: apiOrigin,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10_000,
   withCredentials: true,
 })
 
 /**
+ * Endpoints where a 401 is an ordinary answer rather than an expired session.
+ * The boot session check answers 401 for every signed-out visitor, so bouncing
+ * on it would stop the app from ever rendering a signed-out page -- including
+ * the 404. The login form and the public invite flow report their own 401s.
+ */
+const EXPECTED_401_PATHS = [
+  '/api/v1/admin/auth/me',
+  '/api/v1/admin/auth/login',
+  '/api/v1/public/invite/',
+]
+
+/**
  * Global response handler.
  * Extracts the human-readable server message from the response body so
  * components never have to parse AxiosError themselves.
- * Redirects to /login on 401 Unauthorized.
+ * Sends the browser to /login when a session expires mid-use, carrying the
+ * current location as `next` so signing back in returns there.
  */
 http.interceptors.response.use(
   (res) => res,
@@ -51,9 +77,12 @@ http.interceptors.response.use(
     if (axios.isAxiosError(err)) {
       const status = err.response?.status ?? 0
       const path = window.location.pathname
+      const requested = err.config?.url ?? ''
+      const expected = EXPECTED_401_PATHS.some((p) => requested.startsWith(p))
       /** The invite-accept page is public; a 401 there must not bounce to login. */
-      if (status === 401 && path !== '/login' && !path.startsWith('/invite/')) {
-        window.location.href = '/login'
+      const onPublicPage = path === '/login' || path.startsWith('/invite/')
+      if (status === 401 && !expected && !onPublicPage) {
+        window.location.href = loginUrlFor(path, window.location.search)
       }
       const data = err.response?.data as
         | { message?: string; issues?: { message: string }[] }
@@ -174,7 +203,7 @@ export const keysApi = {
   /** Returns the plaintext key once; the backend only ever stores its hash. */
   create: (
     projectId: string,
-    data: { type: ApiKeyType; environmentId?: string; description?: string },
+    data: { type: ApiKeyType; environmentId?: string; description: string },
   ) => http.post<CreatedApiKey>(`/api/v1/admin/projects/${projectId}/keys`, data),
 
   delete: (projectId: string, keyId: string) =>

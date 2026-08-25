@@ -16,6 +16,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: IconName
   rightIcon?: IconName
   iconOnly?: boolean
+  isDisabled?: boolean
+  isPending?: boolean
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -28,6 +30,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       iconOnly = false,
       className = '',
       children,
+      isDisabled,
+      isPending,
+      disabled,
       ...rest
     },
     ref,
@@ -48,13 +53,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ...variantClasses,
       size !== 'default' && size,
       iconOnly && 'icon-only',
+      isPending && 'pending',
       className,
     ]
       .filter(Boolean)
       .join(' ')
 
+    const actuallyDisabled = disabled || isDisabled || isPending
+
     return (
-      <button ref={ref} className={classes} {...rest}>
+      <button ref={ref} className={classes} disabled={actuallyDisabled} {...rest}>
         {leftIcon ? <Icon name={leftIcon} size={14} /> : null}
         {children}
         {rightIcon ? <Icon name={rightIcon} size={14} /> : null}
