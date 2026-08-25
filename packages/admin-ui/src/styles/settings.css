@@ -382,25 +382,25 @@
   padding-left: 1rem;
 }
 
-.role-select[data-role="owner"] {
+.role-select[data-role='owner'] {
   background-color: var(--danger-soft);
   color: var(--danger-fg);
   border-color: var(--danger-soft-border);
 }
 
-.role-select[data-role="admin"] {
+.role-select[data-role='admin'] {
   background-color: var(--pri-soft);
   color: var(--pri-fg);
   border-color: var(--pri-soft-border);
 }
 
-.role-select[data-role="editor"] {
+.role-select[data-role='editor'] {
   background-color: var(--acc-soft);
   color: var(--acc-fg);
   border-color: var(--acc-soft-border);
 }
 
-.role-select[data-role="viewer"] {
+.role-select[data-role='viewer'] {
   background-color: var(--bg-subtle);
   color: var(--text-2);
   border-color: var(--border);

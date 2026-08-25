@@ -196,9 +196,9 @@ All config is read from environment variables. See `.env.example` for the full l
 The admin UI is a separate build and reads one variable of its own, at build
 time rather than at run time:
 
-| Variable        | Default                 | Description                                                                                                                          |
-| --------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_URL`  | `http://localhost:3000` | Origin of the Flagraft API the admin UI talks to. Also the endpoint it shows on the Environments screen and in the API-key snippet, so set it to your own domain when self-hosting. |
+| Variable       | Default                 | Description                                                                                                                                                                         |
+| -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL` | `http://localhost:3000` | Origin of the Flagraft API the admin UI talks to. Also the endpoint it shows on the Environments screen and in the API-key snippet, so set it to your own domain when self-hosting. |
 
 ---
 

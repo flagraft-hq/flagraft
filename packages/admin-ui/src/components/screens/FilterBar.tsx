@@ -31,7 +31,12 @@ export function FilterBar({
 
   return (
     <div className="filters-bar dc-toolbar">
-      <SearchField aria-label="Search flags" value={search} onChange={onSearchChange} className="search-pill">
+      <SearchField
+        aria-label="Search flags"
+        value={search}
+        onChange={onSearchChange}
+        className="search-pill"
+      >
         <SearchField.Group>
           <SearchField.SearchIcon />
           <SearchField.Input placeholder="Filter by name or key..." />

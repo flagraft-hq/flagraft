@@ -358,9 +358,9 @@
   display: flex;
   flex-direction: column;
 }
-.user-drawer > [role="dialog"],
+.user-drawer > [role='dialog'],
 .user-drawer .drawer__dialog,
-.user-drawer [data-slot="base"] {
+.user-drawer [data-slot='base'] {
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: 100%;

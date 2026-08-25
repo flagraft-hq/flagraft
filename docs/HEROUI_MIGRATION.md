@@ -103,7 +103,7 @@ API and `--focus-ring` is only ours.
 | 564 tests across 52 files                            | Tests query by role and text; HeroUI changes DOM structure. Expect heavy churn, and treat every rewritten assertion as a chance to silently drop coverage.                                       |
 | Button used in 26 files, Modal 18, Select 10, Tip 10 | Leaf primitives have the widest blast radius. They go first, one per PR.                                                                                                                         |
 | Sorting, filtering and pagination are server-side    | HeroUI's table takes `sortDescriptor` / `onSortChange`. Wire those to the existing API params. Do **not** let it sort client-side — it would sort only the current page and look like it worked. |
-| After Phase 1: 125 KB gzip JS, 18 KB gzip CSS       | Was 110 / 16. The JS delta is React 19, not HeroUI — no HeroUI code is in the bundle yet. **Ceiling: 165 KB gzip JS (+50%).** Measure again after the pilot screen, not at the end.              |
+| After Phase 1: 125 KB gzip JS, 18 KB gzip CSS        | Was 110 / 16. The JS delta is React 19, not HeroUI — no HeroUI code is in the bundle yet. **Ceiling: 165 KB gzip JS (+50%).** Measure again after the pilot screen, not at the end.              |
 | HeroUI 3 ships all component CSS in one file         | Plain CSS does not tree-shake. Import per-component stylesheets alongside the components that use them, never the `@heroui/styles` barrel — that alone is +36 KB gzip.                           |
 | `radix-ui` and `motion` are not installed            | Already gone. Note that `@heroui/react` itself depends on `@radix-ui/react-avatar`, so Radix returns transitively regardless.                                                                    |
 | 5,633 lines of CSS in 14 files                       | Deleting it is the main prize. It only gets deleted when the last consumer of each rule is gone, so retirement is per-file and late.                                                             |
@@ -117,14 +117,14 @@ No visual change. Nothing replaced yet.
 Three of the six steps as written did not survive contact with HeroUI 3, which is a different
 product from the v2 this plan was drafted against:
 
-| Planned                                                    | Actual                                                                                                         |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `add @heroui/react`                                        | Done — plus five hard peers: `react-aria`, `react-aria-components`, `@react-aria/{i18n,ssr,utils}`              |
-| `HeroUIProvider` at the app root                           | **Does not exist in v3.** No provider is needed; components are imported and used directly                      |
-| HeroUI's Tailwind plugin via `@plugin`, `@source` scanning  | **No plugin in v3.** It ships plain CSS, wired by `@import` in `index.css`                                      |
-| Decisions 1 and 2                                          | Done — see above                                                                                               |
-| `ThemeContext` applies `dark`                              | Done, with a test                                                                                              |
-| Remove `radix-ui` and `motion`                             | Already absent from every `package.json` — no-op                                                               |
+| Planned                                                    | Actual                                                                                             |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `add @heroui/react`                                        | Done — plus five hard peers: `react-aria`, `react-aria-components`, `@react-aria/{i18n,ssr,utils}` |
+| `HeroUIProvider` at the app root                           | **Does not exist in v3.** No provider is needed; components are imported and used directly         |
+| HeroUI's Tailwind plugin via `@plugin`, `@source` scanning | **No plugin in v3.** It ships plain CSS, wired by `@import` in `index.css`                         |
+| Decisions 1 and 2                                          | Done — see above                                                                                   |
+| `ThemeContext` applies `dark`                              | Done, with a test                                                                                  |
+| Remove `radix-ui` and `motion`                             | Already absent from every `package.json` — no-op                                                   |
 
 The CSS import needed one deliberate departure. HeroUI's `@heroui/styles` entry point pulls in every
 component's stylesheet at once: **52.1 KB gzip, against a 16.2 KB baseline**, for components this app

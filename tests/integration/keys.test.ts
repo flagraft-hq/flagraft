@@ -158,7 +158,11 @@ describeIfDb('api keys', () => {
         method: 'POST',
         url: `/api/v1/admin/projects/${project.id}/keys`,
         headers: { authorization: rootKey },
-        payload: { type: API_KEY_TYPES.ADMIN, environmentId: productionId, description: 'Test key' },
+        payload: {
+          type: API_KEY_TYPES.ADMIN,
+          environmentId: productionId,
+          description: 'Test key',
+        },
       })
 
       expect(res.statusCode).toBe(400)
