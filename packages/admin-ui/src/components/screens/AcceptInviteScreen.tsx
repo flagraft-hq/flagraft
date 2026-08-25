@@ -72,11 +72,11 @@ export function AcceptInviteScreen() {
       <aside className="auth-brand">
         <div className="auth-brand-inner">
           <div className="auth-brand-mark">
-            <img 
-              src={logoImg} 
-              alt="Flagraft Logo" 
-              className="brand-logo" 
-              style={{ height: '4rem', marginLeft: '-0.875rem', marginRight: '-0.625rem' }} 
+            <img
+              src={logoImg}
+              alt="Flagraft Logo"
+              className="brand-logo"
+              style={{ height: '4rem', marginLeft: '-0.875rem', marginRight: '-0.625rem' }}
             />
             <span style={{ fontSize: '1.0625rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
               Flagraft
