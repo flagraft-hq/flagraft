@@ -198,9 +198,10 @@
   height: 22px;
   padding: 0 10px;
   border-radius: 999px;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 .users-role .chip__label,
 .users-tag .chip__label {
@@ -208,20 +209,43 @@
 }
 
 .users-role--owner {
-  background: color-mix(in srgb, var(--pri) 12%, transparent);
-  color: var(--pri);
+  background-color: var(--danger-soft);
+  color: var(--danger-fg);
+  border-color: var(--danger-soft-border);
 }
+.theme-dark .users-role--owner {
+  /* Let variables handle dark mode natively if they do, but we can keep it simple. */
+  background-color: var(--danger-soft);
+  color: var(--danger-fg);
+  border-color: var(--danger-soft-border);
+}
+
 .users-role--admin {
-  background: color-mix(in srgb, #8b5cf6 15%, transparent);
-  color: #7c3aed;
+  background-color: var(--pri-soft);
+  color: var(--pri-fg);
+  border-color: var(--pri-soft-border);
 }
 .theme-dark .users-role--admin {
-  color: #c4b5fd;
+  background-color: var(--pri-soft);
+  color: var(--pri-fg);
+  border-color: var(--pri-soft-border);
 }
-.users-role--editor,
+
+.users-role--editor {
+  background-color: var(--acc-soft);
+  color: var(--acc-fg);
+  border-color: var(--acc-soft-border);
+}
+.theme-dark .users-role--editor {
+  background-color: var(--acc-soft);
+  color: var(--acc-fg);
+  border-color: var(--acc-soft-border);
+}
+
 .users-role--viewer {
-  background: var(--bg-subtle);
+  background-color: var(--bg-subtle);
   color: var(--text-2);
+  border-color: var(--border);
 }
 
 .users-tag--slate {
@@ -277,10 +301,14 @@
   place-items: center;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: #fff;
-  background: var(--text-3);
   border-radius: 999px;
   flex-shrink: 0;
+  background: var(--teal-100);
+  color: var(--teal-700);
+}
+.theme-dark .avatar {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal-300);
 }
 .avatar.sm {
   width: 2rem;
@@ -292,18 +320,6 @@
   height: 3.5rem;
   font-size: 1.0625rem;
 }
-.avatar.color-teal {
-  background: linear-gradient(135deg, #2dd4bf, #0d9488);
-}
-.avatar.color-amber {
-  background: linear-gradient(135deg, #fbbf24, #d97706);
-}
-.avatar.color-violet {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-}
-.avatar.color-slate {
-  background: linear-gradient(135deg, #94a3b8, #475569);
-}
 
 .proj-avatar {
   display: inline-grid;
@@ -312,9 +328,13 @@
   height: 1.75rem;
   border-radius: 0.5rem;
   font-size: 0.6875rem;
-  background: linear-gradient(135deg, #2dd4bf, #0d9488);
-  color: #052321;
+  background: var(--teal-100);
+  color: var(--teal-700);
   font-weight: 700;
+}
+.theme-dark .proj-avatar {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal-300);
 }
 .proj-avatar-sm {
   width: 1.375rem;

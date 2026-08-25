@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Seeds a project, environment, flags and a client key against a running
  * server, then writes the client key to .bench.json for server.ts to use.

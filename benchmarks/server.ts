@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Load-tests the client evaluation endpoints against a running server.
  * Run seed.ts first -- it writes the client key this reads.

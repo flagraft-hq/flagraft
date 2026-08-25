@@ -47,7 +47,6 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   /**
    * The flags list shows the development and production columns by design.
    * Their labels come from the real environment names so renames show here too.
-   * ponytail: fixed two columns; revisit if the list needs to scale to N envs.
    */
   const nameFor = (slug: string) => environments.find((e) => e.slug === slug)?.name ?? slug
   const navigate = useNavigate()

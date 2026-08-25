@@ -247,33 +247,17 @@
   border-radius: 999px;
   font-weight: 700;
   flex-shrink: 0;
-  background: var(--pri-soft);
-  color: var(--pri-fg);
+  background: var(--teal-100);
+  color: var(--teal-700);
+}
+.theme-dark .flag-avatar {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal-300);
 }
 .flag-avatar-sm {
   width: 1.625rem;
   height: 1.625rem;
   font-size: 0.6562rem;
-}
-.flag-avatar-teal {
-  background: #0d9488;
-  color: #ffffff;
-}
-.flag-avatar-violet {
-  background: #7c3aed;
-  color: #ffffff;
-}
-.flag-avatar-amber {
-  background: #d97706;
-  color: #ffffff;
-}
-.flag-avatar-rose {
-  background: #e11d48;
-  color: #ffffff;
-}
-.flag-avatar-slate {
-  background: #475569;
-  color: #ffffff;
 }
 .edited-stack {
   display: flex;

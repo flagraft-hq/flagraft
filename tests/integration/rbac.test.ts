@@ -189,7 +189,7 @@ describeIfDb('session RBAC', () => {
       })
       expect(list.statusCode).toBe(200)
 
-      const body = list.json() as { data: Record<string, unknown>[] }
+      const body = list.json<{ data: Record<string, unknown>[] }>()
       expect(body.data.length).toBeGreaterThan(0)
       for (const user of body.data) {
         expect(user).not.toHaveProperty('passwordHash')

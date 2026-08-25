@@ -38,6 +38,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     /** Kept so the stack is still reachable in the browser console. */
+    // eslint-disable-next-line no-console
     console.error('Unhandled UI error:', error, info.componentStack)
   }
 

@@ -12,7 +12,7 @@ import { Kbd } from '../primitives/Kbd'
 const DEBOUNCE_MS = 250
 /** Source lists are refetched at most once per this window (throttle). */
 /**
- * ponytail: the palette matches against a cached first page rather than
+ * The palette matches against a cached first page rather than
  * querying the server per keystroke. Flags beyond this many rows will not
  * appear in quick search; move the match server-side if that starts to bite.
  */
@@ -39,7 +39,7 @@ interface SourceCache {
  * Topbar search over flags (name, key, tags) and users (name, email).
  * Typing is debounced; the flag/user lists are fetched lazily and refetched
  * at most once per throttle window. Results are keyboard-navigable.
- * ponytail: searches flags + users only; add API keys as sources
+ * Searches flags + users only; add API keys as sources
  * when someone actually asks for them.
  */
 export function GlobalSearch() {

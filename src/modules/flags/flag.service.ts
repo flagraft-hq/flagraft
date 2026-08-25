@@ -436,7 +436,7 @@ async function applyToggle(
  * requester wanting the same state is the confirmation, which applies the
  * toggle and clears the pending row.
  *
- * ponytail: the very first request for a given flag+environment isn't locked
+ * The very first request for a given flag+environment isn't locked
  * against a simultaneous first request from someone else (nothing exists yet
  * to lock) -- the unique constraint would surface that as a raw DB conflict.
  * Vanishingly unlikely (two admins requesting the exact same untouched

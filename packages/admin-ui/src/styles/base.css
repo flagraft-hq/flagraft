@@ -152,7 +152,6 @@
  * changing this one value scales the whole UI together. 16px is the
  * browser default; 19.2px is 20% larger.
  *
- * ponytail: border widths, shadows and pill radii stay in px on purpose —
  * a 1px hairline should stay 1px at any scale.
  */
 html {

@@ -172,7 +172,7 @@ function shouldRecordUsage(keyId: string): boolean {
   const now = Date.now()
   const previous = lastUsedWrites.get(keyId)
   if (previous !== undefined && now - previous < LAST_USED_WRITE_INTERVAL_MS) return false
-  /** ponytail: grows with the number of API keys, not with traffic. */
+  /** Grows with the number of API keys, not with traffic. */
   lastUsedWrites.set(keyId, now)
   return true
 }

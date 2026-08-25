@@ -150,7 +150,7 @@ export function FlagRow({
         </div>
 
         {/**
-         * ponytail: the confirm dialog lives inside a cell because a
+         * the confirm dialog lives inside a cell because a
          * `Table.Row` may only have cells as children -- React Aria reads them
          * to build its collection. It portals out of the table either way.
          */}

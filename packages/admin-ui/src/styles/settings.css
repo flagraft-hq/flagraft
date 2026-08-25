@@ -375,7 +375,35 @@
   padding-top: 0;
   padding-bottom: 0;
   line-height: 1.75rem;
-  font-size: 0.7812rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  text-align: center;
+  padding-left: 1rem;
+}
+
+.role-select[data-role="owner"] {
+  background-color: var(--danger-soft);
+  color: var(--danger-fg);
+  border-color: var(--danger-soft-border);
+}
+
+.role-select[data-role="admin"] {
+  background-color: var(--pri-soft);
+  color: var(--pri-fg);
+  border-color: var(--pri-soft-border);
+}
+
+.role-select[data-role="editor"] {
+  background-color: var(--acc-soft);
+  color: var(--acc-fg);
+  border-color: var(--acc-soft-border);
+}
+
+.role-select[data-role="viewer"] {
+  background-color: var(--bg-subtle);
+  color: var(--text-2);
+  border-color: var(--border);
 }
 
 /* Role capability matrix */

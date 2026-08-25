@@ -29,7 +29,6 @@ const ROLE_HINTS: Record<InvitableRole, string> = {
   viewer: 'Read-only across granted projects.',
 }
 
-/** ponytail: UI-side typo guard only. The backend (zod .email()) is authoritative. */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
