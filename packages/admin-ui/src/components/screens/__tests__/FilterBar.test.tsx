@@ -36,7 +36,10 @@ describe('FilterBar', () => {
   it('marks the active state chip as pressed', () => {
     render(<FilterBar {...defaultProps} stateFilter="on" />)
     expect(screen.getByRole('button', { name: 'Enabled' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Disabled' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Disabled' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'false')
   })
 

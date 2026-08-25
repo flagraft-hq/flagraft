@@ -195,8 +195,6 @@ describe('FlagDetailScreen', () => {
     expect(mockFlagsApi.delete).not.toHaveBeenCalled()
   })
 
-
-
   it('SDK snippet button opens SDK snippets modal', async () => {
     renderScreen()
     const sdkBtn = await screen.findByRole('button', { name: /sdk snippet/i })

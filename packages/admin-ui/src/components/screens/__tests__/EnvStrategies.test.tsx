@@ -55,7 +55,9 @@ beforeEach(() => {
 describe('EnvStrategies', () => {
   it('shows the on-for-everyone state when there are no strategies', async () => {
     renderIt()
-    expect(await screen.findByText(/No targeting rules — default value applies/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/No targeting rules — default value applies/i),
+    ).toBeInTheDocument()
   })
 
   it('renders a summary of rules and fields for existing strategies', async () => {
