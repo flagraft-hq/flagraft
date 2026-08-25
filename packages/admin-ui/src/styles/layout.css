@@ -38,23 +38,10 @@
   letter-spacing: -0.01em;
   font-size: 0.9375rem;
 }
-.brand-mark {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.5rem;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, var(--teal-400), var(--teal-600));
-  color: #06322c;
-  font-weight: 800;
-  font-size: 0.75rem;
-  letter-spacing: -0.02em;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 1px 2px rgba(0, 0, 0, 0.06);
-}
-.theme-dark .brand-mark {
-  color: #052321;
+.brand-logo {
+  height: 2.25rem;
+  width: auto;
+  object-fit: contain;
 }
 
 .project-switcher {

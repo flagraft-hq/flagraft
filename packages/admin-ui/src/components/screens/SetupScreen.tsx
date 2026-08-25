@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from '../primitives/Button'
+import logoImg from '../../assets/logo.png'
 
 /**
  * Temporary screen shown when the app redirects to /login before Phase 9 auth is built.
@@ -23,7 +24,7 @@ export function SetupScreen() {
     <div className="setup-screen">
       <div className="setup-card">
         <div className="brand" style={{ marginBottom: 24 }}>
-          <span className="brand-mark">FR</span>
+          <img src={logoImg} alt="Flagraft Logo" className="brand-logo" style={{ height: '4rem', marginLeft: '-0.875rem', marginRight: '-0.625rem' }} />
           <span style={{ fontSize: '1.0625rem', fontWeight: 700 }}>Flagraft</span>
         </div>
         <h1 className="setup-title">Connect to backend</h1>

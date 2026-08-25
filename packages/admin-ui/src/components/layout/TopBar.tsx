@@ -5,7 +5,8 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
 import type { Env } from '../../lib/types'
 
-/** Environment slugs are project-defined, so this is just a string. */
+import logoImg from '../../assets/logo.png'
+
 export type EnvSlug = string
 
 export interface ProjectInfo {
@@ -42,7 +43,7 @@ export function TopBar({
     <header className="topbar">
       {/* Brand */}
       <div className="brand">
-        <span className="brand-mark">FR</span>
+        <img src={logoImg} alt="Flagraft Logo" className="brand-logo" />
         <span>Flagraft</span>
       </div>
 
