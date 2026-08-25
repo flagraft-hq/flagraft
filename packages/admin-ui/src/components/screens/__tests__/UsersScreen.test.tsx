@@ -489,3 +489,26 @@ describe('UsersScreen without member-management rights', () => {
     expect(screen.queryByRole('button', { name: /actions for/i })).not.toBeInTheDocument()
   })
 })
+
+describe('UsersScreen loading states', () => {
+  it('shows skeleton rows on the first load, not an empty table', () => {
+    ;(usersApi.list as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}))
+    renderScreen()
+    expect(screen.getByRole('status', { name: /loading users/i })).toBeInTheDocument()
+    expect(screen.queryByText(/no users match/i)).not.toBeInTheDocument()
+  })
+
+  it('keeps the header and search box mounted while the first load runs', () => {
+    ;(usersApi.list as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}))
+    renderScreen()
+    /** Unmounting these would drop focus out of the search box on every fetch. */
+    expect(screen.getByRole('heading', { name: /^users$/i })).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: /search users/i })).toBeInTheDocument()
+  })
+
+  it('shows placeholders instead of zeroes in the stat tiles while counting', () => {
+    ;(usersApi.list as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}))
+    renderScreen()
+    expect(screen.getAllByLabelText('Loading').length).toBeGreaterThan(0)
+  })
+})

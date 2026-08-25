@@ -49,6 +49,64 @@ describe('useFlags', () => {
     expect(result.current.loading).toBe(true)
   })
 
+  it('is loading but not refreshing on the very first fetch', () => {
+    listMock().mockReturnValue(new Promise(() => {}))
+    const { result } = renderHook(() => useFlags({ projectId: 'proj-1', limit: 25, offset: 0 }))
+    expect(result.current.loading).toBe(true)
+    expect(result.current.refreshing).toBe(false)
+  })
+
+  it('reports later fetches as refreshing, keeping the previous page in hand', async () => {
+    listMock().mockResolvedValue(page(mockFlags, 2))
+    const { result, rerender } = renderHook(
+      (props: { search: string }) =>
+        useFlags({ projectId: 'proj-1', limit: 25, offset: 0, search: props.search }),
+      { initialProps: { search: '' } },
+    )
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    /** A filter change must never blank the table out again. */
+    listMock().mockReturnValue(new Promise(() => {}))
+    rerender({ search: 'alpha' })
+
+    await waitFor(() => expect(result.current.refreshing).toBe(true))
+    expect(result.current.loading).toBe(false)
+    expect(result.current.flags).toHaveLength(2)
+  })
+
+  it('clears refreshing once the later fetch lands', async () => {
+    listMock().mockResolvedValue(page(mockFlags, 2))
+    const { result, rerender } = renderHook(
+      (props: { search: string }) =>
+        useFlags({ projectId: 'proj-1', limit: 25, offset: 0, search: props.search }),
+      { initialProps: { search: '' } },
+    )
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    listMock().mockResolvedValue(page([mockFlags[0]], 1))
+    rerender({ search: 'alpha' })
+
+    await waitFor(() => expect(result.current.refreshing).toBe(false))
+    expect(result.current.flags).toHaveLength(1)
+  })
+
+  it('stops refreshing when a later fetch fails, and keeps reporting the error', async () => {
+    listMock().mockResolvedValue(page(mockFlags, 2))
+    const { result, rerender } = renderHook(
+      (props: { search: string }) =>
+        useFlags({ projectId: 'proj-1', limit: 25, offset: 0, search: props.search }),
+      { initialProps: { search: '' } },
+    )
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    listMock().mockRejectedValue(new Error('boom'))
+    rerender({ search: 'alpha' })
+
+    await waitFor(() => expect(result.current.error).toBe('boom'))
+    expect(result.current.refreshing).toBe(false)
+    expect(result.current.loading).toBe(false)
+  })
+
   it('returns the page and the unpaged total after a successful fetch', async () => {
     listMock().mockResolvedValue(page(mockFlags, 42))
     const { result } = renderHook(() => useFlags({ projectId: 'proj-1', limit: 25, offset: 0 }))

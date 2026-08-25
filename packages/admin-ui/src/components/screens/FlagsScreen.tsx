@@ -10,6 +10,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { useToast } from '../../hooks/useToast'
 import { Denied } from '../primitives/Denied'
 import { ErrorState } from '../primitives/ErrorState'
+import { TableSkeleton } from '../primitives/TableSkeleton'
 import { Pagination } from '../primitives/Pagination'
 import { Icon } from '../primitives/Icon'
 import { FilterBar } from './FilterBar'
@@ -63,7 +64,7 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   /** Typing must not fire a request per keystroke. */
   const debouncedSearch = useDebouncedValue(search, 300)
 
-  const { flags, total, loading, error, refetch } = useFlags({
+  const { flags, total, loading, refreshing, error, refetch } = useFlags({
     projectId,
     search: debouncedSearch,
     stateFilter,
@@ -86,18 +87,6 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   useEffect(() => {
     setSelectedKeys((current) => (current.length === 0 ? current : []))
   }, [offset])
-
-  if (loading) {
-    return (
-      <div className="flags-loading">
-        <span>Loading...</span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return <ErrorState title="Failed to load flags" message={error} onRetry={refetch} />
-  }
 
   const anyFilters = search !== '' || stateFilter !== null
 
@@ -152,9 +141,9 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           </p>
         </div>
         <div className="page-header-actions">
-          <Button variant="ghost" onClick={refetch}>
+          <Button variant="ghost" onClick={refetch} isDisabled={loading || refreshing}>
             <Icon name="refresh" size={14} />
-            Refresh
+            {refreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
           <Denied when={!canWrite} reason="Your role is read-only">
             <Button variant="primary" isDisabled={!canWrite} onClick={() => setShowCreate(true)}>
@@ -194,7 +183,17 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      {total === 0 && !anyFilters ? (
+      {loading ? (
+        <div className="flags-list dc-card">
+          <TableSkeleton
+            label="Loading flags"
+            rows={8}
+            columns={['1.25rem', '38%', '4rem', '4rem', '4rem', '5rem']}
+          />
+        </div>
+      ) : error ? (
+        <ErrorState title="Failed to load flags" message={error} onRetry={refetch} />
+      ) : total === 0 && !anyFilters ? (
         <div className="flags-empty dc-empty">
           <Icon name="flag" size={48} className="flags-empty-icon" />
           <h2 className="flags-empty-title">No flags yet</h2>
@@ -210,7 +209,10 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
           </Button>
         </div>
       ) : (
-        <div className="flags-list dc-card">
+        <div
+          className={'flags-list dc-card' + (refreshing ? ' is-refreshing' : '')}
+          aria-busy={refreshing}
+        >
           <Table>
             <Table.Content
               aria-label="Feature flags"

@@ -25,6 +25,7 @@ import { Pagination } from '../primitives/Pagination'
 import { InviteLinksModal } from './InviteLinksModal'
 import { UserBulkActionBar } from './UserBulkActionBar'
 import { Denied } from '../primitives/Denied'
+import { TableSkeleton } from '../primitives/TableSkeleton'
 import { usePermissions } from '../../hooks/usePermissions'
 import { UserDetailDrawer } from './UserDetailDrawer'
 import { InviteModal } from './InviteModal'
@@ -75,7 +76,7 @@ export function UsersScreen() {
   /** Typing must not fire a request per keystroke. */
   const debouncedQuery = useDebouncedValue(q, 300)
 
-  const { users, total, counts, loading, error, refetch } = useUsers({
+  const { users, total, counts, loading, refreshing, error, refetch } = useUsers({
     search: debouncedQuery,
     status: statusFilter === 'all' ? undefined : statusFilter,
     role: roleFilter === 'all' ? undefined : roleFilter,
@@ -186,18 +187,6 @@ export function UsersScreen() {
     setRoleFilter('all')
   }
 
-  if (loading) {
-    return (
-      <div className="users-loading" style={{ padding: '1.5rem' }}>
-        <span className="muted">Loading users...</span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return <ErrorState title="Failed to load users" message={error} onRetry={refetch} />
-  }
-
   return (
     <div className="users-screen dc">
       <div className="page-header">
@@ -228,6 +217,7 @@ export function UsersScreen() {
 
       <div className="users-stats">
         <StatCard
+          pending={loading}
           label="Total users"
           value={counts.all}
           sub={`${counts.active} active, ${counts.system} service`}
@@ -235,6 +225,7 @@ export function UsersScreen() {
           tone="teal"
         />
         <StatCard
+          pending={loading}
           label="Pending invites"
           value={counts.invited}
           sub={counts.invited > 0 ? 'expires in 7 days' : 'nothing pending'}
@@ -243,6 +234,7 @@ export function UsersScreen() {
           warn={counts.invited > 0}
         />
         <StatCard
+          pending={loading}
           label="Privileged access"
           value={counts.owners + counts.admins}
           sub={`${counts.owners} owner${counts.owners === 1 ? '' : 's'}, ${counts.admins} admin${counts.admins === 1 ? '' : 's'}`}
@@ -298,7 +290,17 @@ export function UsersScreen() {
         />
       </div>
 
-      {total === 0 ? (
+      {loading ? (
+        <div className="users-card dc-card">
+          <TableSkeleton
+            label="Loading users"
+            rows={8}
+            columns={['1.25rem', '32%', '5rem', '30%', '5rem', '1.5rem']}
+          />
+        </div>
+      ) : error ? (
+        <ErrorState title="Failed to load users" message={error} onRetry={refetch} />
+      ) : total === 0 ? (
         <div className="dc-empty users-empty">
           <h3>No users match</h3>
           <p>Try clearing the search or changing the status filter.</p>
@@ -309,7 +311,10 @@ export function UsersScreen() {
           )}
         </div>
       ) : (
-        <div className="users-card dc-card">
+        <div
+          className={'users-card dc-card' + (refreshing ? ' is-refreshing' : '')}
+          aria-busy={refreshing}
+        >
           <Table>
             <Table.Content
               aria-label="Workspace users"
@@ -431,6 +436,8 @@ export function UsersScreen() {
 }
 
 interface StatCardProps {
+  /** True on first load: the number is not known yet, so show a placeholder. */
+  pending?: boolean
   label: string
   value: ReactNode
   sub: ReactNode
@@ -439,18 +446,24 @@ interface StatCardProps {
   warn?: boolean
 }
 
-function StatCard({ label, value, sub, icon, tone, warn }: StatCardProps) {
+function StatCard({ label, value, sub, icon, tone, warn, pending }: StatCardProps) {
   return (
     <div className={'users-stat' + (warn ? ' warn' : '')} data-tone={tone}>
       <div className="users-stat-ic">
         <Icon name={icon} size={14} />
       </div>
       <div className="users-stat-body">
-        <div className="users-stat-val num">{value}</div>
+        <div className="users-stat-val num">
+          {pending ? <span className="users-stat-pending" aria-label="Loading" /> : value}
+        </div>
         <div className="users-stat-lbl">
           {label}
-          {' · '}
-          <span className="users-stat-sub">{sub}</span>
+          {pending ? null : (
+            <>
+              {' · '}
+              <span className="users-stat-sub">{sub}</span>
+            </>
+          )}
         </div>
       </div>
     </div>

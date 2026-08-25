@@ -75,6 +75,7 @@ beforeEach(() => {
     flags: [],
     total: 0,
     loading: false,
+    refreshing: false,
     error: null,
     refetch: vi.fn(),
   })
@@ -87,6 +88,7 @@ beforeEach(() => {
     setActiveProject: vi.fn(),
     setActiveEnv: vi.fn(),
     loading: false,
+    refreshing: false,
     error: null,
   })
 })
@@ -102,6 +104,7 @@ describe('FlagsScreen', () => {
       setActiveProject: vi.fn(),
       setActiveEnv: vi.fn(),
       loading: false,
+      refreshing: false,
       error: null,
     })
 
@@ -109,17 +112,50 @@ describe('FlagsScreen', () => {
     expect(screen.getByText('No project selected')).toBeInTheDocument()
   })
 
-  it('shows loading indicator when loading is true', () => {
+  it('shows skeleton rows on the very first load', () => {
     mockUseFlags.mockReturnValue({
       flags: [],
       total: 0,
       loading: true,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
 
     render(<FlagsScreen />)
-    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: /loading flags/i })).toBeInTheDocument()
+  })
+
+  it('keeps the filter bar mounted while the first load runs', () => {
+    mockUseFlags.mockReturnValue({
+      flags: [],
+      total: 0,
+      loading: true,
+      refreshing: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+
+    render(<FlagsScreen />)
+    /** Unmounting it would drop focus out of the search box on every fetch. */
+    expect(screen.getByRole('button', { name: /new flag/i })).toBeInTheDocument()
+  })
+
+  it('keeps the current rows on screen while a later fetch runs', () => {
+    mockUseFlags.mockReturnValue({
+      flags: defaultFlags,
+      total: defaultFlags.length,
+      loading: false,
+      refreshing: true,
+      error: null,
+      refetch: vi.fn(),
+    })
+
+    const { container } = render(<FlagsScreen />)
+    /** The previous page stays readable -- it is dimmed, not replaced. */
+    expect(screen.getByText(defaultFlags[0].name)).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: /loading flags/i })).not.toBeInTheDocument()
+    expect(container.querySelector('.flags-list')).toHaveAttribute('aria-busy', 'true')
   })
 
   it('shows error message when error is not null', () => {
@@ -127,6 +163,7 @@ describe('FlagsScreen', () => {
       flags: [],
       total: 0,
       loading: false,
+      refreshing: false,
       error: 'Failed to fetch flags',
       refetch: vi.fn(),
     })
@@ -140,6 +177,7 @@ describe('FlagsScreen', () => {
       flags: defaultFlags,
       total: defaultFlags.length,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
@@ -163,6 +201,7 @@ describe('FlagsScreen', () => {
       flags: defaultFlags,
       total: defaultFlags.length,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
@@ -179,6 +218,7 @@ describe('FlagsScreen', () => {
       flags: defaultFlags,
       total: defaultFlags.length,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
@@ -194,6 +234,7 @@ describe('FlagsScreen empty states', () => {
       flags: [],
       total: 0,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
@@ -209,6 +250,7 @@ describe('FlagsScreen empty states', () => {
       flags: [],
       total: 0,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
@@ -231,6 +273,7 @@ describe('FlagsScreen empty states', () => {
       flags: [],
       total: 0,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
@@ -284,6 +327,7 @@ describe('FlagsScreen integration', () => {
       flags: multipleFlags,
       total: multipleFlags.length,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: vi.fn(),
     })
@@ -381,6 +425,7 @@ describe('FlagsScreen integration', () => {
       flags: multipleFlags,
       total: multipleFlags.length,
       loading: false,
+      refreshing: false,
       error: null,
       refetch: mockRefetch,
     })
@@ -409,6 +454,7 @@ describe('FlagsScreen retry', () => {
       flags: [],
       total: 0,
       loading: false,
+      refreshing: false,
       error: 'Network error',
       refetch: mockRefetch,
     })
