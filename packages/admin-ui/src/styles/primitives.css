@@ -644,3 +644,36 @@
   margin-inline-start: 1.05rem;
   background: #ffffff;
 }
+
+/**
+ * Brand lockup -- the logo mark next to the wordmark.
+ *
+ * The mark art is cropped square, so each size only sets the mark height and
+ * lets the wordmark and the gap scale with it. None of the margin nudges the
+ * old uncropped asset needed are necessary here.
+ */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-1);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.brand-logo {
+  height: 2rem;
+  width: auto;
+  object-fit: contain;
+}
+.brand-word {
+  font-size: 1rem;
+}
+.brand[data-size='lg'] {
+  gap: 0.625rem;
+}
+.brand[data-size='lg'] .brand-logo {
+  height: 3rem;
+}
+.brand[data-size='lg'] .brand-word {
+  font-size: 1.5rem;
+}

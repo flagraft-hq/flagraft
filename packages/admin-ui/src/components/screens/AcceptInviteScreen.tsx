@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Button, FieldError, InputGroup, Label, TextField } from '@heroui/react'
 import { useAuth } from '../../contexts/AuthContext'
 import { inviteApi } from '../../lib/api'
+import { Brand } from '../primitives/Brand'
+import { FormError } from '../primitives/FormError'
 import { Icon } from '../primitives/Icon'
-import { Button } from '../primitives/Button'
 import { PasswordStrength } from '../primitives/PasswordStrength'
-import logoImg from '../../assets/logo.png'
 
 type LinkState =
   | { status: 'loading' }
@@ -71,22 +72,11 @@ export function AcceptInviteScreen() {
     <div className="auth-page">
       <aside className="auth-brand">
         <div className="auth-brand-inner">
-          <div className="auth-brand-mark">
-            <img
-              src={logoImg}
-              alt="Flagraft Logo"
-              className="brand-logo"
-              style={{ height: '4rem', marginLeft: '-0.875rem', marginRight: '-0.625rem' }}
-            />
-            <span style={{ fontSize: '1.0625rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
-              Flagraft
-            </span>
-          </div>
+          <Brand size="lg" />
           <div className="auth-pitch">
             <h1>
-              You're almost
+              You're almost in.
               <br />
-              in.
             </h1>
             <p>Set a password to activate your account and start shipping behind flags.</p>
           </div>
@@ -102,13 +92,8 @@ export function AcceptInviteScreen() {
           <span className="muted" style={{ fontSize: '0.7812rem' }}>
             Already have an account?
           </span>
-          <Button
-            size="sm"
-            variant="ghost"
-            rightIcon="arrowRight"
-            onClick={() => navigate('/login')}
-          >
-            Sign in
+          <Button size="sm" variant="ghost" onPress={() => navigate('/login')}>
+            Sign in <Icon name="arrowRight" size={14} />
           </Button>
         </div>
 
@@ -130,7 +115,7 @@ export function AcceptInviteScreen() {
                   Ask your workspace admin to send a fresh invite.
                 </p>
                 <div className="row" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
-                  <Button variant="ghost" onClick={() => navigate('/login', { replace: true })}>
+                  <Button variant="ghost" onPress={() => navigate('/login', { replace: true })}>
                     Go to sign in
                   </Button>
                 </div>
@@ -145,78 +130,83 @@ export function AcceptInviteScreen() {
                 </header>
 
                 <form onSubmit={(e) => void handleSubmit(e)} noValidate>
-                  <div className="field">
-                    <label htmlFor="invite-pw">New password</label>
-                    <div className="auth-input-wrap">
-                      <Icon name="key" size={14} className="ic" />
-                      <input
-                        id="invite-pw"
-                        className="input"
-                        type={showPw ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value)
-                          if (error) setError(null)
-                        }}
+                  <TextField
+                    className="field"
+                    value={password}
+                    onChange={(v) => {
+                      setPassword(v)
+                      if (error) setError(null)
+                    }}
+                    type={showPw ? 'text' : 'password'}
+                    autoFocus
+                  >
+                    <Label>New password</Label>
+                    <InputGroup fullWidth>
+                      <InputGroup.Prefix>
+                        <Icon name="key" size={14} />
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
                         placeholder="At least 8 characters"
-                        autoFocus
                         autoComplete="new-password"
                       />
-                      <button
-                        type="button"
-                        className="auth-input-toggle"
-                        onClick={() => setShowPw((v) => !v)}
-                      >
-                        <Icon name={showPw ? 'eyeOff' : 'eye'} size={14} />
-                        <span className="sr-only">
-                          {showPw ? 'Hide password' : 'Show password'}
-                        </span>
-                      </button>
-                    </div>
+                      <InputGroup.Suffix>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          isIconOnly
+                          onPress={() => setShowPw((v) => !v)}
+                        >
+                          <Icon name={showPw ? 'eyeOff' : 'eye'} size={14} />
+                          <span className="sr-only">
+                            {showPw ? 'Hide password' : 'Show password'}
+                          </span>
+                        </Button>
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     <PasswordStrength password={password} />
-                  </div>
+                  </TextField>
 
-                  <div className="field">
-                    <label htmlFor="invite-pw2">Confirm password</label>
-                    <div className="auth-input-wrap">
-                      <Icon name="key" size={14} className="ic" />
-                      <input
-                        id="invite-pw2"
-                        className="input"
-                        type={showPw ? 'text' : 'password'}
-                        value={confirm}
-                        onChange={(e) => setConfirm(e.target.value)}
+                  <TextField
+                    className="field"
+                    value={confirm}
+                    onChange={setConfirm}
+                    type={showPw ? 'text' : 'password'}
+                    isInvalid={mismatch}
+                  >
+                    <Label>Confirm password</Label>
+                    <InputGroup fullWidth>
+                      <InputGroup.Prefix>
+                        <Icon name="key" size={14} />
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
                         placeholder="Re-enter password"
                         autoComplete="new-password"
                       />
-                    </div>
-                    {mismatch ? (
-                      <span className="hint" style={{ color: 'var(--acc-fg)' }}>
-                        <Icon name="alert" size={11} /> Passwords don't match
-                      </span>
-                    ) : null}
-                  </div>
+                    </InputGroup>
+                    {/** Renders only while the field is invalid, i.e. while they differ. */}
+                    <FieldError className="auth-warn">
+                      <Icon name="alert" size={11} /> Passwords don&apos;t match
+                    </FieldError>
+                  </TextField>
 
-                  {error ? (
-                    <div role="alert" className="err">
-                      <Icon name="alert" size={13} />
-                      {error}
-                    </div>
-                  ) : null}
+                  <FormError message={error} />
 
                   <Button
                     type="submit"
                     variant="primary"
+                    fullWidth
                     className="auth-submit"
-                    rightIcon={submitting ? undefined : 'arrowRight'}
-                    disabled={!canSubmit}
+                    isDisabled={!canSubmit}
+                    isPending={submitting}
                   >
                     {submitting ? (
                       <>
                         <span className="auth-spinner" /> Activating&hellip;
                       </>
                     ) : (
-                      'Activate account'
+                      <>
+                        Activate account <Icon name="arrowRight" size={14} />
+                      </>
                     )}
                   </Button>
                 </form>

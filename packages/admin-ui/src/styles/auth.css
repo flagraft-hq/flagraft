@@ -40,19 +40,6 @@
   justify-content: center;
   gap: 1.875rem;
 }
-.auth-brand-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: var(--text-1);
-}
-.auth-brand-mark .brand-mark {
-  background: linear-gradient(135deg, #2dd4bf, #14b8a6);
-  color: #052321;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 8px 24px rgba(45, 212, 191, 0.35);
-}
 .auth-pitch {
   max-width: 27.5rem;
 }
@@ -239,52 +226,73 @@
   font-weight: 600;
   color: var(--text-2);
 }
-.auth-form .input {
+/**
+ * The fields are HeroUI InputGroups: a bordered shell holding a leading icon,
+ * the input, and (on password fields) the show/hide button. HeroUI draws
+ * dividers between those slots, which this design does not want, so the slot
+ * borders are stripped and the shell keeps the single outer border.
+ */
+.auth-form .input-group {
   width: 100%;
-  padding: 0 0.75rem;
+  height: 2.5rem;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--bg-elev);
-  font-size: 0.8438rem;
-  color: var(--text-1);
+  box-shadow: none;
   transition:
     border-color 0.1s,
     box-shadow 0.1s;
 }
-.auth-form .input::placeholder {
-  color: var(--text-4);
-}
-.auth-form .input:focus {
-  outline: none;
+.auth-form .input-group:has(.input-group__input:focus) {
   border-color: var(--pri);
   box-shadow: var(--focus-ring);
 }
-.auth-form .err {
-  display: flex;
-  /* Top-aligned so the icon sits on the first line when the message wraps */
-  align-items: flex-start;
-  gap: 0.375rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: var(--r-md);
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #b91c1c;
-  font-size: 0.7812rem;
+/* Beats the focus rule above, so an invalid field stays red while focused. */
+.auth-form .textfield[data-invalid='true'] .input-group {
+  border-color: var(--danger);
 }
-.auth-form .err svg {
-  flex-shrink: 0;
-  margin-top: 0.1875rem;
+.auth-form .input-group__input {
+  padding: 0;
+  font-size: 0.8438rem;
+  color: var(--text-1);
+  background: transparent;
 }
-.theme-dark .auth-form .err {
-  color: #fca5a5;
+.auth-form .input-group__input::placeholder {
+  color: var(--text-4);
 }
-.auth-form .hint {
+.auth-form .input-group__prefix,
+.auth-form .input-group__suffix {
+  border: none;
+  color: var(--text-4);
+}
+.auth-form .input-group__prefix {
+  padding: 0 0.5rem 0 0.75rem;
+}
+.auth-form .input-group__suffix {
+  padding: 0 0.375rem 0 0.5rem;
+}
+/* The show/hide password button, sized to sit inside the field. */
+.auth-form .input-group__suffix .button {
+  width: 1.75rem;
+  height: 1.75rem;
+  min-height: 0;
+  padding: 0;
+  color: var(--text-3);
+}
+/**
+ * Warnings that sit under a field: the Caps Lock notice (a HeroUI Description)
+ * and the password mismatch notice (a HeroUI FieldError).
+ */
+.auth-form .auth-warn {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  height: auto;
+  padding: 0;
   margin-top: 0.375rem;
   font-size: 0.7188rem;
-  color: var(--text-3);
+  color: var(--acc-fg);
+  opacity: 1;
 }
 
 .auth-info-msg {
@@ -306,43 +314,6 @@
 }
 .theme-dark .auth-info-msg {
   /* Inherit the nice dark mode soft colors already defined for --pri-soft etc. */
-}
-
-/* Input with icon */
-.auth-input-wrap {
-  position: relative;
-}
-.auth-input-wrap > .ic {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-4);
-  pointer-events: none;
-}
-.auth-input-wrap .input {
-  padding-left: 2.25rem;
-  padding-right: 2.5rem;
-  height: 2.5rem;
-}
-.auth-input-toggle {
-  position: absolute;
-  right: 0.375rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.375rem;
-  color: var(--text-3);
-  background: transparent;
-  display: inline-grid;
-  place-items: center;
-  cursor: pointer;
-  border: none;
-}
-.auth-input-toggle:hover {
-  background: var(--bg-hover);
-  color: var(--text-1);
 }
 
 .auth-submit {
@@ -371,6 +342,8 @@
   border: none;
   background: none;
   padding: 0;
+  height: auto;
+  min-height: 0;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--pri-fg);

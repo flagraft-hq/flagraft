@@ -29,19 +29,8 @@
   position: relative;
   z-index: 10;
 }
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
+.topbar .brand {
   padding-right: var(--s-3);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  font-size: 0.9375rem;
-}
-.brand-logo {
-  height: 2.25rem;
-  width: auto;
-  object-fit: contain;
 }
 
 .project-switcher {
