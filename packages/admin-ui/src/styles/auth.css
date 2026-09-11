@@ -360,14 +360,22 @@
   font-size: 0.75rem;
 }
 
+/**
+ * Terminal outcome panel: illustration, headline, cause, next step, one action.
+ * Spacing comes from the column gap so each band can stay margin-free.
+ */
 .auth-magic-sent {
   text-align: center;
   padding: 0.875rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4375rem;
 }
 .auth-magic-sent .ill {
-  width: 3rem;
-  height: 3rem;
-  margin: 0 auto 0.875rem;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0 0 0.5rem;
   border-radius: 999px;
   background: var(--pri-soft);
   border: 1px solid var(--pri-soft-border);
@@ -376,14 +384,24 @@
   place-items: center;
 }
 .auth-magic-sent h3 {
-  margin: 0 0 0.375rem;
-  font-size: 0.9375rem;
+  margin: 0;
+  font-size: 1.0625rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .auth-magic-sent p {
-  margin: 0 auto;
-  font-size: 0.8125rem;
+  margin: 0;
+  font-size: 0.8438rem;
+  line-height: 1.5;
   max-width: 20rem;
+}
+/** Sits a step below the cause so the two lines do not compete. */
+.auth-magic-sent .hint {
+  font-size: 0.7812rem;
+  color: var(--text-3);
+}
+.auth-magic-sent button {
+  margin-top: 0.875rem;
 }
 .auth-magic-sent .ill[data-tone='danger'] {
   background: rgba(239, 68, 68, 0.1);

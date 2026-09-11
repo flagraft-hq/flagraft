@@ -111,14 +111,15 @@ export function AcceptInviteScreen() {
                 </div>
                 <h3>Invite link expired</h3>
                 <p className="muted">{link.message}</p>
-                <p className="muted" style={{ marginTop: '0.5rem' }}>
-                  Ask your workspace admin to send a fresh invite.
-                </p>
-                <div className="row" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
-                  <Button variant="ghost" onPress={() => navigate('/login', { replace: true })}>
-                    Go to sign in
-                  </Button>
-                </div>
+                <p className="hint">Ask your workspace admin to send a fresh invite.</p>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onPress={() => navigate('/login', { replace: true })}
+                >
+                  Go to sign in
+                  <Icon name="arrowRight" size={14} />
+                </Button>
               </div>
             ) : (
               <>

@@ -349,35 +349,41 @@
  * HeroUI's Drawer supplies the overlay, the slide-in and the focus trap; this
  * only sizes it and dresses the three bands inside.
  */
-.user-drawer {
+.user-drawer.drawer__dialog {
   width: 100%;
   max-width: 30rem;
+  height: 100%;
+  padding: 0;
   background: var(--bg-elev);
   border-left: 2px solid var(--border);
+  border-radius: 0;
   color: var(--text-1);
-  display: flex;
-  flex-direction: column;
 }
-.user-drawer > [role='dialog'],
-.user-drawer .drawer__dialog,
-.user-drawer [data-slot='base'] {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  height: 100%;
-  min-height: 0;
-  width: 100%;
+/**
+ * HeroUI spaces the three bands apart and insets the body by 3px so its
+ * scrollbar clears the dialog padding. This drawer has no padding, so the
+ * bands should sit flush and run the full width.
+ */
+.user-drawer .drawer__header,
+.user-drawer .drawer__body,
+.user-drawer .drawer__footer {
+  margin: 0;
 }
+/** HeroUI stacks its drawer header as a column; this row holds one button. */
 .user-drawer-head {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: flex-end;
   padding: 0.625rem 0.875rem;
   border-bottom: 1px solid var(--border);
 }
+/** HeroUI tints the drawer body muted, which makes ordinary text read as disabled. */
 .user-drawer-body {
   padding: 0;
   overflow: auto;
   min-height: 0;
+  color: var(--text-1);
 }
 .user-drawer-hero {
   display: flex;

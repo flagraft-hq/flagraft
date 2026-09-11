@@ -105,8 +105,8 @@ export function UserDetailDrawer({ user, onClose, onUpdated }: UserDetailDrawerP
   return (
     <Drawer.Root isOpen onOpenChange={(next) => !next && onClose()}>
       <Drawer.Backdrop className="dc-backdrop">
-        <Drawer.Content placement="right" className="dc user-drawer">
-          <Drawer.Dialog aria-label={'User detail: ' + user.name}>
+        <Drawer.Content placement="right">
+          <Drawer.Dialog className="dc user-drawer" aria-label={'User detail: ' + user.name}>
             <Drawer.Header className="user-drawer-head">
               <button type="button" className="dc-icon-btn" onClick={onClose} aria-label="Close">
                 <Icon name="x" size={16} />
