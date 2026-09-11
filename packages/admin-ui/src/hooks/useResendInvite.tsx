@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { usersApi } from '../lib/api'
 import { useToast } from './useToast'
 import { Icon } from '../components/primitives/Icon'
@@ -41,13 +41,18 @@ export function useResendInvite() {
     const manual: InviteLink[] = ok
       .filter((r) => !r.emailed)
       .map((r) => ({ email: r.email, inviteUrl: r.inviteUrl }))
-    let clipNote: string | null = null
+    let clipNote: ReactNode = null
     if (manual.length > 0) {
       try {
         await navigator.clipboard.writeText(manual.map((m) => m.inviteUrl).join('\n'))
-        clipNote = `Email is not configured, ${
-          manual.length === 1 ? 'the new link was' : `${manual.length} links were`
-        } copied to the clipboard.`
+        const what =
+          manual.length === 1 ? 'The new link was' : `All ${manual.length} new links were`
+        clipNote = (
+          <>
+            Email is not configured. <strong>{what} copied to the clipboard</strong>, paste it
+            somewhere before closing this.
+          </>
+        )
       } catch {
         /** Copy is best-effort; the dialog is the reliable path to the links. */
         setFallbackLinks(manual)
@@ -59,6 +64,7 @@ export function useResendInvite() {
         title: targets.length === 1 ? 'Invite resent' : `Resent ${targets.length} invites`,
         msg: clipNote ?? (targets.length === 1 ? targets[0].email : undefined),
         variant: 'success',
+        sticky: clipNote !== null,
       })
       return true
     }
@@ -85,6 +91,7 @@ export function useResendInvite() {
         </>
       ),
       variant: 'success',
+      sticky: true,
     })
     return true
   }

@@ -15,7 +15,13 @@ export interface Toast {
   /** Plain text, or structured lines (see .toast-line) for mixed outcomes. */
   msg?: ReactNode
   variant?: 'default' | 'success' | 'error'
-  /** Auto-dismiss delay in ms; also drives the progress bar animation. */
+  /**
+   * Stays on screen until the user dismisses it. For outcomes the admin has
+   * to act on (a link sitting on the clipboard, a partial batch failure) —
+   * those must not vanish while they are still reading.
+   */
+  sticky?: boolean
+  /** Auto-dismiss delay in ms; also drives the progress bar animation. 0 when sticky. */
   duration: number
 }
 
@@ -41,8 +47,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     /** Non-string msg (structured lines) can't be measured; assume medium. */
     const msgChars = typeof toast.msg === 'string' ? toast.msg.length : toast.msg ? 120 : 0
     const chars = toast.title.length + msgChars
-    const duration = Math.min(12_000, Math.max(toast.variant === 'error' ? 6000 : 4000, chars * 60))
+    const duration = toast.sticky
+      ? 0
+      : Math.min(12_000, Math.max(toast.variant === 'error' ? 6000 : 4000, chars * 60))
     setToasts((prev) => [...prev, { ...toast, id, duration }])
+    if (toast.sticky) return
     const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
       timersRef.current.delete(id)
@@ -72,7 +81,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`toast ${t.variant ?? 'default'}`}
+            className={`toast ${t.variant ?? 'default'}${t.sticky ? ' is-sticky' : ''}`}
             role="status"
             style={{ '--toast-duration': `${t.duration}ms` } as CSSProperties}
           >
