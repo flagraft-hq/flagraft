@@ -338,3 +338,84 @@ export const usersApi = {
   removeFromProject: (id: string, projectId: string) =>
     http.delete(`/api/v1/admin/users/${id}/projects/${projectId}`),
 }
+
+/* ── Flag transfer (import / export) ─────────────────────────────────────── */
+
+/**
+ * Mirrors the server types in src/modules/transfer/transfer.schema.ts. The
+ * admin UI does not import from the server package, so these are hand-copied;
+ * keeping the field names identical is what makes a server change show up
+ * here as a type error rather than a runtime surprise.
+ */
+export type TransferWarningKind =
+  | 'unsupported-strategy'
+  | 'unsupported-operator'
+  | 'unknown-environment'
+  | 'approval-required'
+  | 'constraint-rejected'
+  | 'behaviour-change'
+
+export interface TransferWarning {
+  environment?: string
+  kind: TransferWarningKind
+  detail: string
+}
+
+export interface TransferFlagEntry {
+  key: string
+  action: 'created' | 'updated' | 'skipped'
+  reason?: string
+  warnings: TransferWarning[]
+}
+
+export interface TransferReport {
+  dryRun: boolean
+  source: 'flagraft' | 'unleash'
+  counts: {
+    flagsCreated: number
+    flagsUpdated: number
+    flagsSkipped: number
+    contextFieldsCreated: number
+    strategiesImported: number
+    strategiesSkipped: number
+  }
+  contextFieldsCreated: string[]
+  unmatchedEnvironments: string[]
+  flags: TransferFlagEntry[]
+}
+
+/** The document itself is opaque here: the UI moves it, it never reads it. */
+export interface TransferExport {
+  document: unknown
+  warnings: TransferWarning[]
+}
+
+export interface TransferImportRequest {
+  document: unknown
+  onConflict?: 'skip' | 'overwrite'
+  environmentMap?: Record<string, string>
+  dryRun?: boolean
+}
+
+export const transferApi = {
+  /** Native document plus any warnings. `keys` exports a subset. */
+  export: (projectId: string, keys?: string[]) =>
+    http.get<TransferExport>(`/api/v1/admin/projects/${projectId}/transfer/export`, {
+      params: keys?.length ? { keys: keys.join(',') } : undefined,
+    }),
+
+  import: (projectId: string, body: TransferImportRequest) =>
+    http.post<{ report: TransferReport }>(
+      `/api/v1/admin/projects/${projectId}/transfer/import`,
+      body,
+    ),
+
+  exportUnleash: (projectId: string) =>
+    http.get<TransferExport>(`/api/v1/admin/projects/${projectId}/transfer/export/unleash`),
+
+  importUnleash: (projectId: string, body: TransferImportRequest) =>
+    http.post<{ report: TransferReport; warnings: TransferWarning[] }>(
+      `/api/v1/admin/projects/${projectId}/transfer/import/unleash`,
+      body,
+    ),
+}

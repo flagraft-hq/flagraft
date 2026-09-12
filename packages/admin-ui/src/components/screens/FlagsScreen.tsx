@@ -17,6 +17,8 @@ import { FilterBar } from './FilterBar'
 import { FlagRow } from './FlagRow'
 import { FlagBulkActionBar } from './FlagBulkActionBar'
 import { CreateFlagModal } from './CreateFlagModal'
+import { ImportFlagsModal } from './ImportFlagsModal'
+import { ExportFlagsModal } from './ExportFlagsModal'
 import { flagsApi } from '../../lib/api'
 import { isFlagStale } from '../../lib/stale'
 import type { Flag, StateFilter } from '../../lib/types'
@@ -41,7 +43,7 @@ export function FlagsScreen() {
 
 function FlagsScreenInner({ projectId }: { projectId: string }) {
   const { activeEnv, environments, activeProject } = useProject()
-  const { canWrite } = usePermissions()
+  const { canWrite, canProjectAdmin } = usePermissions()
   const toast = useToast()
   const staleFlagDays = activeProject?.settings?.flagDefaults?.staleFlagDays
   /**
@@ -59,6 +61,8 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [toggleError, setToggleError] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [showExport, setShowExport] = useState(false)
 
   /** Typing must not fire a request per keystroke. */
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -144,6 +148,21 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
             <Icon name="refresh" size={14} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
+          <Button variant="secondary" onClick={() => setShowExport(true)}>
+            <Icon name="download" size={14} />
+            Export
+          </Button>
+          {/**
+           * Import rewrites flag state in every environment, so it follows the
+           * server's own rule and shows only for owners and admins. Export is
+           * left alone: reading every flag is already allowed.
+           */}
+          {canProjectAdmin ? (
+            <Button variant="secondary" onClick={() => setShowImport(true)}>
+              <Icon name="upload" size={14} />
+              Import
+            </Button>
+          ) : null}
           <Denied when={!canWrite} reason="Your role is read-only">
             <Button variant="primary" isDisabled={!canWrite} onClick={() => setShowCreate(true)}>
               <Icon name="plus" size={14} />
@@ -290,6 +309,19 @@ function FlagsScreenInner({ projectId }: { projectId: string }) {
         open={showCreate}
         projectId={projectId}
         onClose={() => setShowCreate(false)}
+      />
+      <ImportFlagsModal
+        open={showImport}
+        projectId={projectId}
+        onClose={() => setShowImport(false)}
+        onImported={refetch}
+      />
+      <ExportFlagsModal
+        open={showExport}
+        projectId={projectId}
+        projectSlug={activeProject?.slug ?? 'flags'}
+        selectedKeys={selectedKeys}
+        onClose={() => setShowExport(false)}
       />
     </div>
   )

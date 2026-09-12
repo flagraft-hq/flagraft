@@ -537,6 +537,12 @@
   border: 1px solid color-mix(in srgb, var(--pri) 25%, transparent);
   color: var(--pri);
 }
+/** Something imported, but not everything the file asked for. */
+.form-msg.warn {
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  color: var(--danger);
+}
 
 .invite-count {
   margin-left: 0.5rem;
