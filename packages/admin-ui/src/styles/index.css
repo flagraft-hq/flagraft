@@ -34,7 +34,8 @@
  * and ours wins. An `import './x.css'` inside a `.tsx` would land wherever the
  * bundler happened to put it.
  *
- * Currently rendered by: KeysScreen, FlagsScreen, EnvironmentsScreen, UsersScreen.
+ * Currently rendered by: KeysScreen, FlagsScreen, EnvironmentsScreen, UsersScreen,
+ * LoginScreen, AcceptInviteScreen.
  */
 @import '@heroui/styles/components/button.css' layer(components);
 @import '@heroui/styles/components/checkbox.css' layer(components);
@@ -44,6 +45,7 @@
 @import '@heroui/styles/components/dropdown.css' layer(components);
 @import '@heroui/styles/components/field-error.css' layer(components);
 @import '@heroui/styles/components/input.css' layer(components);
+@import '@heroui/styles/components/input-group.css' layer(components);
 @import '@heroui/styles/components/label.css' layer(components);
 @import '@heroui/styles/components/list-box.css' layer(components);
 @import '@heroui/styles/components/list-box-item.css' layer(components);

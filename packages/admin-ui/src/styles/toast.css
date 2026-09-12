@@ -40,6 +40,12 @@
   font-size: 0.7812rem;
   color: var(--text-3);
 }
+/** The part of a message the admin must actually read and act on. */
+.toast .msg strong {
+  font-size: 0.8438rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
 /* Structured outcome lines inside a toast msg (e.g. "2 resent" / "1 skipped") */
 .toast .toast-line {
   display: flex;
@@ -87,6 +93,10 @@
 .toast.default::after,
 .toast.info::after {
   background: var(--text-4);
+}
+/** No timer, so no progress bar to count down. */
+.toast.is-sticky::after {
+  display: none;
 }
 @keyframes toastIn {
   from {

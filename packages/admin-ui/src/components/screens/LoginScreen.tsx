@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Button, Description, InputGroup, Label, TextField } from '@heroui/react'
 import { useAuth } from '../../contexts/AuthContext'
 import { safeNext } from '../../lib/nextPath'
+import { Brand } from '../primitives/Brand'
+import { FormError } from '../primitives/FormError'
 import { Icon } from '../primitives/Icon'
-import { Button } from '../primitives/Button'
-import logoImg from '../../assets/logo.png'
 
 /** Illustrative rows for the brand panel's product preview card. */
 const PREVIEW_FLAGS = [
@@ -50,17 +51,7 @@ export function LoginScreen() {
       {/* Brand panel - hidden below 880px */}
       <aside className="auth-brand">
         <div className="auth-brand-inner">
-          <div className="auth-brand-mark">
-            <img
-              src={logoImg}
-              alt="Flagraft Logo"
-              className="brand-logo"
-              style={{ height: '4rem', marginLeft: '-0.875rem', marginRight: '-0.625rem' }}
-            />
-            <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
-              Flagraft
-            </span>
-          </div>
+          <Brand size="lg" />
 
           <div className="auth-pitch">
             <h1>Ship features without redeploying.</h1>
@@ -100,59 +91,62 @@ export function LoginScreen() {
             </header>
 
             <form onSubmit={(e) => void handleSubmit(e)} noValidate>
-              <div className="field">
-                <label htmlFor="auth-email">Email</label>
-                <div className="auth-input-wrap">
-                  <Icon name="user" size={14} className="ic" />
-                  <input
-                    id="auth-email"
-                    className="input mono"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+              <TextField className="field" value={email} onChange={setEmail} type="email" autoFocus>
+                <Label>Email</Label>
+                <InputGroup fullWidth>
+                  <InputGroup.Prefix>
+                    <Icon name="user" size={14} />
+                  </InputGroup.Prefix>
+                  <InputGroup.Input
+                    className="mono"
                     placeholder="you@company.com"
-                    autoFocus
                     autoComplete="username"
                   />
-                </div>
-              </div>
+                </InputGroup>
+              </TextField>
 
-              <div className="field">
+              <TextField
+                className="field"
+                value={password}
+                onChange={(v) => {
+                  setPassword(v)
+                  if (error) setError(null)
+                }}
+                type={showPw ? 'text' : 'password'}
+              >
                 <div className="auth-label-row">
-                  <label htmlFor="auth-pw">Password</label>
-                  <button
-                    type="button"
+                  <Label>Password</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="auth-forgot"
                     aria-expanded={showForgotHint}
-                    onClick={() => setShowForgotHint((v) => !v)}
+                    onPress={() => setShowForgotHint((v) => !v)}
                   >
                     Forgot password?
-                  </button>
+                  </Button>
                 </div>
-                <div className="auth-input-wrap">
-                  <Icon name="key" size={14} className="ic" />
-                  <input
-                    id="auth-pw"
-                    className="input"
-                    type={showPw ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value)
-                      if (error) setError(null)
-                    }}
-                    onKeyUp={(e) => setCapsOn(e.getModifierState?.('CapsLock') ?? false)}
+                <InputGroup fullWidth>
+                  <InputGroup.Prefix>
+                    <Icon name="key" size={14} />
+                  </InputGroup.Prefix>
+                  <InputGroup.Input
                     placeholder="••••••••"
                     autoComplete="current-password"
+                    onKeyUp={(e) => setCapsOn(e.getModifierState?.('CapsLock') ?? false)}
                   />
-                  <button
-                    type="button"
-                    className="auth-input-toggle"
-                    onClick={() => setShowPw((v) => !v)}
-                  >
-                    <Icon name={showPw ? 'eyeOff' : 'eye'} size={14} />
-                    <span className="sr-only">{showPw ? 'Hide password' : 'Show password'}</span>
-                  </button>
-                </div>
+                  <InputGroup.Suffix>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      onPress={() => setShowPw((v) => !v)}
+                    >
+                      <Icon name={showPw ? 'eyeOff' : 'eye'} size={14} />
+                      <span className="sr-only">{showPw ? 'Hide password' : 'Show password'}</span>
+                    </Button>
+                  </InputGroup.Suffix>
+                </InputGroup>
                 {showForgotHint ? (
                   <div className="auth-info-msg">
                     <Icon name="info" size={14} />
@@ -162,33 +156,30 @@ export function LoginScreen() {
                   </div>
                 ) : null}
                 {capsOn ? (
-                  <span className="hint" style={{ color: 'var(--acc-fg)' }}>
+                  <Description className="auth-warn">
                     <Icon name="alert" size={11} /> Caps Lock is on
-                  </span>
+                  </Description>
                 ) : null}
-              </div>
+              </TextField>
 
-              {error ? (
-                <div role="alert" className="err">
-                  <Icon name="alert" size={13} />
-                  {error}
-                </div>
-              ) : null}
+              <FormError message={error} />
 
               <Button
                 type="submit"
                 variant="primary"
+                fullWidth
                 className="auth-submit"
-                rightIcon={submitting ? undefined : 'arrowRight'}
-                disabled={submitting}
-                aria-label={submitting ? 'Signing in' : undefined}
+                isDisabled={submitting}
+                isPending={submitting}
               >
                 {submitting ? (
                   <>
                     <span className="auth-spinner" /> Signing in&hellip;
                   </>
                 ) : (
-                  'Sign in'
+                  <>
+                    Sign in <Icon name="arrowRight" size={14} />
+                  </>
                 )}
               </Button>
 

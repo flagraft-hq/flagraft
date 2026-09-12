@@ -1,11 +1,10 @@
+import { Brand } from '../primitives/Brand'
 import { Icon } from '../primitives/Icon'
 import { Tip } from '../primitives/Tip'
 import { GlobalSearch } from './GlobalSearch'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
 import type { Env } from '../../lib/types'
-
-import logoImg from '../../assets/logo.png'
 
 export type EnvSlug = string
 
@@ -42,10 +41,7 @@ export function TopBar({
   return (
     <header className="topbar">
       {/* Brand */}
-      <div className="brand">
-        <img src={logoImg} alt="Flagraft Logo" className="brand-logo" />
-        <span>Flagraft</span>
-      </div>
+      <Brand />
 
       {/* Project switcher */}
       <button className="project-switcher" onClick={onSwitchProject} aria-label="Switch project">

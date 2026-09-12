@@ -524,55 +524,6 @@
   padding: var(--s-6) 0;
 }
 
-.setup-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-app);
-}
-
-.setup-card {
-  width: 100%;
-  max-width: 23.75rem;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  padding: var(--s-10) var(--s-8);
-  box-shadow: var(--shadow-3);
-}
-
-.setup-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-1);
-  margin: 0 0 var(--s-2);
-}
-
-.setup-sub {
-  font-size: 0.8438rem;
-  color: var(--text-3);
-  margin: 0 0 var(--s-6);
-  line-height: 1.5;
-}
-
-.setup-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  margin-bottom: var(--s-4);
-}
-
-.setup-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-2);
-}
-
-.setup-submit {
-  width: 100%;
-}
-
 /* Context fields section */
 
 .ctx-section-sub {

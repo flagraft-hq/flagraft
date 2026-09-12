@@ -189,6 +189,43 @@ describe('ToastContext', () => {
     vi.useRealTimers()
   })
 
+  it('keeps a sticky toast until it is dismissed', () => {
+    vi.useFakeTimers()
+    function StickyConsumer() {
+      const { toasts, push } = useToast()
+      return (
+        <div>
+          <span data-testid="count">{toasts.length}</span>
+          <button
+            data-testid="push-sticky"
+            onClick={() => push({ title: 'Invite resent', msg: 'Copied', sticky: true })}
+          >
+            push sticky
+          </button>
+        </div>
+      )
+    }
+    render(
+      <ToastProvider>
+        <StickyConsumer />
+      </ToastProvider>,
+    )
+    act(() => {
+      screen.getByTestId('push-sticky').click()
+    })
+    /** Well past the 12s ceiling: a sticky toast has no timer at all. */
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+    expect(screen.getByTestId('count').textContent).toBe('1')
+    expect(screen.getByRole('status')).toHaveClass('is-sticky')
+    act(() => {
+      screen.getByRole('button', { name: 'Dismiss' }).click()
+    })
+    expect(screen.getByTestId('count').textContent).toBe('0')
+    vi.useRealTimers()
+  })
+
   it('useToast throws when called outside ToastProvider', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => render(<TestConsumer />)).toThrow('useToast called outside ToastProvider')

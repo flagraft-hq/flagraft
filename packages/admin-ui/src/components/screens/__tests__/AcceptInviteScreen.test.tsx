@@ -67,6 +67,18 @@ describe('AcceptInviteScreen', () => {
     expect(btn).toBeDisabled()
   })
 
+  it('reveals both password fields when the show-password button is clicked', async () => {
+    vi.mocked(inviteApi.get).mockResolvedValue({
+      data: { email: 'jo@co.com', name: 'Jo' },
+    } as unknown as Awaited<ReturnType<typeof inviteApi.get>>)
+    renderAt()
+    await waitFor(() => screen.getByText('Set your password'))
+    expect(screen.getByLabelText('New password')).toHaveAttribute('type', 'password')
+    fireEvent.click(screen.getByRole('button', { name: /show password/i }))
+    expect(screen.getByLabelText('New password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Confirm password')).toHaveAttribute('type', 'text')
+  })
+
   it('activates and navigates to /flags on success', async () => {
     vi.mocked(inviteApi.get).mockResolvedValue({
       data: { email: 'jo@co.com', name: 'Jo' },
