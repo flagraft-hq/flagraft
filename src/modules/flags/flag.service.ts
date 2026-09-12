@@ -35,7 +35,7 @@ function escapeLike(value: string): string {
  * have turned it on directly (an editor) -- otherwise a project default of
  * "on" would let flag creation bypass the toggle/targeting write guard.
  */
-function initialEnabled(
+export function initialEnabled(
   defaultState: DefaultFlagState | undefined,
   envSlug: string,
   isProtected: boolean,

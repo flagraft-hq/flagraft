@@ -1,9 +1,9 @@
 import { and, asc, eq } from 'drizzle-orm'
 
-import type { Db } from '../../db/index.js'
+import type { Db, DbLike } from '../../db/index.js'
 import { contextFields, environments, featureFlags, targetingStrategies } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
-import { OPERATORS_BY_TYPE } from './strategy.schema.js'
+import { constraintError, type FieldRule } from './constraint-rules.js'
 import type { PutStrategiesInput } from './strategy.schema.js'
 
 type StrategyRow = typeof targetingStrategies.$inferSelect
@@ -59,12 +59,15 @@ export async function listStrategies(
 }
 
 /**
- * Validates every constraint against the project's registered context fields:
- * the field must exist, the operator must be legal for its type, and enum
- * values must be within the field's allowed set.
+ * Loads a project's context fields keyed by field key, in the shape the
+ * constraint rule expects. Shared with the flag importer, which needs the
+ * same lookup inside its transaction.
  */
-async function validateConstraints(db: Db, projectId: string, input: PutStrategiesInput) {
-  const fields = await db
+export async function loadFieldRules(
+  db: DbLike,
+  projectId: string,
+): Promise<Map<string, FieldRule>> {
+  const rows = await db
     .select({
       key: contextFields.key,
       type: contextFields.type,
@@ -72,33 +75,24 @@ async function validateConstraints(db: Db, projectId: string, input: PutStrategi
     })
     .from(contextFields)
     .where(eq(contextFields.projectId, projectId))
-  const byKey = new Map(fields.map((f) => [f.key, f]))
-  const operatorsByType = OPERATORS_BY_TYPE as Record<string, readonly string[]>
+  return new Map(rows.map((row) => [row.key, row]))
+}
+
+/**
+ * Validates every constraint against the project's registered context fields.
+ *
+ * The rule itself lives in constraint-rules.ts because the flag importer needs
+ * the same decision without the throw -- it drops the offending strategy and
+ * reports it instead of failing the whole request.
+ */
+async function validateConstraints(db: Db, projectId: string, input: PutStrategiesInput) {
+  const fields = await loadFieldRules(db, projectId)
 
   for (const strategy of input.strategies) {
     for (const c of strategy.constraints) {
-      const field = byKey.get(c.fieldKey)
-      if (!field) {
-        throw new AppError(`Unknown context field: "${c.fieldKey}"`, 400, 'BadRequest')
-      }
-      const allowed = operatorsByType[field.type] ?? []
-      if (!allowed.includes(c.operator)) {
-        throw new AppError(
-          `Operator "${c.operator}" is not valid for ${field.type} field "${c.fieldKey}"`,
-          400,
-          'BadRequest',
-        )
-      }
-      if (field.type === 'enum' && field.enumValues) {
-        for (const v of c.values) {
-          if (!field.enumValues.includes(v)) {
-            throw new AppError(
-              `Value "${v}" is not an allowed value for "${c.fieldKey}"`,
-              400,
-              'BadRequest',
-            )
-          }
-        }
+      const reason = constraintError(fields, c)
+      if (reason) {
+        throw new AppError(reason, 400, 'BadRequest')
       }
     }
   }
