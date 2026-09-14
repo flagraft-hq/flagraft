@@ -73,6 +73,18 @@ describe('ImportFlagsModal', () => {
 
     await waitFor(() => expect(screen.getByText(/could not be read as json/i)).toBeInTheDocument())
     expect(mockImport).not.toHaveBeenCalled()
+    /** The name stays on screen; blanking it reads as the file vanishing. */
+    expect(screen.getByText('flags.json')).toBeInTheDocument()
+  })
+
+  it('keeps the file name visible when the server rejects the document', async () => {
+    mockImport.mockRejectedValue(new Error('Not a Flagraft export. 3 problems in the file: ...'))
+    renderModal()
+    await chooseFile()
+    fireEvent.click(screen.getByRole('button', { name: /preview/i }))
+
+    await waitFor(() => expect(screen.getByText(/3 problems in the file/i)).toBeInTheDocument())
+    expect(screen.getByText('flags.json')).toBeInTheDocument()
   })
 
   it('runs a dry run first and never imports straight from the file picker', async () => {
@@ -178,13 +190,29 @@ describe('ImportFlagsModal', () => {
     await waitFor(() => expect(screen.getByText(/legacy-banner/)).toBeInTheDocument())
   })
 
-  it('clears a chosen file when the source changes, so the wrong route cannot be used', async () => {
+  it('keeps the chosen file when the source changes', async () => {
     renderModal()
     await chooseFile()
     fireEvent.change(screen.getByLabelText(/where the file came from/i), {
       target: { value: 'unleash' },
     })
 
-    expect(screen.getByRole('button', { name: /preview/i })).toBeDisabled()
+    /** Emptying the picker here made the dialog look broken. */
+    expect(screen.getByRole('button', { name: /preview/i })).toBeEnabled()
+    expect(screen.getByText('flags.json')).toBeInTheDocument()
+  })
+
+  it('drops a stale report when the source changes', async () => {
+    renderModal()
+    await chooseFile()
+    fireEvent.click(screen.getByRole('button', { name: /preview/i }))
+    await waitFor(() => expect(screen.getByText(/preview only/i)).toBeInTheDocument())
+
+    fireEvent.change(screen.getByLabelText(/where the file came from/i), {
+      target: { value: 'unleash' },
+    })
+
+    expect(screen.queryByText(/preview only/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /preview/i })).toBeInTheDocument()
   })
 })

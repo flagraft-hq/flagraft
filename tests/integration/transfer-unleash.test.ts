@@ -228,4 +228,54 @@ describeIfDb('unleash transfer', () => {
 
     await app.close()
   })
+
+  it('counts strategies the adapter dropped, not just the ones the importer dropped', async () => {
+    const { app, auth, base } = await target()
+
+    /** Strategies with no environment: unplaceable, so dropped by the adapter. */
+    const res = await app.inject({
+      method: 'POST',
+      url: `${base}/transfer/import/unleash`,
+      headers: auth,
+      payload: {
+        document: {
+          features: [{ name: 'odd', description: '', archived: false }],
+          featureEnvironments: [{ featureName: 'odd', environment: 'production', enabled: true }],
+          featureStrategies: [
+            { featureName: 'odd', parameters: {}, constraints: [] },
+            { featureName: 'odd', parameters: {}, constraints: [] },
+          ],
+          contextFields: [],
+        },
+      },
+    })
+    expect(res.statusCode).toBe(200)
+
+    const { report } = res.json<ImportBody>()
+    expect(report.counts.flagsCreated).toBe(1)
+    /** The number must match the list of warnings shown beside it. */
+    expect(report.counts.strategiesSkipped).toBe(2)
+    expect(report.flags[0].warnings).toHaveLength(2)
+
+    await app.close()
+  })
+
+  it('rejects a malformed file with a readable message, not a wall of JSON', async () => {
+    const { app, auth, base } = await target()
+    const res = await app.inject({
+      method: 'POST',
+      url: `${base}/transfer/import/unleash`,
+      headers: auth,
+      payload: { document: { features: [{ description: 'no name' }] } },
+    })
+    expect(res.statusCode).toBe(400)
+
+    const message = res.json<{ message: string }>().message
+    expect(message).toContain('Not an Unleash export')
+    expect(message).not.toContain('invalid_type')
+    expect(message).not.toContain('"code"')
+    expect(message.length).toBeLessThan(400)
+
+    await app.close()
+  })
 })

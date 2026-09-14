@@ -31,17 +31,27 @@ const featureSchema = z.object({
 const featureEnvironmentSchema = z.object({
   featureName: z.string().min(1),
   environment: z.string().min(1),
-  enabled: z.boolean(),
+  enabled: z.boolean().default(false),
   variants: z.array(z.unknown()).default([]),
 })
 
+/**
+ * Unleash's own export varies between versions: some write `strategyName`,
+ * others `name`, and an entry can arrive with neither an environment nor a
+ * strategy name at all. None of that is worth failing a whole migration over,
+ * so both are optional here and the adapter skips and reports the entries it
+ * cannot place. Being strict would mean one odd row rejects 200 good flags.
+ */
 const featureStrategySchema = z.object({
   featureName: z.string().min(1),
-  environment: z.string().min(1),
-  strategyName: z.string().min(1),
+  environment: z.string().min(1).optional(),
+  strategyName: z.string().min(1).optional(),
+  /** Older exports call it `name`. */
+  name: z.string().min(1).optional(),
   sortOrder: z.number().optional(),
   disabled: z.boolean().optional(),
-  parameters: z.record(z.string(), z.string()).default({}),
+  /** Unleash writes numbers here in some versions; coerce rather than reject. */
+  parameters: z.record(z.string(), z.coerce.string()).default({}),
   constraints: z.array(constraintSchema).default([]),
   variants: z.array(z.unknown()).default([]),
   /** Segment ids. A strategy that references one cannot be represented. */

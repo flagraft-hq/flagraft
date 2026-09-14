@@ -109,3 +109,26 @@ export interface ExportEnvelope<T> {
   document: T
   warnings: TransferWarning[]
 }
+
+/**
+ * Turns zod issues into one sentence a person can act on.
+ *
+ * The raw issue array is a wall of JSON, and it used to reach the admin UI
+ * verbatim. Three examples and a count is enough to find the problem in the
+ * file; the whole list never helped anybody.
+ */
+export function summariseIssues(issues: z.ZodIssue[]): string {
+  if (issues.length === 0) return 'The file does not match the expected shape.'
+
+  const shown = issues.slice(0, 3).map((issue) => {
+    const path = issue.path.join('.')
+    return path ? `${path} — ${issue.message.toLowerCase()}` : issue.message
+  })
+  const rest = issues.length - shown.length
+
+  return (
+    `${issues.length} problem${issues.length === 1 ? '' : 's'} in the file: ` +
+    shown.join('; ') +
+    (rest > 0 ? `; and ${rest} more.` : '.')
+  )
+}

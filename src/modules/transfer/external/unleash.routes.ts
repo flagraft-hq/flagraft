@@ -3,9 +3,10 @@ import { z } from 'zod'
 
 import { cacheKeys } from '../../../cache/keys.js'
 import { AppError } from '../../../plugins/errorHandler.js'
-import { importOptionsSchema } from '../transfer.schema.js'
+import { importOptionsSchema, summariseIssues } from '../transfer.schema.js'
 import * as service from '../transfer.service.js'
 import { fromNative, toNative } from './unleash.adapter.js'
+import { unleashDocumentSchema } from './unleash.schema.js'
 
 const projectParamsSchema = z.object({ projectId: z.string().uuid() })
 
@@ -20,21 +21,21 @@ function parseUnleashDocument(input: unknown) {
     (input as { format?: unknown }).format === 'flagraft.export'
   if (looksNative) {
     throw new AppError(
-      'This is a Flagraft export. Use POST /transfer/import instead.',
+      'This is a Flagraft export, not an Unleash one. Import it as Flagraft instead (POST /transfer/import).',
       400,
       'BadRequest',
     )
   }
 
-  try {
-    return toNative(input)
-  } catch (error) {
+  const parsed = unleashDocumentSchema.safeParse(input)
+  if (!parsed.success) {
     throw new AppError(
-      `Not an Unleash export: ${error instanceof Error ? error.message : 'unrecognised shape'}`,
+      `Not an Unleash export. ${summariseIssues(parsed.error.issues)}`,
       400,
       'BadRequest',
     )
   }
+  return toNative(parsed.data)
 }
 
 export async function unleashRoutes(fastify: FastifyInstance) {

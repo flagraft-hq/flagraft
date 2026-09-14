@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { cacheKeys } from '../../cache/keys.js'
 import { AppError } from '../../plugins/errorHandler.js'
-import { importOptionsSchema, nativeDocumentSchema } from './transfer.schema.js'
+import { importOptionsSchema, nativeDocumentSchema, summariseIssues } from './transfer.schema.js'
 import * as service from './transfer.service.js'
 
 /**
@@ -20,14 +20,14 @@ function parseNativeDocument(input: unknown) {
     Array.isArray((input as { features?: unknown }).features)
   if (looksLikeUnleash) {
     throw new AppError(
-      'This looks like an Unleash export. Use POST /transfer/import/unleash instead.',
+      'This looks like an Unleash export. Import it as Unleash instead (POST /transfer/import/unleash).',
       400,
       'BadRequest',
     )
   }
 
   throw new AppError(
-    `Not a flagraft.export v1 document: ${parsed.error.issues[0]?.message ?? 'unrecognised shape'}`,
+    `Not a Flagraft export. ${summariseIssues(parsed.error.issues)}`,
     400,
     'BadRequest',
   )

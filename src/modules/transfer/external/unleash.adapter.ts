@@ -37,6 +37,30 @@ export const FROM_UNLEASH_OPERATOR: Record<string, string | undefined> = {
 }
 
 /**
+ * What an Unleash constraint means when `inverted: true` is set: the negation
+ * of the operator, for the ones we can negate exactly.
+ *
+ * The ones missing here are missing on purpose, because their negation is not
+ * a thing we can store:
+ *   STR_CONTAINS / STR_STARTS_WITH -- there is no notContains or notStartsWith
+ *   SEMVER_EQ -- version fields have no neq
+ *   DATE_AFTER / DATE_BEFORE -- before and after are both strict here, so
+ *     negating one loses the boundary instant and silently changes who matches
+ *     at exactly that time
+ * An inverted constraint using one of those drops its whole strategy, the same
+ * as any other rule we cannot carry over exactly.
+ */
+export const INVERTED_FROM_UNLEASH_OPERATOR: Record<string, string | undefined> = {
+  IN: 'notIn',
+  NOT_IN: 'in',
+  NUM_EQ: 'neq',
+  NUM_GT: 'lte',
+  NUM_GTE: 'lt',
+  NUM_LT: 'gte',
+  NUM_LTE: 'gt',
+}
+
+/**
  * The reverse table. `singleValue` marks an operator Unleash expresses as a
  * one-element IN: it has no equality operator of its own, and its context
  * values are strings throughout, so a boolean `is` lands there too.
@@ -226,27 +250,39 @@ const USER_ID_FIELD = 'userId'
 function convertStrategy(
   strategy: UnleashStrategy,
   operatorFor: (constraint: UnleashConstraint) => string | null,
-): { constraints: ConstraintLike[] } | { skip: string } {
+): { constraints: ConstraintLike[]; caseInsensitive: string[] } | { skip: string } {
+  const strategyName = strategy.strategyName ?? strategy.name
+  if (!strategyName) {
+    /**
+     * Without a name there is no way to know what the strategy did, and
+     * treating it as `default` would turn an unknown rule into one that
+     * matches everybody.
+     */
+    return { skip: 'the export gives this strategy no name, so what it matched is unknown' }
+  }
   if (strategy.disabled) {
-    return { skip: `"${strategy.strategyName}" is disabled in Unleash, so it was not imported` }
+    return { skip: `"${strategyName}" is disabled in Unleash, so it was not imported` }
   }
   if (strategy.segments.length > 0) {
-    return {
-      skip: `"${strategy.strategyName}" uses a segment, which has no equivalent here`,
-    }
+    return { skip: `"${strategyName}" uses a segment, which has no equivalent here` }
   }
 
   const constraints: ConstraintLike[] = []
+  /**
+   * Matching here is always case-sensitive, so an Unleash constraint that
+   * ignored case now matches fewer callers. That narrows rather than widens,
+   * which is the safe direction, but it is still a change in who sees the
+   * flag -- so it is carried out and reported, not silently applied.
+   */
+  const caseInsensitive: string[] = []
   for (const constraint of strategy.constraints) {
-    if (constraint.inverted) {
-      return {
-        skip: `constraint on "${constraint.contextName}" is inverted, and there is no NOT here`,
-      }
-    }
+    if (constraint.caseInsensitive) caseInsensitive.push(constraint.contextName)
     const operator = operatorFor(constraint)
     if (!operator) {
       return {
-        skip: `operator ${constraint.operator} on "${constraint.contextName}" has no equivalent here`,
+        skip: constraint.inverted
+          ? `inverted ${constraint.operator} on "${constraint.contextName}" has no exact negation here`
+          : `operator ${constraint.operator} on "${constraint.contextName}" has no equivalent here`,
       }
     }
     const values = constraint.values.length
@@ -260,9 +296,9 @@ function convertStrategy(
     constraints.push({ fieldKey: constraint.contextName, operator, values })
   }
 
-  switch (strategy.strategyName) {
+  switch (strategyName) {
     case 'default':
-      return { constraints }
+      return { constraints, caseInsensitive }
 
     case 'flexibleRollout': {
       const rollout = strategy.parameters.rollout ?? '100'
@@ -271,7 +307,7 @@ function convertStrategy(
           skip: `flexibleRollout at ${rollout}% -- percentage rollouts do not exist here yet, so importing it would turn ${rollout}% into 100%`,
         }
       }
-      return { constraints }
+      return { constraints, caseInsensitive }
     }
 
     case 'userWithId': {
@@ -284,6 +320,7 @@ function convertStrategy(
       }
       return {
         constraints: [...constraints, { fieldKey: USER_ID_FIELD, operator: 'in', values: userIds }],
+        caseInsensitive,
       }
     }
 
@@ -296,7 +333,7 @@ function convertStrategy(
       return { skip: 'applicationHostname has no equivalent context field here' }
 
     default:
-      return { skip: `strategy "${strategy.strategyName}" has no equivalent here` }
+      return { skip: `strategy "${strategyName}" has no equivalent here` }
   }
 }
 
@@ -323,7 +360,7 @@ export function toNative(input: unknown): ToNativeResult {
   const inferred = inferFieldTypes(source.contextFields, allConstraints)
 
   const needsUserId = source.featureStrategies.some(
-    (strategy) => strategy.strategyName === 'userWithId' && !strategy.disabled,
+    (strategy) => (strategy.strategyName ?? strategy.name) === 'userWithId' && !strategy.disabled,
   )
   if (needsUserId && !inferred.has(USER_ID_FIELD)) {
     inferred.set(USER_ID_FIELD, {
@@ -344,7 +381,10 @@ export function toNative(input: unknown): ToNativeResult {
   }
 
   const operatorFor = (constraint: UnleashConstraint): string | null => {
-    const operator = FROM_UNLEASH_OPERATOR[constraint.operator]
+    /** `inverted` negates the constraint, so it needs the opposite operator. */
+    const operator = constraint.inverted
+      ? INVERTED_FROM_UNLEASH_OPERATOR[constraint.operator]
+      : FROM_UNLEASH_OPERATOR[constraint.operator]
     if (!operator) return null
     const field = inferred.get(constraint.contextName)
     /** SEMVER_EQ and NUM_EQ both map to "eq"; the field type disambiguates. */
@@ -382,6 +422,15 @@ export function toNative(input: unknown): ToNativeResult {
     })
   }
 
+  /**
+   * Every environment the export mentions anywhere. An export taken from one
+   * Unleash environment names exactly one, which is what makes the inference
+   * below safe.
+   */
+  const documentEnvironments = new Set(source.featureEnvironments.map((e) => e.environment))
+  /** Environments strategies were placed in by inference, for one summary warning. */
+  const inferredPlacements = new Map<string, number>()
+
   const flags: NativeDocument['flags'] = []
   for (const feature of source.features) {
     if (feature.archived) continue
@@ -392,24 +441,65 @@ export function toNative(input: unknown): ToNativeResult {
       environments[entry.environment] = { enabled: entry.enabled, strategies: [] }
     }
 
+    /**
+     * Unleash's single-environment export writes no `environment` on a
+     * strategy -- the environment is the one the export was taken from, and it
+     * shows up only on the feature's own state rows. When the feature has
+     * exactly one of those, or the whole export describes exactly one
+     * environment, there is nothing to guess at: that is where the strategy
+     * belongs. Only a genuinely ambiguous strategy is dropped below.
+     */
+    const featureEnvironmentSlugs = Object.keys(environments)
+    const impliedEnvironment =
+      featureEnvironmentSlugs.length === 1
+        ? featureEnvironmentSlugs[0]
+        : documentEnvironments.size === 1
+          ? [...documentEnvironments][0]
+          : undefined
+
     const ordered = source.featureStrategies
       .filter((strategy) => strategy.featureName === feature.name)
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
     for (const strategy of ordered) {
+      const environmentSlug = strategy.environment ?? impliedEnvironment
+      /**
+       * Still nothing to place it against: the export names several
+       * environments and this strategy says nothing about which one it is for.
+       * Guessing would switch targeting on somewhere the export never said.
+       */
+      if (!environmentSlug) {
+        addFlagWarning(feature.name, {
+          kind: 'unknown-environment',
+          detail:
+            'Strategy dropped: the export does not say which environment it belongs to, and it ' +
+            'describes more than one. Rebuild it by hand in the right environment.',
+        })
+        continue
+      }
+      if (!strategy.environment) {
+        inferredPlacements.set(environmentSlug, (inferredPlacements.get(environmentSlug) ?? 0) + 1)
+      }
       /** A strategy can name an environment the feature has no state row for. */
-      environments[strategy.environment] ??= { enabled: false, strategies: [] }
+      environments[environmentSlug] ??= { enabled: false, strategies: [] }
 
       const converted = convertStrategy(strategy, operatorFor)
       if ('skip' in converted) {
         addFlagWarning(feature.name, {
-          environment: strategy.environment,
+          environment: environmentSlug,
           kind: 'unsupported-strategy',
           detail: `Strategy dropped: ${converted.skip}. Rebuild it by hand rather than importing a wider rule.`,
         })
         continue
       }
-      environments[strategy.environment].strategies.push({ constraints: converted.constraints })
+      if (converted.caseInsensitive.length > 0) {
+        addFlagWarning(feature.name, {
+          environment: environmentSlug,
+          kind: 'behaviour-change',
+          detail: `Constraint on ${converted.caseInsensitive.map((key) => `"${key}"`).join(', ')} ignored case in Unleash; matching here is case-sensitive, so it now matches fewer callers.`,
+        })
+      }
+      environments[environmentSlug].strategies.push({ constraints: converted.constraints })
     }
 
     flags.push({
@@ -417,6 +507,20 @@ export function toNative(input: unknown): ToNativeResult {
       name: feature.name,
       description: feature.description ?? null,
       environments,
+    })
+  }
+
+  if (inferredPlacements.size > 0) {
+    const total = [...inferredPlacements.values()].reduce((sum, count) => sum + count, 0)
+    const placed = [...inferredPlacements.entries()]
+      .map(([slug, count]) => `${count} in "${slug}"`)
+      .join(', ')
+    warnings.push({
+      kind: 'unknown-environment',
+      detail:
+        `${total} strategy/strategies named no environment, so they were placed in the only one ` +
+        `the export describes for their flag: ${placed}. This is how Unleash writes a ` +
+        `single-environment export -- check the environment is the one you meant.`,
     })
   }
 

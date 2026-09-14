@@ -315,6 +315,14 @@ async function applyImport(tx: DbLike, projectId: string, args: ImportArgs): Pro
       action: 'created',
       warnings: [...(args.seedWarnings?.get(flag.key) ?? [])],
     }
+    /**
+     * Strategies an adapter dropped before the document ever got here still
+     * count as skipped. Without this the report showed "0 dropped" above a
+     * list of everything it had dropped.
+     */
+    report.counts.strategiesSkipped += entry.warnings.filter(
+      (warning) => warning.kind === 'unsupported-strategy',
+    ).length
     const existingId = existingByKey.get(flag.key)
 
     if (existingId && onConflict === 'skip') {

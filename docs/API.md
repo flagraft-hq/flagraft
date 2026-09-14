@@ -429,6 +429,23 @@ curl -s -X POST "http://localhost:3000/api/v1/admin/projects/$PROJECT_ID/transfe
 Flagraft's model has no variants, no percentage rollouts and no segments. Unleash leans
 on all three, so the mapping is lossy by nature -- and everything lost is reported.
 
+Flagraft is deliberately lenient about the shape: Unleash's export differs between
+versions, and entries arrive missing `environment` or `strategyName` (some write `name`
+instead). Rather than reject the whole file over a few odd rows, those entries are
+skipped and named in the report so the rest of the migration still lands.
+
+### Strategies with no environment
+
+An export taken from a single Unleash environment writes no `environment` on its
+strategies at all -- the environment appears only on the feature's `featureEnvironments`
+row. Such a strategy is placed in the one environment its flag has, or, if the flag has
+no state row, in the single environment the export describes. That is a lookup, not a
+guess, and the import reports how many strategies were placed this way and where.
+
+A strategy with no `environment` in an export that describes **several** environments is
+genuinely ambiguous, so it is **dropped** and reported. Placing it would switch targeting
+on somewhere the export never named.
+
 ### Top level
 
 | Unleash                                                 | Becomes                                             |
@@ -439,6 +456,7 @@ on all three, so the mapping is lossy by nature -- and everything lost is report
 | `features[].type`, `stale`, `impressionData`, `project` | ignored; no equivalent                              |
 | `featureEnvironments[]`                                 | per-environment `enabled`                           |
 | `featureStrategies[]`                                   | strategies, ordered by `sortOrder`                  |
+| `featureStrategies[].environment` missing               | inferred when unambiguous; see above                |
 | `contextFields[]`, `legalValues[].value`                | context fields, `enumValues`                        |
 | `featureTags`, `tagTypes`, `segments`, `dependencies`   | **dropped**, reported once each                     |
 | any `variants`                                          | **dropped**, reported                               |
@@ -472,11 +490,28 @@ on all three, so the mapping is lossy by nature -- and everything lost is report
 | `SEMVER_EQ`                           | `eq`                  | version                                      |
 | `STR_ENDS_WITH`                       | --                    | no equivalent                                |
 | `SEMVER_GT` `SEMVER_LT`               | --                    | we have only `eq`, `gte`, `lte`, `satisfies` |
-| `inverted: true`                      | --                    | no NOT wrapper in the model                  |
+| `inverted: true`                      | the negated operator  | see below                                    |
 
 An unmapped operator drops its whole strategy, per the fail-safe rule above.
 `caseInsensitive: true` is kept and reported as `behaviour-change`: the constraint becomes
 case-sensitive, which narrows who matches, and narrowing is the safe direction.
+
+#### Inverted constraints
+
+Unleash writes "is not one of" as an operator plus `inverted: true`. There is no NOT
+wrapper here, so the inversion is folded into the operator itself, which is exact:
+
+| Unleash, inverted            | Becomes                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `IN`                         | `notIn`                                                                                              |
+| `NOT_IN`                     | `in`                                                                                                 |
+| `NUM_EQ`                     | `neq`                                                                                                |
+| `NUM_GT` / `NUM_GTE`         | `lte` / `lt`                                                                                         |
+| `NUM_LT` / `NUM_LTE`         | `gte` / `gt`                                                                                         |
+| `STR_CONTAINS`               | **dropped** -- no `notContains`                                                                      |
+| `STR_STARTS_WITH`            | **dropped** -- no `notStartsWith`                                                                    |
+| `SEMVER_EQ`                  | **dropped** -- version has no `neq`                                                                  |
+| `DATE_AFTER` / `DATE_BEFORE` | **dropped** -- `before` and `after` are both strict here, so negating one loses the boundary instant |
 
 ### Context field typing
 

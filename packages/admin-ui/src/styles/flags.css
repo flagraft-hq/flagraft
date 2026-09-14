@@ -585,3 +585,17 @@
   min-height: 0;
   overflow-y: auto;
 }
+
+/**
+ * A rejected file can come back with a long explanation. Cap it and let it
+ * scroll rather than pushing the rest of the dialog out of reach.
+ */
+.transfer-form .form-msg {
+  max-height: 9rem;
+  overflow-y: auto;
+  align-items: flex-start;
+}
+.transfer-form .form-msg svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}

@@ -226,8 +226,14 @@ describe('toNative', () => {
     expect(details('new-checkout')).toContain('STR_ENDS_WITH')
   })
 
-  it('skips an inverted constraint rather than dropping the negation', () => {
-    expect(details('new-checkout').toLowerCase()).toContain('inverted')
+  it('imports an inverted constraint as its negated operator', () => {
+    /** Unleash writes "not in one of" as NOT_IN with inverted set; that is our `in`. */
+    const production = result().document.flags[0].environments.production
+    expect(production.strategies).toEqual(
+      expect.arrayContaining([
+        { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['free'] }] },
+      ]),
+    )
   })
 
   it('skips a strategy that references a segment', () => {
@@ -236,10 +242,14 @@ describe('toNative', () => {
 
   it('orders the surviving strategies by sortOrder', () => {
     const production = result().document.flags[0].environments.production
-    /** sortOrder 0 (flexibleRollout 100) then 1 (userWithId); the rest dropped. */
+    /**
+     * sortOrder 0 (flexibleRollout 100), 1 (userWithId) and 4 (an inverted
+     * NOT_IN, which negates to `in`); 2, 3 and 5 dropped.
+     */
     expect(production.strategies).toEqual([
       { constraints: [{ fieldKey: 'appVersion', operator: 'eq', values: ['2.1.0'] }] },
       { constraints: [{ fieldKey: 'userId', operator: 'in', values: ['u-1', 'u-2'] }] },
+      { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['free'] }] },
     ])
   })
 
@@ -363,5 +373,372 @@ describe('fromNative', () => {
     ])
     expect(back.flags[0].environments.production.enabled).toBe(true)
     expect(back.flags[0].environments.development.enabled).toBe(false)
+  })
+})
+
+describe('inverted constraints', () => {
+  const base = {
+    features: [{ name: 'a', description: '', archived: false }],
+    featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+    contextFields: [],
+  }
+
+  const withConstraint = (constraint: Record<string, unknown>) =>
+    toNative({
+      ...base,
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'production',
+          strategyName: 'default',
+          parameters: {},
+          constraints: [constraint],
+        },
+      ],
+    })
+
+  const strategiesOf = (result: ReturnType<typeof toNative>) =>
+    result.document.flags[0].environments.production.strategies
+
+  it.each([
+    ['IN', 'notIn'],
+    ['NOT_IN', 'in'],
+  ])('negates %s to %s', (operator, expected) => {
+    const result = withConstraint({
+      contextName: 'tenant',
+      operator,
+      values: ['acme'],
+      inverted: true,
+    })
+    expect(strategiesOf(result)).toEqual([
+      { constraints: [{ fieldKey: 'tenant', operator: expected, values: ['acme'] }] },
+    ])
+  })
+
+  it.each([
+    ['NUM_EQ', 'neq'],
+    ['NUM_GT', 'lte'],
+    ['NUM_GTE', 'lt'],
+    ['NUM_LT', 'gte'],
+    ['NUM_LTE', 'gt'],
+  ])('negates %s to %s, which is exact on numbers', (operator, expected) => {
+    const result = withConstraint({
+      contextName: 'seats',
+      operator,
+      values: ['10'],
+      inverted: true,
+    })
+    expect(strategiesOf(result)).toEqual([
+      { constraints: [{ fieldKey: 'seats', operator: expected, values: ['10'] }] },
+    ])
+  })
+
+  it.each(['STR_CONTAINS', 'STR_STARTS_WITH'])(
+    'drops an inverted %s, because there is no negated form of it here',
+    (operator) => {
+      const result = withConstraint({
+        contextName: 'email',
+        operator,
+        values: ['@acme'],
+        inverted: true,
+      })
+      expect(strategiesOf(result)).toEqual([])
+      expect(result.flagWarnings.get('a')?.[0].detail).toMatch(/inverted .* has no exact negation/i)
+    },
+  )
+
+  it.each(['DATE_AFTER', 'DATE_BEFORE'])(
+    'drops an inverted %s, because before and after are both strict here',
+    (operator) => {
+      /**
+       * Negating a strict bound loses the boundary instant: NOT(after X) is
+       * "on or before X", and the only thing we could store is "before X",
+       * which quietly stops matching at exactly X.
+       */
+      const result = withConstraint({
+        contextName: 'signupDate',
+        operator,
+        values: ['2026-01-01T00:00:00.000Z'],
+        inverted: true,
+      })
+      expect(strategiesOf(result)).toEqual([])
+      expect(result.flagWarnings.get('a')?.[0].detail).toMatch(/no exact negation/i)
+    },
+  )
+
+  it('drops an inverted SEMVER_EQ, because version fields have no neq', () => {
+    const result = withConstraint({
+      contextName: 'appVersion',
+      operator: 'SEMVER_EQ',
+      values: ['2.1.0'],
+      inverted: true,
+    })
+    expect(strategiesOf(result)).toEqual([])
+  })
+
+  it('keeps the plain meaning when inverted is false', () => {
+    const result = withConstraint({
+      contextName: 'tenant',
+      operator: 'NOT_IN',
+      values: ['acme'],
+      inverted: false,
+    })
+    expect(strategiesOf(result)).toEqual([
+      { constraints: [{ fieldKey: 'tenant', operator: 'notIn', values: ['acme'] }] },
+    ])
+  })
+
+  it('negates an enum field into notIn, which enum fields allow', () => {
+    const result = toNative({
+      ...base,
+      contextFields: [{ name: 'plan', legalValues: [{ value: 'pro' }, { value: 'free' }] }],
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'production',
+          strategyName: 'default',
+          parameters: {},
+          constraints: [{ contextName: 'plan', operator: 'IN', values: ['free'], inverted: true }],
+        },
+      ],
+    })
+
+    expect(result.document.contextFields).toEqual([
+      expect.objectContaining({ key: 'plan', type: 'enum' }),
+    ])
+    expect(strategiesOf(result)).toEqual([
+      { constraints: [{ fieldKey: 'plan', operator: 'notIn', values: ['free'] }] },
+    ])
+  })
+})
+
+describe('case-insensitive constraints', () => {
+  it('imports the constraint and reports that matching is now case-sensitive', () => {
+    const { document, flagWarnings } = toNative({
+      features: [{ name: 'a', description: '', archived: false }],
+      featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+      contextFields: [],
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'production',
+          strategyName: 'default',
+          parameters: {},
+          constraints: [
+            {
+              contextName: 'tenant',
+              operator: 'IN',
+              values: ['Acme'],
+              caseInsensitive: true,
+              inverted: false,
+            },
+          ],
+        },
+      ],
+    })
+
+    /** Narrowing, so it lands -- but nobody should have to discover it. */
+    expect(document.flags[0].environments.production.strategies).toEqual([
+      { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['Acme'] }] },
+    ])
+    expect(flagWarnings.get('a')?.[0]).toMatchObject({
+      environment: 'production',
+      kind: 'behaviour-change',
+    })
+    expect(flagWarnings.get('a')?.[0].detail).toMatch(/case-sensitive/i)
+  })
+
+  it('says nothing when every constraint was already case-sensitive', () => {
+    const { flagWarnings } = toNative({
+      features: [{ name: 'a', description: '', archived: false }],
+      featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+      contextFields: [],
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'production',
+          strategyName: 'default',
+          parameters: {},
+          constraints: [
+            {
+              contextName: 'tenant',
+              operator: 'IN',
+              values: ['acme'],
+              caseInsensitive: false,
+              inverted: false,
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(flagWarnings.get('a')).toBeUndefined()
+  })
+})
+
+describe('tolerating real-world export variations', () => {
+  const base = {
+    features: [{ name: 'a', description: '', archived: false }],
+    featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+    contextFields: [],
+  }
+
+  it('parses a document whose strategies carry no environment or strategyName', () => {
+    /**
+     * Some Unleash versions export exactly this. Rejecting the document meant
+     * one odd row blocked every other flag in the file.
+     */
+    const doc = {
+      ...base,
+      featureStrategies: [{ featureName: 'a', parameters: {}, constraints: [] }],
+    }
+    expect(() => unleashDocumentSchema.parse(doc)).not.toThrow()
+  })
+
+  it('places a strategy with no environment in the only one the flag has', () => {
+    /**
+     * This is what an export taken from a single Unleash environment looks
+     * like: the environment appears on the feature's state row and nowhere on
+     * the strategy. Dropping these meant a migration arrived with every flag
+     * wide open, which is the opposite of the fail-safe rule.
+     */
+    const { document, warnings } = toNative({
+      ...base,
+      featureStrategies: [
+        {
+          featureName: 'a',
+          strategyName: 'flexibleRollout',
+          parameters: { rollout: '100' },
+          constraints: [
+            { contextName: 'tenant', operator: 'IN', values: ['acme'], inverted: false },
+          ],
+        },
+      ],
+    })
+
+    expect(document.flags[0].environments.production.strategies).toEqual([
+      { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['acme'] }] },
+    ])
+    /** The inference is reported, so nobody finds targeting they did not ask for. */
+    expect(warnings.find((w) => w.kind === 'unknown-environment')?.detail).toMatch(
+      /placed in the only one/i,
+    )
+  })
+
+  it('places it in the export-wide environment when the flag has no state row', () => {
+    const { document } = toNative({
+      features: [
+        { name: 'a', description: '', archived: false },
+        { name: 'b', archived: false },
+      ],
+      featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+      contextFields: [],
+      featureStrategies: [
+        { featureName: 'b', strategyName: 'default', parameters: {}, constraints: [] },
+      ],
+    })
+
+    const b = document.flags.find((flag) => flag.key === 'b')
+    expect(b?.environments.production).toEqual({
+      enabled: false,
+      strategies: [{ constraints: [] }],
+    })
+  })
+
+  it('drops it when the export describes more than one environment', () => {
+    /** Two candidates is a guess, and a guess here turns targeting on somewhere real. */
+    const { document, flagWarnings } = toNative({
+      features: [{ name: 'a', description: '', archived: false }],
+      featureEnvironments: [
+        { featureName: 'a', environment: 'production', enabled: true },
+        { featureName: 'a', environment: 'development', enabled: true },
+      ],
+      contextFields: [],
+      featureStrategies: [
+        { featureName: 'a', strategyName: 'default', parameters: {}, constraints: [] },
+      ],
+    })
+
+    expect(document.flags[0].environments.production.strategies).toEqual([])
+    expect(document.flags[0].environments.development.strategies).toEqual([])
+    expect(flagWarnings.get('a')?.[0].kind).toBe('unknown-environment')
+    expect(flagWarnings.get('a')?.[0].detail).toMatch(/more than one/i)
+  })
+
+  it('keeps an explicit environment over the inferred one', () => {
+    const { document, warnings } = toNative({
+      features: [{ name: 'a', description: '', archived: false }],
+      featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+      contextFields: [],
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'staging',
+          strategyName: 'default',
+          parameters: {},
+          constraints: [],
+        },
+      ],
+    })
+
+    expect(document.flags[0].environments.staging.strategies).toEqual([{ constraints: [] }])
+    expect(document.flags[0].environments.production.strategies).toEqual([])
+    expect(warnings.some((w) => w.kind === 'unknown-environment')).toBe(false)
+  })
+
+  it('still reports a strategy it cannot name, even once it can place it', () => {
+    const { document, flagWarnings } = toNative({
+      ...base,
+      featureStrategies: [{ featureName: 'a', parameters: {}, constraints: [] }],
+    })
+
+    expect(document.flags[0].environments.production.enabled).toBe(true)
+    expect(document.flags[0].environments.production.strategies).toEqual([])
+    expect(flagWarnings.get('a')?.[0].detail).toMatch(/no name/i)
+  })
+
+  it('never guesses a missing strategy name into an always-on rule', () => {
+    const { document, flagWarnings } = toNative({
+      ...base,
+      featureStrategies: [
+        { featureName: 'a', environment: 'production', parameters: {}, constraints: [] },
+      ],
+    })
+
+    /** A nameless strategy with no constraints would match everybody. */
+    expect(document.flags[0].environments.production.strategies).toEqual([])
+    expect(flagWarnings.get('a')?.[0].detail).toMatch(/no name/i)
+  })
+
+  it('accepts `name` as an alias for `strategyName`', () => {
+    const { document } = toNative({
+      ...base,
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'production',
+          name: 'default',
+          parameters: {},
+          constraints: [],
+        },
+      ],
+    })
+    expect(document.flags[0].environments.production.strategies).toEqual([{ constraints: [] }])
+  })
+
+  it('coerces numeric strategy parameters instead of rejecting them', () => {
+    const { document } = toNative({
+      ...base,
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'production',
+          strategyName: 'flexibleRollout',
+          parameters: { rollout: 100 },
+          constraints: [],
+        },
+      ],
+    })
+    expect(document.flags[0].environments.production.strategies).toEqual([{ constraints: [] }])
   })
 })

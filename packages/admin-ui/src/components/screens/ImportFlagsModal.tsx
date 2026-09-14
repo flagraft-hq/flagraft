@@ -136,7 +136,15 @@ export function ImportFlagsModal({ open, projectId, onClose, onImported }: Impor
           placeholder=""
           onChange={(value) => {
             setSource(value as TransferSource)
-            reset()
+            /**
+             * The file is kept: only the report is stale. Clearing the file
+             * here made the dialog look broken -- the picker emptied and
+             * Preview greyed out with nothing said about why.
+             */
+            setReport(null)
+            setWarnings([])
+            setError(null)
+            setDone(false)
           }}
           options={Object.entries(TRANSFER_SOURCES).map(([value, entry]) => ({
             value,
@@ -145,8 +153,9 @@ export function ImportFlagsModal({ open, projectId, onClose, onImported }: Impor
           hint={chosen.importHint}
         />
 
+        {/** The name stays visible through an error: blanking it reads as the file vanishing. */}
         <FilePicker
-          fileName={error ? '' : fileName}
+          fileName={fileName}
           hint={chosen.fileHint}
           onFile={(file) => void handleFile(file)}
         />
