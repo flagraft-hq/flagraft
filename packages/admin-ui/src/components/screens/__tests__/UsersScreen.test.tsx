@@ -454,7 +454,13 @@ describe('UsersScreen', () => {
     renderScreen()
     await waitFor(() => expect(screen.getByText(/Privileged access/)).toBeInTheDocument())
     const card = document.querySelector('.users-stat[data-tone="slate"]') as HTMLElement
-    expect(within(card).getByText('2')).toBeInTheDocument()
+    /**
+     * The label renders on the first paint but the value does not: while the
+     * fetch is in flight the card shows a loading placeholder instead. So this
+     * has to wait for the number rather than read it straight after the label,
+     * or it races the request on a slow machine.
+     */
+    expect(await within(card).findByText('2')).toBeInTheDocument()
     expect(within(card).getByText(/1 owner, 1 admin/)).toBeInTheDocument()
   })
 })
