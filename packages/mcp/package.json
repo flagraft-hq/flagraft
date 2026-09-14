@@ -1,0 +1,50 @@
+{
+  "name": "@flagraft/mcp",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "MCP server for Flagraft feature flags -- lets coding agents create, read and toggle flags",
+  "type": "module",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "feature-flags",
+    "feature-toggles",
+    "flagraft",
+    "claude",
+    "ai-agent"
+  ],
+  "homepage": "https://github.com/flagraft-hq/flagraft/tree/main/packages/mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flagraft-hq/flagraft.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/flagraft-hq/flagraft/issues"
+  },
+  "bin": {
+    "flagraft-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -49,6 +49,12 @@ Pass any key/value context at evaluation time -- user ID, tenant, plan, region -
 **Import and export**
 Every project exports to a versioned JSON document that round-trips losslessly -- for backups, restores, or cloning a project into another install. A separate one-way importer reads [Unleash](https://www.getunleash.io) exports, so trying Flagraft does not mean re-entering every flag by hand. See [Import and export](#import-and-export) below.
 
+**MCP server for coding agents**
+[`@flagraft/mcp`](packages/mcp/README.md) lets Claude Code, Cursor, Codex or any other MCP client
+read and toggle your flags while it writes the code behind them -- so "put this behind a flag" does
+not mean leaving the editor. It runs on your machine against your own server, and deliberately has
+no delete tool.
+
 **In-memory caching**
 Flag state is cached per `projectId + environmentId` using BentoCache. Any write (flag update, strategy change, environment delete) invalidates the relevant cache entries automatically. TTL is configurable via `CACHE_TTL_SECONDS`.
 
@@ -94,6 +100,7 @@ Flagraft is a deliberately small, focused alternative to the well-known feature 
 | Per-seat pricing        | None                  | Yes          | None (OSS)    | None (OSS)    | Yes        |
 | Context-aware targeting | Built-in              | Built-in     | Built-in      | Built-in      | Built-in   |
 | Official TypeScript SDK | `@flagraft/sdk`       | Yes          | Yes           | Yes           | Yes        |
+| MCP server for agents   | `@flagraft/mcp`       | No           | No            | No            | No         |
 | Admin UI                | Built in              | Yes          | Yes           | Yes           | Yes        |
 | OpenAPI / Swagger UI    | Yes, at `/docs`       | Partial      | Yes           | Yes           | Yes        |
 | External services       | Just Postgres         | SaaS         | Postgres + UI | Postgres + UI | SaaS       |
@@ -203,6 +210,14 @@ time rather than at run time:
 | -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_API_URL` | `http://localhost:3000` | Origin of the Flagraft API the admin UI talks to. Also the endpoint it shows on the Environments screen and in the API-key snippet, so set it to your own domain when self-hosting. |
 
+The MCP server is a separate package and reads two variables of its own, set in your
+agent's MCP config rather than in `.env`:
+
+| Variable           | Default                 | Description                                                                   |
+| ------------------ | ----------------------- | ----------------------------------------------------------------------------- |
+| `FLAGRAFT_API_KEY` | --                      | Required. A root or project admin key. Client keys cannot read the admin API. |
+| `FLAGRAFT_URL`     | `http://localhost:3000` | Origin of the Flagraft server the MCP server talks to.                        |
+
 ---
 
 ## API overview
@@ -293,6 +308,7 @@ Full endpoint reference, the report shape, and the complete Unleash mapping tabl
 ## Client SDKs
 
 - **TypeScript / JavaScript:** [`@flagraft/sdk`](packages/sdk-js/README.md)
+- **MCP server for coding agents:** [`@flagraft/mcp`](packages/mcp/README.md)
 
 ---
 

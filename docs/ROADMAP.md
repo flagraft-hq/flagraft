@@ -25,6 +25,11 @@ commitment. Items move only when they are actually done.
   export. Every import is previewable with `dryRun`, runs in one transaction, and reports anything
   it could not represent rather than approximating it — a strategy that cannot be carried over
   exactly is dropped, never widened. See [API.md](API.md#import-and-export).
+- **MCP server** -- [`@flagraft/mcp`](../packages/mcp), a stdio MCP server over the admin API so a
+  coding agent can list, create and toggle flags while writing the code behind them. Reads,
+  plus create and toggle; no delete tool and no strategy writes, because an agent that can drop a
+  project or quietly rewrite a rollout is a worse trade than opening the admin UI for the rare
+  destructive change.
 - **OpenAPI / Swagger UI** at `/docs`.
 
 ## Planned
