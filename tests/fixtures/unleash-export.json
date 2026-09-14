@@ -1,0 +1,191 @@
+{
+  "features": [
+    {
+      "name": "new-checkout",
+      "description": "New funnel",
+      "type": "release",
+      "project": "default",
+      "stale": false,
+      "impressionData": false,
+      "archived": false
+    },
+    {
+      "name": "legacy-banner",
+      "description": "",
+      "type": "operational",
+      "project": "default",
+      "stale": true,
+      "impressionData": false,
+      "archived": true
+    }
+  ],
+  "featureEnvironments": [
+    {
+      "featureName": "new-checkout",
+      "environment": "development",
+      "enabled": true,
+      "variants": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "production",
+      "enabled": false,
+      "variants": [{ "name": "blue", "weight": 500 }]
+    },
+    { "featureName": "new-checkout", "environment": "staging", "enabled": true, "variants": [] }
+  ],
+  "featureStrategies": [
+    {
+      "featureName": "new-checkout",
+      "environment": "development",
+      "strategyName": "default",
+      "sortOrder": 0,
+      "disabled": false,
+      "parameters": {},
+      "constraints": [
+        {
+          "contextName": "plan",
+          "operator": "IN",
+          "values": ["pro", "enterprise"],
+          "caseInsensitive": false,
+          "inverted": false
+        }
+      ],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "development",
+      "strategyName": "flexibleRollout",
+      "sortOrder": 1,
+      "disabled": false,
+      "parameters": { "rollout": "50", "stickiness": "default", "groupId": "new-checkout" },
+      "constraints": [],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "development",
+      "strategyName": "default",
+      "sortOrder": 2,
+      "disabled": false,
+      "parameters": {},
+      "constraints": [
+        {
+          "contextName": "email",
+          "operator": "STR_ENDS_WITH",
+          "values": ["@internal.example"],
+          "caseInsensitive": false,
+          "inverted": false
+        }
+      ],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "production",
+      "strategyName": "flexibleRollout",
+      "sortOrder": 0,
+      "disabled": false,
+      "parameters": { "rollout": "100", "stickiness": "default", "groupId": "new-checkout" },
+      "constraints": [
+        {
+          "contextName": "appVersion",
+          "operator": "SEMVER_EQ",
+          "values": ["2.1.0"],
+          "caseInsensitive": false,
+          "inverted": false
+        }
+      ],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "production",
+      "strategyName": "userWithId",
+      "sortOrder": 1,
+      "disabled": false,
+      "parameters": { "userIds": "u-1,u-2" },
+      "constraints": [],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "production",
+      "strategyName": "remoteAddress",
+      "sortOrder": 2,
+      "disabled": false,
+      "parameters": { "IPs": "10.0.0.0/8" },
+      "constraints": [],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "production",
+      "strategyName": "default",
+      "sortOrder": 3,
+      "disabled": true,
+      "parameters": {},
+      "constraints": [],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "production",
+      "strategyName": "default",
+      "sortOrder": 4,
+      "disabled": false,
+      "parameters": {},
+      "constraints": [
+        {
+          "contextName": "plan",
+          "operator": "NOT_IN",
+          "values": ["free"],
+          "caseInsensitive": false,
+          "inverted": true
+        }
+      ],
+      "variants": [],
+      "segments": []
+    },
+    {
+      "featureName": "new-checkout",
+      "environment": "production",
+      "strategyName": "default",
+      "sortOrder": 5,
+      "disabled": false,
+      "parameters": {},
+      "constraints": [],
+      "variants": [],
+      "segments": [1]
+    }
+  ],
+  "contextFields": [
+    {
+      "name": "plan",
+      "description": "Billing plan",
+      "stickiness": false,
+      "sortOrder": 10,
+      "legalValues": [{ "value": "free" }, { "value": "pro" }, { "value": "enterprise" }]
+    },
+    {
+      "name": "appVersion",
+      "description": "Client build",
+      "stickiness": false,
+      "sortOrder": 20,
+      "legalValues": []
+    },
+    { "name": "email", "description": "", "stickiness": false, "sortOrder": 30, "legalValues": [] }
+  ],
+  "featureTags": [{ "featureName": "new-checkout", "tagType": "simple", "tagValue": "q3" }],
+  "segments": [{ "id": 1, "name": "internal", "constraints": [] }],
+  "tagTypes": [{ "name": "simple", "description": "", "icon": "#" }],
+  "dependencies": []
+}

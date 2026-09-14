@@ -20,6 +20,11 @@ commitment. Items move only when they are actually done.
   rate-limit backoff and per-call default values.
 - **Conditional requests** — `ETag` / `If-None-Match` on the bulk evaluation endpoint, so an
   unchanged flag list costs a 304 with no body. Handled automatically by the SDK.
+- **Import and export** — a versioned `flagraft.export` document that round-trips losslessly,
+  plus a one-way importer for [Unleash](https://www.getunleash.io) exports and an Unleash-shaped
+  export. Every import is previewable with `dryRun`, runs in one transaction, and reports anything
+  it could not represent rather than approximating it — a strategy that cannot be carried over
+  exactly is dropped, never widened. See [API.md](API.md#import-and-export).
 - **OpenAPI / Swagger UI** at `/docs`.
 
 ## Planned
@@ -27,8 +32,11 @@ commitment. Items move only when they are actually done.
 ### Evaluation
 
 - **Percentage rollouts** — deterministic bucketing on a context field so a flag can be
-  enabled for a stable subset of users.
+  enabled for a stable subset of users. The Unleash importer skips `flexibleRollout` below
+  100% today and will map it once this exists, so this is worth more than it looks: it is
+  the single most common reason an Unleash migration comes out incomplete.
 - **Flag variants** — beyond boolean, returning a string or JSON value per matched strategy.
+  The Unleash importer drops variants today and will map them once this exists.
 - **Constraint-level evaluation detail** — report _which_ constraint failed, so "why is this
   off for this user" is answerable without re-deriving the strategy by hand.
 

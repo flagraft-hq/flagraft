@@ -46,6 +46,9 @@ Pass any key/value context at evaluation time -- user ID, tenant, plan, region -
 - Project admin keys: scoped to one project, manage flags, context fields, and strategies
 - Client keys: scoped to one project and environment, evaluate flags only
 
+**Import and export**
+Every project exports to a versioned JSON document that round-trips losslessly -- for backups, restores, or cloning a project into another install. A separate one-way importer reads [Unleash](https://www.getunleash.io) exports, so trying Flagraft does not mean re-entering every flag by hand. See [Import and export](#import-and-export) below.
+
 **In-memory caching**
 Flag state is cached per `projectId + environmentId` using BentoCache. Any write (flag update, strategy change, environment delete) invalidates the relevant cache entries automatically. TTL is configurable via `CACHE_TTL_SECONDS`.
 
@@ -239,6 +242,51 @@ The single-flag response includes a `reason`: `strategy-match`, `default`, or `d
 Targeting strategies are managed per flag + environment via the `strategies` endpoint (PUT replaces
 the whole ordered list). Each strategy is a set of constraints (`fieldKey`, `operator`, `values`)
 that AND together; multiple strategies OR together.
+
+---
+
+## Import and export
+
+Two surfaces that deliberately share nothing but their report format.
+
+**Native** -- `GET` and `POST` on `/api/v1/admin/projects/:id/transfer/export|import`. A
+`flagraft.export` v1 document holding flags, per-environment states, targeting strategies and
+context fields. It round-trips exactly: export a project, import it into an empty one, export
+again, and you get the same document back. Ids, timestamps, API keys, users and project settings
+are deliberately left out, so a file is safe to hand around and lands in any project on any
+install.
+
+**External tools** -- `/transfer/export|import/unleash`. Unleash is the only tool supported today;
+a second one becomes another route pair, not a rewrite. There is no `format` parameter and no
+format sniffing: each endpoint accepts exactly one shape, and points you at the other route if you
+bring the wrong file.
+
+In the admin UI this is two controls on the flags screen -- **Export** and **Import** -- each with a
+format field inside it. From an operator's side it is one job either way; which tool the file
+belongs to is a property of the file, not a different task.
+
+Three properties worth knowing before you run one:
+
+- **Every import is previewable.** `dryRun: true` runs the identical code path inside the
+  transaction and rolls it back, returning the report it would have returned. The UI always
+  previews first and only writes when you confirm.
+- **It is one transaction.** A half-imported project -- some flags created, some strategies
+  missing -- is impossible rather than recoverable.
+- **Import never widens a flag's audience.** Flagraft has no variants, percentage rollouts or
+  segments, so an Unleash export cannot be carried over whole. Rather than approximate, any
+  strategy that cannot be represented exactly is dropped and named in the report. Importing a 50%
+  rollout as an always-on rule would double who sees a feature, which is not a mistake worth
+  making quietly. Same for a constraint we cannot express: the whole strategy goes, because
+  dropping one AND-ed condition broadens the rest.
+
+Protected environments keep their guarantees. If the project requires two admins to confirm a
+production toggle, an import will not flip one -- it reports those as `approval-required` and
+leaves them alone.
+
+No new configuration: nothing is added to the [Configuration](#configuration) table, and there is nothing new to put in `.env`.
+
+Full endpoint reference, the report shape, and the complete Unleash mapping tables are in
+[docs/API.md](docs/API.md#import-and-export).
 
 ---
 

@@ -33,6 +33,9 @@ vi.mock('../../../lib/api', () => ({
   flagsApi: { toggle: vi.fn() },
 }))
 
+vi.mock('../ImportFlagsModal', () => ({ ImportFlagsModal: () => null }))
+vi.mock('../ExportFlagsModal', () => ({ ExportFlagsModal: () => null }))
+
 vi.mock('../FlagBulkActionBar', () => ({
   FlagBulkActionBar: ({ selectedKeys }: { selectedKeys: string[] }) =>
     selectedKeys.length > 0 ? (

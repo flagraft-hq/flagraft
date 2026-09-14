@@ -30,6 +30,8 @@ export type IconName =
   | 'shield'
   | 'book'
   | 'refresh'
+  | 'download'
+  | 'upload'
   | 'sparkles'
   | 'arrowRight'
   | 'play'
@@ -239,6 +241,18 @@ export function Icon({ name, size = 16, className = '', ...rest }: IconProps) {
     refresh: (
       <>
         <path d="M3 12a9 9 0 0 1 15.7-6L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.7 6L3 16M3 21v-5h5" />
+      </>
+    ),
+    download: (
+      <>
+        <path d="M12 3v12M7 11l5 5 5-5" />
+        <path d="M4 20h16" />
+      </>
+    ),
+    upload: (
+      <>
+        <path d="M12 16V4M7 8l5-5 5 5" />
+        <path d="M4 20h16" />
       </>
     ),
     sparkles: (
