@@ -10,7 +10,12 @@ export const contextFieldIdParamsSchema = contextFieldParamsSchema.extend({
   fieldId: z.string().uuid(),
 })
 
-const keySchema = z
+/**
+ * Exported because the transfer format has to accept exactly the keys this
+ * does. An import writes to the same table as the create route, so anything
+ * looser here would let a file create fields the UI and API refuse.
+ */
+export const contextFieldKeySchema = z
   .string()
   .min(1)
   .max(64)
@@ -54,7 +59,11 @@ function refineEnumValues(
 }
 
 export const createContextFieldSchema = z
-  .object({ key: keySchema, type: z.enum(FIELD_TYPES).default('string'), ...optionalFields })
+  .object({
+    key: contextFieldKeySchema,
+    type: z.enum(FIELD_TYPES).default('string'),
+    ...optionalFields,
+  })
   .superRefine(refineEnumValues)
 
 /**

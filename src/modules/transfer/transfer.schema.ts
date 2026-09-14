@@ -1,16 +1,39 @@
 import { z } from 'zod'
 
-import { FIELD_TYPES } from '../context-fields/context-field.schema.js'
+import { FIELD_TYPES, contextFieldKeySchema } from '../context-fields/context-field.schema.js'
 
 export const NATIVE_FORMAT = 'flagraft.export'
 export const NATIVE_VERSION = 1
 
-const contextFieldSchema = z.object({
-  key: z.string().min(1),
-  type: z.enum(FIELD_TYPES),
-  description: z.string().nullable().optional(),
-  enumValues: z.array(z.string().min(1)).nullable().optional(),
-})
+/**
+ * Same rules as the create-context-field route, because an import writes to
+ * the same table. `enumValues` additionally accepts null, which is what the
+ * export writes for every non-enum field.
+ */
+export const nativeContextFieldSchema = z
+  .object({
+    key: contextFieldKeySchema,
+    type: z.enum(FIELD_TYPES),
+    description: z.string().nullable().optional(),
+    enumValues: z.array(z.string().min(1)).nullable().optional(),
+  })
+  .superRefine((field, ctx) => {
+    if (field.type === 'enum') {
+      if (!field.enumValues || field.enumValues.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['enumValues'],
+          message: 'enumValues is required and must be non-empty when type is "enum"',
+        })
+      }
+    } else if (field.enumValues && field.enumValues.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['enumValues'],
+        message: 'enumValues is only allowed when type is "enum"',
+      })
+    }
+  })
 
 const constraintSchema = z.object({
   fieldKey: z.string().min(1),
@@ -47,13 +70,13 @@ export const nativeDocumentSchema = z.object({
   exportedAt: z.string().optional(),
   /** Informational. The import target is always the projectId in the URL. */
   project: z.object({ slug: z.string(), name: z.string() }).optional(),
-  contextFields: z.array(contextFieldSchema).default([]),
+  contextFields: z.array(nativeContextFieldSchema).default([]),
   flags: z.array(flagSchema).default([]),
 })
 
 export type NativeDocument = z.infer<typeof nativeDocumentSchema>
 export type NativeFlag = z.infer<typeof flagSchema>
-export type NativeContextField = z.infer<typeof contextFieldSchema>
+export type NativeContextField = z.infer<typeof nativeContextFieldSchema>
 export type NativeStrategy = z.infer<typeof strategySchema>
 
 export const importOptionsSchema = z.object({

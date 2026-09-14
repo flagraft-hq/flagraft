@@ -13,9 +13,12 @@ import {
   projects,
   targetingStrategies,
 } from '../../db/schema.js'
+import { MAX_CONTEXT_FIELDS_PER_PROJECT } from '../../limits.js'
 import {
   NATIVE_FORMAT,
   NATIVE_VERSION,
+  nativeContextFieldSchema,
+  summariseIssues,
   type ExportEnvelope,
   type FlagReportEntry,
   type ImportReport,
@@ -277,8 +280,38 @@ async function applyImport(tx: DbLike, projectId: string, args: ImportArgs): Pro
 
   /** Context fields: create what is missing, never touch what already exists. */
   const fields = await loadFieldRules(tx, projectId)
-  for (const field of document.contextFields) {
-    if (fields.has(field.key)) continue
+  const newFields = document.contextFields.filter((field) => !fields.has(field.key))
+
+  /**
+   * The same ceiling the create route enforces. This writes to `context_fields`
+   * directly, so without this an import is a way past a limit the rest of the
+   * app keeps -- and a project that lands over the limit cannot be edited back
+   * under it one field at a time.
+   */
+  if (fields.size + newFields.length > MAX_CONTEXT_FIELDS_PER_PROJECT) {
+    throw new AppError(
+      `This import would leave the project with ${fields.size + newFields.length} context ` +
+        `fields; the limit is ${MAX_CONTEXT_FIELDS_PER_PROJECT}. Remove fields from the file ` +
+        'or delete some here first.',
+      409,
+      'Conflict',
+    )
+  }
+
+  for (const field of newFields) {
+    /**
+     * Belt and braces: both import routes validate before they get here, so a
+     * field that fails now is a bug rather than a bad file. It still must not
+     * reach the table -- this is the only place either route writes one.
+     */
+    const parsed = nativeContextFieldSchema.safeParse(field)
+    if (!parsed.success) {
+      throw new AppError(
+        `Context field "${field.key}" cannot be created: ${summariseIssues(parsed.error.issues)}`,
+        400,
+        'BadRequest',
+      )
+    }
     const enumValues = field.type === 'enum' ? (field.enumValues ?? []) : null
     await tx.insert(contextFields).values({
       projectId,

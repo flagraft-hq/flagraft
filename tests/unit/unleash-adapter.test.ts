@@ -512,6 +512,54 @@ describe('inverted constraints', () => {
   })
 })
 
+describe('context field keys Flagraft cannot store', () => {
+  it('drops the field and every strategy that used it, rather than writing an illegal key', () => {
+    /**
+     * Unleash context names are free-form. The import writes to the same table
+     * the create route guards, so a name we could not create by hand must not
+     * arrive through a file either.
+     */
+    const { document, warnings, flagWarnings } = toNative({
+      features: [{ name: 'a', description: '', archived: false }],
+      featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+      contextFields: [{ name: 'my tenant', legalValues: [] }],
+      featureStrategies: [
+        {
+          featureName: 'a',
+          environment: 'production',
+          strategyName: 'default',
+          parameters: {},
+          constraints: [
+            { contextName: 'my tenant', operator: 'IN', values: ['acme'], inverted: false },
+          ],
+        },
+      ],
+    })
+
+    expect(document.contextFields).toEqual([])
+    expect(warnings.find((w) => w.detail.includes('my tenant'))?.detail).toMatch(
+      /not a legal context field key/i,
+    )
+    /** The flag still lands; only what depends on the field is gone. */
+    expect(document.flags[0].key).toBe('a')
+    expect(flagWarnings.get('a')).toBeUndefined()
+  })
+
+  it('keeps a legal key untouched', () => {
+    const { document, warnings } = toNative({
+      features: [{ name: 'a', description: '', archived: false }],
+      featureEnvironments: [{ featureName: 'a', environment: 'production', enabled: true }],
+      contextFields: [{ name: 'tenant', legalValues: [] }],
+      featureStrategies: [],
+    })
+
+    expect(document.contextFields).toEqual([
+      expect.objectContaining({ key: 'tenant', type: 'string' }),
+    ])
+    expect(warnings).toEqual([])
+  })
+})
+
 describe('case-insensitive constraints', () => {
   it('imports the constraint and reports that matching is now case-sensitive', () => {
     const { document, flagWarnings } = toNative({

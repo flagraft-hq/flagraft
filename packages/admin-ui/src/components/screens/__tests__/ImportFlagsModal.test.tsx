@@ -127,6 +127,35 @@ describe('ImportFlagsModal', () => {
     )
   })
 
+  it('drops the preview when the conflict option changes, so Confirm cannot act on a stale one', async () => {
+    renderModal()
+    await chooseFile()
+    fireEvent.click(screen.getByRole('button', { name: /preview/i }))
+    await waitFor(() => expect(screen.getByText(/preview only/i)).toBeInTheDocument())
+
+    /**
+     * The report describes what "skip" would do. Switching to "overwrite"
+     * without clearing it left a Confirm button that overwrote flags the
+     * report on screen had just promised to leave alone.
+     */
+    fireEvent.change(screen.getByLabelText(/if a flag already exists/i), {
+      target: { value: 'overwrite' },
+    })
+
+    expect(screen.queryByText(/preview only/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /import for real/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /preview/i })).toBeInTheDocument()
+
+    /** And the next preview is the one the confirm acts on. */
+    fireEvent.click(screen.getByRole('button', { name: /preview/i }))
+    await waitFor(() =>
+      expect(mockImport).toHaveBeenLastCalledWith(
+        'p1',
+        expect.objectContaining({ onConflict: 'overwrite', dryRun: true }),
+      ),
+    )
+  })
+
   it('surfaces a failed dry run inline', async () => {
     mockImport.mockRejectedValue(new Error('Not a flagraft.export v1 document'))
     renderModal()

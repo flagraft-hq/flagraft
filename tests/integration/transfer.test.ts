@@ -573,6 +573,69 @@ describeIfDb('native flag transfer', () => {
     await app.close()
   })
 
+  it('refuses an import that would push the project past the context field ceiling', async () => {
+    const { app, rootKey } = await seeded()
+    const { targetAuth, targetBase } = await freshTarget(app, rootKey, 'ceiling-project')
+
+    /**
+     * The create route caps a project at 25 context fields. The importer writes
+     * to the same table directly, so without its own check an import is a way
+     * round a limit the rest of the app keeps.
+     */
+    const document = {
+      format: 'flagraft.export',
+      version: 1,
+      contextFields: Array.from({ length: 26 }, (_, index) => ({
+        key: `field_${index}`,
+        type: 'string',
+      })),
+      flags: [],
+    }
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `${targetBase}/transfer/import`,
+      headers: targetAuth,
+      payload: { document },
+    })
+
+    expect(res.statusCode).toBe(409)
+    expect(res.json<{ message: string }>().message).toMatch(/limit is 25/)
+
+    /** The whole transaction rolls back: not even the first 25 land. */
+    const fields = await app.inject({
+      method: 'GET',
+      url: `${targetBase}/context-fields`,
+      headers: targetAuth,
+    })
+    expect(fields.json<unknown[]>()).toEqual([])
+
+    await app.close()
+  })
+
+  it('rejects a document whose context field key the API would refuse', async () => {
+    const { app, rootKey } = await seeded()
+    const { targetAuth, targetBase } = await freshTarget(app, rootKey, 'badkey-project')
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `${targetBase}/transfer/import`,
+      headers: targetAuth,
+      payload: {
+        document: {
+          format: 'flagraft.export',
+          version: 1,
+          contextFields: [{ key: 'my tenant', type: 'string' }],
+          flags: [],
+        },
+      },
+    })
+
+    expect(res.statusCode).toBe(400)
+
+    await app.close()
+  })
+
   it('dryRun returns the real report and writes nothing', async () => {
     const { app, rootKey } = await seeded()
     const { targetAuth, targetBase } = await freshTarget(app, rootKey, 'dry-project')

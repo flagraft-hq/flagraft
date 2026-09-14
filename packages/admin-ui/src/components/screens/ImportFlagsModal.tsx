@@ -164,7 +164,19 @@ export function ImportFlagsModal({ open, projectId, onClose, onImported }: Impor
           label="If a flag already exists"
           value={onConflict}
           placeholder=""
-          onChange={(value) => setOnConflict(value as 'skip' | 'overwrite')}
+          onChange={(value) => {
+            setOnConflict(value as 'skip' | 'overwrite')
+            /**
+             * The report describes what the options said at preview time, and
+             * the confirm button acts on whatever they say now. Leaving a
+             * report up after this changes meant "Import for real" could
+             * overwrite flags the report had just promised to skip.
+             */
+            setReport(null)
+            setWarnings([])
+            setError(null)
+            setDone(false)
+          }}
           options={[
             { value: 'skip', label: 'Skip it — leave the existing flag alone' },
             { value: 'overwrite', label: 'Overwrite it with the file' },

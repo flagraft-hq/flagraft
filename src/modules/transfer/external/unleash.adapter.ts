@@ -2,6 +2,7 @@ import type { ConstraintLike } from '../../strategies/constraint-rules.js'
 import {
   NATIVE_FORMAT,
   NATIVE_VERSION,
+  nativeContextFieldSchema,
   type NativeDocument,
   type TransferWarning,
 } from '../transfer.schema.js'
@@ -524,18 +525,36 @@ export function toNative(input: unknown): ToNativeResult {
     })
   }
 
+  /**
+   * Unleash context names are free-form; ours are not, and an import writes to
+   * the same table the create route guards. A name we cannot store is dropped
+   * here rather than written anyway -- the strategies using it then fail the
+   * ordinary unknown-field check and are reported one by one, so the rest of
+   * the migration still lands.
+   */
+  const contextFields: NativeDocument['contextFields'] = []
+  for (const field of [...inferred.values()].sort((a, b) => a.key.localeCompare(b.key))) {
+    const candidate = {
+      key: field.key,
+      type: field.type,
+      description: field.description,
+      enumValues: field.enumValues,
+    }
+    if (!nativeContextFieldSchema.safeParse(candidate).success) {
+      warnings.push({
+        kind: 'unsupported-strategy',
+        detail: `Context field "${field.key}" was not imported: its name is not a legal context field key here, so any strategy using it was dropped too.`,
+      })
+      continue
+    }
+    contextFields.push(candidate)
+  }
+
   const document: NativeDocument = {
     format: NATIVE_FORMAT,
     version: NATIVE_VERSION,
     exportedAt: new Date().toISOString(),
-    contextFields: [...inferred.values()]
-      .map((field) => ({
-        key: field.key,
-        type: field.type,
-        description: field.description,
-        enumValues: field.enumValues,
-      }))
-      .sort((a, b) => a.key.localeCompare(b.key)),
+    contextFields,
     flags,
   }
 

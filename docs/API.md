@@ -323,6 +323,22 @@ POST /api/v1/admin/projects/:id/transfer/import
 - **Context fields** are created when missing and never modified when present. Every
   creation is listed in the report.
 
+### Context fields on import
+
+An import creates the context fields the file names and never touches one that already
+exists. It is held to exactly the rules `POST /context-fields` enforces, because it writes
+to the same table:
+
+- keys must match `^[A-Za-z_][A-Za-z0-9_.-]*$` and be at most 64 characters
+- an `enum` field must carry a non-empty `enumValues`, and nothing else may carry one
+- a project may hold at most 25 context fields; an import that would take it over is
+  refused with a `409` and writes nothing at all
+
+A native document that breaks the first two is rejected with a `400`. An Unleash export is
+not: its context names are free-form, so a name that is not a legal key here is dropped and
+reported, and the strategies referring to it fail the ordinary unknown-field check and are
+reported one by one -- the rest of the migration still lands.
+
 ### The fail-safe rule
 
 **If any part of a strategy cannot be represented, the whole strategy is dropped and

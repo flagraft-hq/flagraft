@@ -8,6 +8,38 @@ import {
 
 const minimal = { format: 'flagraft.export', version: 1 }
 
+describe('nativeDocumentSchema context fields', () => {
+  const withField = (field: Record<string, unknown>) =>
+    nativeDocumentSchema.safeParse({ ...minimal, contextFields: [field] })
+
+  it('accepts a key the create-context-field route would accept', () => {
+    expect(withField({ key: 'tenant_id.v2-x', type: 'string' }).success).toBe(true)
+  })
+
+  it.each([
+    ['starting with a digit', '1tenant'],
+    ['carrying a space', 'my tenant'],
+    ['carrying punctuation the API forbids', 'tenant;drop'],
+    ['longer than 64 characters', 'a'.repeat(65)],
+  ])('rejects a key %s, the same as the API does', (_label, key) => {
+    /** An import writes to the same table, so it must not be a way round the rules. */
+    expect(withField({ key, type: 'string' }).success).toBe(false)
+  })
+
+  it('rejects an enum field with no values, which cannot ever match', () => {
+    expect(withField({ key: 'plan', type: 'enum' }).success).toBe(false)
+    expect(withField({ key: 'plan', type: 'enum', enumValues: [] }).success).toBe(false)
+  })
+
+  it('rejects enum values on a field that is not an enum', () => {
+    expect(withField({ key: 'plan', type: 'string', enumValues: ['pro'] }).success).toBe(false)
+  })
+
+  it('accepts null enumValues, which is what the export writes for non-enums', () => {
+    expect(withField({ key: 'plan', type: 'string', enumValues: null }).success).toBe(true)
+  })
+})
+
 describe('nativeDocumentSchema', () => {
   it('fills in empty collections', () => {
     const doc = nativeDocumentSchema.parse(minimal)
