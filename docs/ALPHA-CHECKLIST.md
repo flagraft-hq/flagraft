@@ -157,8 +157,19 @@ file is too big".
 
 No `USER` directive, and `/ready` exists but nothing is wired to it.
 
-- [ ] Non-root user
-- [ ] `HEALTHCHECK` against `/ready`
+Verified by building the image and booting it: the process runs as uid 1000, and
+the probe honours `PORT` rather than assuming 3000. busybox `wget -q --spider`
+is already in `node:20-alpine` and exits non-zero on both a 503 and a refused
+connection, so no extra tooling was needed.
+
+Note the boot-time case is not covered by the healthcheck: an unreachable
+database makes the server exit 1 during the onReady seed rather than come up
+unhealthy. The healthcheck is for a database that dies after boot, where the
+server stays up and `/ready` starts answering 503. A restart policy covers the
+other half.
+
+- [x] Non-root user (`USER node`)
+- [x] `HEALTHCHECK` against `/ready`
 
 ### 10. Playwright e2e is orphaned
 
