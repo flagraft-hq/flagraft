@@ -27,12 +27,21 @@ deep-reviewed (their tests pass).
 `request.ip` by default. Behind nginx, traefik or any load balancer every SDK
 instance in the fleet shares a single 100/min bucket and starts getting 429s.
 
-Fix: set `trustProxy` (config-gated, so it is opt-in for operators who are not
-behind a proxy), and consider keying the limiter on `keyContext.keyId` rather
-than IP — the request is already authenticated by the time the limit matters.
+Fixed with a `TRUST_PROXY` env var, off by default, passed to Fastify's
+`trustProxy`. It accepts `true`, `false`, a hop count, or a comma-separated list
+of proxy addresses and CIDR ranges. Off is the right default in both directions:
+with no proxy in front, trusting `X-Forwarded-For` lets any caller invent an IP
+per request and bypass the limit entirely.
 
-- [ ] Fixed
-- [ ] Documented in the README config table
+Keying the limiter on the API key instead of the IP was considered and rejected.
+A client key is embedded in frontend bundles, so one key is shared by every
+browser running the app — per-key limiting would put thousands of users into a
+single 100/min bucket, which is worse than the bug being fixed. Per-IP is the
+right unit here; it just needed the real IP.
+
+- [x] Fixed -- `TRUST_PROXY` in `src/config.ts`, applied in `src/server.ts`
+- [x] Documented in the README config table, with a "Running behind a reverse proxy" section
+- [x] Parsing covered by tests in `tests/config.test.ts`
 
 ### 2. Login has no rate limit and no lockout
 

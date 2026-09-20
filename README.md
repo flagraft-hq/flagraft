@@ -195,6 +195,29 @@ All config is read from environment variables. See `.env.example` for the full l
 | `CACHE_TTL_SECONDS`    | `30`          | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
 | `RATE_LIMIT_MAX`       | `100`         | Maximum requests per window per IP on client evaluation routes.                                                      |
 | `RATE_LIMIT_WINDOW_MS` | `60000`       | Rate limit sliding window duration in milliseconds.                                                                  |
+| `TRUST_PROXY`          | off           | How much of `X-Forwarded-For` to believe when working out the caller's IP. See below.                                |
+
+### Running behind a reverse proxy
+
+The rate limit above is counted per caller IP. Behind nginx, traefik, a cloud load
+balancer or any other proxy, every request arrives from the proxy's address, so
+without `TRUST_PROXY` your entire deployment shares a single bucket and legitimate
+SDK traffic starts getting `429`s.
+
+Set `TRUST_PROXY` so the server reads the real client IP from `X-Forwarded-For`:
+
+```env
+# Trust one hop -- correct when exactly one proxy you control is in front.
+TRUST_PROXY=1
+
+# Or name the proxies explicitly.
+TRUST_PROXY=10.0.0.0/8,192.168.1.1
+```
+
+It is off by default on purpose, and leaving it off is right when you have no
+proxy: `X-Forwarded-For` is caller-supplied, so a server that trusts it with
+nothing in front lets anyone invent a fresh IP per request and bypass the rate
+limit entirely. Turn it on only when a proxy you control is actually there.
 
 The admin UI is a separate build and reads one variable of its own, at build
 time rather than at run time:

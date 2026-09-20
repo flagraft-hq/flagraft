@@ -79,6 +79,48 @@ describe('loadConfig', () => {
     expect(config.DEFAULT_ADMIN_PASSWORD).toBe('a-strong-unique-password')
   })
 
+  describe('TRUST_PROXY', () => {
+    function trustProxy(value?: string) {
+      return loadConfig({
+        DATABASE_URL: 'postgres://flagraft:flagraft@localhost:5432/flagraft',
+        JWT_SECRET: 'super-secret-key-that-is-at-least-32-characters-long',
+        ...(value === undefined ? {} : { TRUST_PROXY: value }),
+      }).TRUST_PROXY
+    }
+
+    it('is off when unset, empty or explicitly false', () => {
+      expect(trustProxy()).toBe(false)
+      expect(trustProxy('')).toBe(false)
+      expect(trustProxy('   ')).toBe(false)
+      expect(trustProxy('false')).toBe(false)
+    })
+
+    it('trusts every hop for true', () => {
+      expect(trustProxy('true')).toBe(true)
+    })
+
+    it('reads a positive integer as a hop count', () => {
+      expect(trustProxy('1')).toBe(1)
+      expect(trustProxy('2')).toBe(2)
+    })
+
+    it('passes addresses and CIDR ranges through as a string', () => {
+      expect(trustProxy('10.0.0.0/8')).toBe('10.0.0.0/8')
+      expect(trustProxy('127.0.0.1,192.168.1.1')).toBe('127.0.0.1,192.168.1.1')
+    })
+
+    /** '0' means trust nothing, so it must not reach proxy-addr as an address. */
+    it('reads 0 as a hop count, not an address', () => {
+      expect(trustProxy('0')).toBe(0)
+    })
+
+    /** Nonsense stops the server at boot rather than silently defaulting to off. */
+    it('leaves an unparseable value for proxy-addr to reject at boot', () => {
+      expect(trustProxy('-1')).toBe('-1')
+      expect(trustProxy('yes')).toBe('yes')
+    })
+  })
+
   it('rejects CACHE_TTL_SECONDS of 0', () => {
     expect(() =>
       loadConfig({

@@ -62,6 +62,8 @@ export async function buildServer(opts: BuildServerOptions = {}) {
     logger: { level: config.LOG_LEVEL },
     /** See requestLog plugin: the per-request firehose is opt-in. */
     disableRequestLogging: !config.REQUEST_LOG,
+    /** Decides whose IP the rate limiter counts; see TRUST_PROXY in config.ts. */
+    trustProxy: config.TRUST_PROXY,
   })
   fastify.decorate('config', config)
 
