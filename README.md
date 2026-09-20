@@ -183,19 +183,59 @@ The seed only runs when the database is empty. Restarting the server later will 
 
 ## Configuration
 
-All config is read from environment variables. See `.env.example` for the full list.
+All config is read from environment variables. `.env.example` is a copyable
+starting point with the same list.
 
-| Variable               | Default       | Description                                                                                                          |
-| ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | --            | Postgres connection string                                                                                           |
-| `PORT`                 | `3000`        | Port the server listens on                                                                                           |
-| `NODE_ENV`             | `development` | Set to `production` in deployments                                                                                   |
-| `LOG_LEVEL`            | `info`        | Pino log level                                                                                                       |
-| `REQUEST_LOG`          | `false`       | Log a line for every request. Off by default: `5xx` and slow requests are logged either way.                         |
-| `CACHE_TTL_SECONDS`    | `30`          | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
-| `RATE_LIMIT_MAX`       | `100`         | Maximum requests per window per IP on client evaluation routes.                                                      |
-| `RATE_LIMIT_WINDOW_MS` | `60000`       | Rate limit sliding window duration in milliseconds.                                                                  |
-| `TRUST_PROXY`          | off           | How much of `X-Forwarded-For` to believe when working out the caller's IP. See below.                                |
+Two have no default and the server refuses to start without them: `DATABASE_URL`
+and `JWT_SECRET`.
+
+### Core
+
+| Variable       | Default       | Description                                                                                                                                                                                           |
+| -------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL` | --            | **Required.** Postgres connection string.                                                                                                                                                             |
+| `JWT_SECRET`   | --            | **Required.** Signs the admin session cookie. At least 32 characters. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Changing it signs every user out. |
+| `PORT`         | `3000`        | Port the server listens on.                                                                                                                                                                           |
+| `NODE_ENV`     | `development` | Set to `production` in deployments. Also disables Swagger UI at `/docs`.                                                                                                                              |
+| `LOG_LEVEL`    | `info`        | Pino log level.                                                                                                                                                                                       |
+| `REQUEST_LOG`  | `false`       | Log a line for every request. Off by default: `5xx` and slow requests are logged either way.                                                                                                          |
+
+### Caching and rate limiting
+
+| Variable               | Default | Description                                                                                                          |
+| ---------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `CACHE_TTL_SECONDS`    | `30`    | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
+| `RATE_LIMIT_MAX`       | `100`   | Maximum requests per window per IP on client evaluation routes.                                                      |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit sliding window duration in milliseconds.                                                                  |
+| `TRUST_PROXY`          | off     | How much of `X-Forwarded-For` to believe when working out the caller's IP. See below.                                |
+
+### First-boot seed
+
+Applied only when the server starts against an empty database. Changing them
+later does nothing -- see [First Setup](#first-setup).
+
+| Variable                 | Default                | Description                                                                                                                          |
+| ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `DEFAULT_ADMIN_EMAIL`    | `admin@flagraft.local` | Email of the admin account created on first boot.                                                                                    |
+| `DEFAULT_ADMIN_PASSWORD` | `flagraft-admin`       | Password for that account. The default is published in these docs, so the server refuses to start in production until you change it. |
+| `DEFAULT_ADMIN_NAME`     | `Admin`                | Display name for that account.                                                                                                       |
+| `DEFAULT_PROJECT_NAME`   | `Default`              | Name of the project created on first boot.                                                                                           |
+| `DEFAULT_PROJECT_SLUG`   | `default`              | Slug of that project.                                                                                                                |
+
+### Email (optional)
+
+Used to send user invites. Leave `SMTP_HOST` unset to disable email entirely:
+invites still work, and the admin shares the invite link by hand instead.
+
+| Variable       | Default | Description                                                                                                                                                                   |
+| -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SMTP_HOST`    | unset   | SMTP server hostname. Unset disables email.                                                                                                                                   |
+| `SMTP_PORT`    | `587`   | SMTP server port.                                                                                                                                                             |
+| `SMTP_SECURE`  | `false` | Use TLS on connect. Set `true` for port 465.                                                                                                                                  |
+| `SMTP_USER`    | unset   | SMTP username.                                                                                                                                                                |
+| `SMTP_PASS`    | unset   | SMTP password.                                                                                                                                                                |
+| `SMTP_FROM`    | unset   | From address on invite emails, e.g. `Flagraft <no-reply@yourcompany.com>`. Falls back to `SMTP_USER`, then `no-reply@flagraft.local`.                                         |
+| `APP_BASE_URL` | unset   | Public URL of the admin UI, used to build the invite link. Falls back to the origin of the request that created the invite, so this is only needed when that origin is wrong. |
 
 ### Running behind a reverse proxy
 

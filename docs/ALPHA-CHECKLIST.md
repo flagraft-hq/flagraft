@@ -105,7 +105,17 @@ config reference: `JWT_SECRET` (the server refuses to boot without it),
 `DEFAULT_PROJECT_NAME`, `DEFAULT_PROJECT_SLUG`, every `SMTP_*` variable, and
 `APP_BASE_URL`.
 
-- [ ] Table completed
+The single flat table is now grouped into Core, Caching and rate limiting,
+First-boot seed, and Email, because 22 rows in one block is poor reference
+material. Checked mechanically against the zod schema: all 22 variables are
+documented, none invented, and `.env.example` carries the same set.
+
+Two descriptions were wrong on a first pass and were corrected against the code
+rather than `.env.example`: `SMTP_FROM` falls back to `SMTP_USER` and then to
+`no-reply@flagraft.local`, and `APP_BASE_URL` falls back to the origin of the
+request that created the invite.
+
+- [x] Table completed
 
 ### 6. README contradicts the code on environment count
 
