@@ -13,3 +13,10 @@ export const MAX_PAGE_SIZE = 100
  */
 export const MAX_CONTEXT_FIELDS_PER_PROJECT = 25
 export const MAX_ENVIRONMENTS_PER_PROJECT = 3
+
+/**
+ * Body size ceiling for the import routes. Fastify defaults every route to 1MB,
+ * which a real Unleash export from a large install goes past, so the import
+ * routes raise it on their own. Everything else keeps the 1MB default.
+ */
+export const MAX_IMPORT_BODY_BYTES = 10 * 1024 * 1024

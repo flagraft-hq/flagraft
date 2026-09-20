@@ -40,6 +40,22 @@ describe('errorHandlerPlugin', () => {
     expect(response.json()).toMatchObject({ error: 'NotFound', message: 'not found' })
   })
 
+  it('answers an oversized body with 413, not a misleading 500', async () => {
+    const fastify = Fastify({ logger: false, bodyLimit: 32 })
+    await fastify.register(errorHandlerPlugin)
+    fastify.post('/import', async () => ({ ok: true }))
+
+    const response = await fastify.inject({
+      method: 'POST',
+      url: '/import',
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ document: 'x'.repeat(200) }),
+    })
+
+    expect(response.statusCode).toBe(413)
+    expect(response.json()).toMatchObject({ error: 'PayloadTooLarge', statusCode: 413 })
+  })
+
   it('does not leak unknown internals', async () => {
     const fastify = await app()
     fastify.get('/boom', async () => {

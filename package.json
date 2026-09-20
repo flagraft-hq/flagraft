@@ -25,6 +25,7 @@
     "test": "pnpm test:all",
     "test:all": "vitest run && pnpm -r --filter=\"./packages/**\" test",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "ui:dev": "pnpm --filter @flagraft/admin-ui dev",
     "ui:build": "pnpm --filter @flagraft/admin-ui build",
     "bench:seed": "tsx benchmarks/seed.ts",

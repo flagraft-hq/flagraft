@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
 import { cacheKeys } from '../../cache/keys.js'
+import { MAX_IMPORT_BODY_BYTES } from '../../limits.js'
 import { AppError } from '../../plugins/errorHandler.js'
 import { importOptionsSchema, nativeDocumentSchema, summariseIssues } from './transfer.schema.js'
 import * as service from './transfer.service.js'
@@ -77,6 +78,7 @@ export async function transferRoutes(fastify: FastifyInstance) {
     '/admin/projects/:projectId/transfer/import',
     {
       preHandler: fastify.requireProjectAdmin,
+      bodyLimit: MAX_IMPORT_BODY_BYTES,
       schema: {
         tags: ['admin'],
         description:

@@ -27,6 +27,14 @@ function isSchemaValidationError(error: unknown): error is FastifyError {
   )
 }
 
+function isBodyTooLargeError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as FastifyError).code === 'FST_ERR_CTP_BODY_TOO_LARGE'
+  )
+}
+
 interface ErrorResponse {
   statusCode: number
   body: { error: string; message: string; statusCode: number; issues?: ZodError['issues'] }
@@ -61,6 +69,17 @@ function toResponse(error: FastifyError | Error): ErrorResponse {
     return {
       statusCode: 400,
       body: { error: 'ValidationError', message: error.message, statusCode: 400 },
+    }
+  }
+
+  if (isBodyTooLargeError(error)) {
+    return {
+      statusCode: 413,
+      body: {
+        error: 'PayloadTooLarge',
+        message: 'Request body is too large',
+        statusCode: 413,
+      },
     }
   }
 

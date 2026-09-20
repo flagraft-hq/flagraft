@@ -35,7 +35,7 @@ SaaS feature flag tools work fine until you hit their pricing tiers, need flags 
 ## What's included
 
 **Projects and environments**
-Flags are scoped per environment. Each project can have any number of environments (production, staging, preview -- whatever matches your workflow). Deleting an environment cascades cleanly.
+Flags are scoped per environment. Each project can have up to three environments (production, staging, preview -- whatever matches your workflow). Deleting an environment cascades cleanly.
 
 **Context-aware targeting**
 Pass any key/value context at evaluation time -- user ID, tenant, plan, region -- and match it against per-environment targeting strategies to turn a flag on for a subset of callers. Useful for canary releases and per-tenant rollouts.
