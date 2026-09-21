@@ -269,7 +269,14 @@ but it matches the `packages/*` workspace glob. Delete it locally.
 of the validated config. It works, but it is the one config read that bypasses
 `loadConfig`, which makes it untestable and inconsistent with everything else.
 
-- [ ] Moved onto the config object
+Now a `sessionCookieOpts(config)` function reading `config.NODE_ENV`. The
+exported constant was dropped rather than kept: nothing outside `session.ts`
+imported it. Being testable was the point, so the regression guard asserts the
+`Secure` flag follows the config even when `process.env.NODE_ENV` disagrees --
+that test fails against the old module-load read.
+
+- [x] Moved onto the config object
+- [x] Covered by `tests/unit/session.test.ts`
 
 ### 14. Two migrations share the `0002` prefix
 

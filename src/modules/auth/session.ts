@@ -1,13 +1,19 @@
 import type { FastifyInstance, FastifyReply } from 'fastify'
 
+import type { AppConfig } from '../../config.js'
+
 export const SESSION_COOKIE = 'flagraft_session'
 
-export const SESSION_COOKIE_OPTS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  path: '/',
-  maxAge: 60 * 60 * 24 * 7,
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
+
+export function sessionCookieOpts(config: AppConfig) {
+  return {
+    httpOnly: true,
+    secure: config.NODE_ENV === 'production',
+    sameSite: 'strict' as const,
+    path: '/',
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  }
 }
 
 interface SessionUser {
@@ -39,5 +45,5 @@ export function setSessionCookie(
     },
     { expiresIn: '7d' },
   )
-  reply.setCookie(SESSION_COOKIE, token, SESSION_COOKIE_OPTS)
+  reply.setCookie(SESSION_COOKIE, token, sessionCookieOpts(fastify.config))
 }
