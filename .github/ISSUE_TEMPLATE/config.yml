@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/flagraft-hq/flagraft/security/advisories/new
+    about: Report privately. Please do not open a public issue.
+  - name: Question or idea
+    url: https://github.com/flagraft-hq/flagraft/discussions
+    about: For anything that is not a bug report or a concrete feature request.

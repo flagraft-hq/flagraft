@@ -244,11 +244,27 @@ Fix: wire it up, or state in the README that it is run manually.
 `CHANGELOG.md` or issue templates. There is also no release or publish workflow,
 so `@flagraft/sdk` at `0.0.1` has no path to npm.
 
-- [ ] CONTRIBUTING.md
-- [ ] SECURITY.md
-- [ ] CHANGELOG.md
-- [ ] Issue templates
-- [ ] SDK publish decision (in or out of scope for alpha)
+Decision taken: the SDK **is** in scope, published under the `alpha` dist-tag so
+`npm i @flagraft/sdk@alpha` works while nothing resolves as `latest`. The README
+already advertises the package, so a 404 during the alpha was the worse option.
+
+`SECURITY.md` points at GitHub private vulnerability reporting rather than an
+email address, because no security contact exists yet and inventing one would be
+worse than none. **Enable it in repo settings** (Settings, Security, Private
+vulnerability reporting) or the link 404s. The Discussions link in the issue
+template config needs Discussions enabled too, or it should be removed.
+
+The release workflow is manual dispatch only, defaults to a dry run, and refuses
+to publish a prerelease as `latest` or a stable version as `alpha`. It needs an
+`NPM_TOKEN` repo secret and an `@flagraft` npm org before its first real run.
+
+- [x] CONTRIBUTING.md -- real setup, the two-database test gotcha, house style
+- [x] SECURITY.md
+- [x] CHANGELOG.md -- Keep a Changelog, seeded with the 0.1.0-alpha.0 feature set
+- [x] Issue templates -- bug, feature, plus config routing security elsewhere
+- [x] SDK publish decision -- alpha dist-tag, `.github/workflows/release.yml`
+- [ ] Enable private vulnerability reporting and Discussions in repo settings
+- [ ] Create the `@flagraft` npm org and add the `NPM_TOKEN` secret
 
 ---
 

@@ -18,12 +18,15 @@ The official TypeScript SDK for [Flagraft](../../README.md), a self-hosted featu
 
 ## Install
 
+Flagraft is in alpha, so the SDK publishes under the `alpha` dist-tag. There is
+no `latest` yet -- install it by tag:
+
 ```bash
-pnpm add @flagraft/sdk
+pnpm add @flagraft/sdk@alpha
 # or
-npm install @flagraft/sdk
+npm install @flagraft/sdk@alpha
 # or
-yarn add @flagraft/sdk
+yarn add @flagraft/sdk@alpha
 ```
 
 **Requirements:**

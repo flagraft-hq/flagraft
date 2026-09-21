@@ -7,7 +7,7 @@
 > **Open source feature flag service for Node.js and TypeScript.** Self-host feature flags, feature toggles, kill switches, A/B tests, canary releases, and gradual rollouts on your own Postgres database, with a typed SDK and zero vendor lock-in.
 
 <p align="center">
-  <a href="./packages/sdk-js"><img alt="@flagraft/sdk status" src="https://img.shields.io/badge/%40flagraft%2Fsdk-in_development-f59e0b"></a>
+  <a href="./packages/sdk-js"><img alt="@flagraft/sdk status" src="https://img.shields.io/badge/%40flagraft%2Fsdk-alpha-f59e0b"></a>
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-2dd4bf"></a>
   <a href="#"><img alt="node" src="https://img.shields.io/badge/node-%3E%3D20-2dd4bf"></a>
   <a href="#"><img alt="built with" src="https://img.shields.io/badge/built_with-Fastify%20%E2%80%A2%20Drizzle%20%E2%80%A2%20Postgres-2dd4bf"></a>
@@ -358,6 +358,13 @@ Full endpoint reference, the report shape, and the complete Unleash mapping tabl
 ## Client SDKs
 
 - **TypeScript / JavaScript:** [`@flagraft/sdk`](packages/sdk-js/README.md)
+
+Flagraft is in alpha, so the SDK publishes under the `alpha` dist-tag rather than
+`latest`:
+
+```sh
+pnpm add @flagraft/sdk@alpha
+```
 
 ---
 
