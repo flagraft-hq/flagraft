@@ -33,6 +33,41 @@ describe('constraintError', () => {
     ).toBe('Value "enterprise" is not an allowed value for "plan"')
   })
 
+  describe('regex patterns', () => {
+    const regex = (pattern: string) =>
+      constraintError(fields, { fieldKey: 'tenant', operator: 'regex', values: [pattern] })
+
+    it.each([
+      '^ac',
+      '^(pro|free)$',
+      '[a-z]+@[a-z]+',
+      '.*@acme\\.com$',
+      '^tenant_[a-zA-Z0-9]+$',
+      '\\d{4}-\\d{2}-\\d{2}',
+    ])('accepts the ordinary pattern %s', (pattern) => {
+      expect(regex(pattern)).toBeNull()
+    })
+
+    it.each(['(a+)+$', '(x+x+)+y', '^(\\w+\\s?)*$', '([a-z]+)*$', '(a*)*b'])(
+      'rejects the catastrophic pattern %s',
+      (pattern) => {
+        expect(regex(pattern)).toContain('can hang flag evaluation')
+      },
+    )
+
+    it('rejects a pattern that is not valid regex at all', () => {
+      expect(regex('^(unclosed')).toBe('"^(unclosed" is not a valid regular expression')
+    })
+
+    /** Only the regex operator pays for the check. */
+    it('leaves other operators alone', () => {
+      expect(regex('(a+)+$')).not.toBeNull()
+      expect(
+        constraintError(fields, { fieldKey: 'tenant', operator: 'equals', values: ['(a+)+$'] }),
+      ).toBeNull()
+    })
+  })
+
   it('accepts an enum field with no declared values', () => {
     const loose = new Map<string, FieldRule>([
       ['free', { key: 'free', type: 'enum', enumValues: null }],

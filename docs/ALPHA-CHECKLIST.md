@@ -144,10 +144,31 @@ and a client key lives in frontend bundles — effectively public. One crafted
 context value against a pattern like `(a+)+$` hangs the event loop for every
 evaluation request.
 
-Cheapest fix for alpha: cap pattern and value length, or drop the `regex`
-operator until there is a matcher that can be given a timeout.
+Fixed by validating the pattern at write time in `constraintError`, which is the
+single choke point both the strategy endpoint and the flag importer already go
+through. A bad pattern now comes back as a `400` the admin can act on, instead
+of surfacing as an outage later. The evaluation path is untouched.
 
-- [ ] Fixed
+Two corrections to the audit's own advice, found while implementing:
+
+- **Length caps do not fix this.** Backtracking is exponential in the input
+  length, so `(a+)+$` (7 characters) against a 40-character value is already
+  hours of CPU. A cap short enough to be safe is too short to be useful.
+- **`redos-detector` was the wrong library**, despite being the obvious pick. It
+  models `.test()`'s unanchored scan, so it flags ordinary patterns like
+  `[a-z]+@[a-z]+` and `.*@acme\.com$` as unsafe, and `maxScore` cannot tune that
+  away because the score comes back infinite. `recheck` does report the
+  exponential/polynomial split but ships 5.8MB plus per-platform native
+  binaries, which contradicts the air-gapped claim in the README.
+
+`safe-regex` was measured against a corpus of 12 ordinary and 8 catastrophic
+patterns: 0 false positives, 7 of 8 caught. The miss is `^(a|a)*$`, ambiguous
+alternation at star height 1, which has to be written deliberately. Recorded in
+the roadmap's known limitations rather than chased.
+
+- [x] Fixed -- `safe-regex` check in `src/modules/strategies/constraint-rules.ts`
+- [x] Covered by unit tests over both corpora, plus an integration test for the 400
+- [x] Documented in `docs/API.md`, with the residual gap in `docs/ROADMAP.md`
 
 ### 8. 1MB default body limit on import
 

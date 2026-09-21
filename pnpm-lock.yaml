@@ -56,6 +56,9 @@ importers:
       pino:
         specifier: ^9.5.0
         version: 9.14.0
+      safe-regex:
+        specifier: ^2.1.1
+        version: 2.1.1
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -81,6 +84,9 @@ importers:
       '@types/pg':
         specifier: ^8.11.10
         version: 8.20.0
+      '@types/safe-regex':
+        specifier: ^1.1.6
+        version: 1.1.6
       autocannon:
         specifier: ^8.0.0
         version: 8.0.0
@@ -1816,6 +1822,9 @@ packages:
   '@types/react@19.2.18':
     resolution: {integrity: sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w==}
 
+  '@types/safe-regex@1.1.6':
+    resolution: {integrity: sha512-CQ/uPB9fLOPKwDsrTeVbNIkwfUthTWOx0l6uIGwVFjZxv7e68pCW5gtTYFzdJi3EBJp8h8zYhJbTasAbX7gEMQ==}
+
   '@types/set-cookie-parser@2.4.10':
     resolution: {integrity: sha512-GGmQVGpQWUe5qglJozEjZV/5dyxbOOZ0LHe/lqyWssB88Y4svNfst0uqBVscdDeIKl5Jy5+aPSvy7mI9tYRguw==}
 
@@ -3369,6 +3378,10 @@ packages:
     resolution: {integrity: sha512-6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==}
     engines: {node: '>=8'}
 
+  regexp-tree@0.1.27:
+    resolution: {integrity: sha512-iETxpjK6YoRWJG5o6hXLwvjYAoW+FEZn9os0PD/b6AP6xQwsa/Y7lCVgIixBbUPMfhu+i2LtdeAqVTgGlQarfA==}
+    hasBin: true
+
   reinterval@1.1.0:
     resolution: {integrity: sha512-QIRet3SYrGp0HUHO88jVskiG6seqUGC5iAG7AwI/BV4ypGcuqk9Du6YQBUOUqm9c8pw1eyLoIaONifRua1lsEQ==}
 
@@ -3420,6 +3433,9 @@ packages:
 
   safe-regex2@3.1.0:
     resolution: {integrity: sha512-RAAZAGbap2kBfbVhvmnTFv73NWLMvDGOITFYTZBAaY8eR+Ir4ef7Up/e7amo+y1+AH+3PtLkrt9mvcTsG9LXug==}
+
+  safe-regex@2.1.1:
+    resolution: {integrity: sha512-rx+x8AMzKb5Q5lQ95Zoi6ZbJqwCLkqi3XuJXp5P3rT8OEc6sZCJG5AE5dU3lsgRr/F4Bs31jSlVN+j5KrsGu9A==}
 
   safe-stable-stringify@2.5.0:
     resolution: {integrity: sha512-b3rppTKm9T+PsVCBEOUR46GWI7fdOs00VKZ1+9c1EWDaDMvjQc6tUwuFyIprgGgTcWoVHSKrU8H31ZHA2e0RHA==}
@@ -5222,6 +5238,8 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
+  '@types/safe-regex@1.1.6': {}
+
   '@types/set-cookie-parser@2.4.10':
     dependencies:
       '@types/node': 22.19.17
@@ -6813,6 +6831,8 @@ snapshots:
       indent-string: 4.0.0
       strip-indent: 3.0.0
 
+  regexp-tree@0.1.27: {}
+
   reinterval@1.1.0: {}
 
   require-directory@2.1.1: {}
@@ -6873,6 +6893,10 @@ snapshots:
   safe-regex2@3.1.0:
     dependencies:
       ret: 0.4.3
+
+  safe-regex@2.1.1:
+    dependencies:
+      regexp-tree: 0.1.27
 
   safe-stable-stringify@2.5.0: {}
 

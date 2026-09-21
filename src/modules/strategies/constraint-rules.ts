@@ -1,4 +1,27 @@
+import safeRegex from 'safe-regex'
+
 import { OPERATORS_BY_TYPE } from './strategy.schema.js'
+
+/**
+ * Checks a regex constraint before it is stored. Evaluation runs the pattern
+ * against caller-supplied context on every request, so a pattern that
+ * backtracks exponentially -- `(a+)+$` and friends -- would hang the server
+ * for everyone. Rejecting it here means the admin who wrote it sees the
+ * problem, instead of it surfacing as an outage later.
+ */
+function regexError(pattern: string): string | null {
+  try {
+    new RegExp(pattern)
+  } catch {
+    return `"${pattern}" is not a valid regular expression`
+  }
+
+  if (!safeRegex(pattern)) {
+    return `"${pattern}" can hang flag evaluation on some inputs. Rewrite it without nested quantifiers, such as a repeated group that itself repeats.`
+  }
+
+  return null
+}
 
 export interface FieldRule {
   key: string
@@ -33,6 +56,11 @@ export function constraintError(
   const allowed = (OPERATORS_BY_TYPE as Record<string, readonly string[]>)[field.type] ?? []
   if (!allowed.includes(constraint.operator)) {
     return `Operator "${constraint.operator}" is not valid for ${field.type} field "${field.key}"`
+  }
+
+  if (constraint.operator === 'regex') {
+    const error = regexError(constraint.values[0] ?? '')
+    if (error) return error
   }
 
   if (field.type === 'enum' && field.enumValues) {
