@@ -22,12 +22,11 @@ const configSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 
-  /**
-   * How much of the X-Forwarded-For header to believe. Off by default: the
-   * header is caller-supplied, so trusting it with no proxy in front lets
-   * anyone invent an IP per request and skip the rate limit. Behind a proxy it
-   * costs the opposite -- every caller looks like the proxy, one bucket for all.
-   */
+  /** Login and invite routes: they run argon2, so guessing is also a CPU drain. */
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  AUTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
+
+  /** Off by default: trusting this header with no proxy in front skips the rate limit. */
   TRUST_PROXY: z
     .string()
     .optional()

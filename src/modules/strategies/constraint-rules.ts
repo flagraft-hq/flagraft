@@ -2,13 +2,7 @@ import safeRegex from 'safe-regex'
 
 import { OPERATORS_BY_TYPE } from './strategy.schema.js'
 
-/**
- * Checks a regex constraint before it is stored. Evaluation runs the pattern
- * against caller-supplied context on every request, so a pattern that
- * backtracks exponentially -- `(a+)+$` and friends -- would hang the server
- * for everyone. Rejecting it here means the admin who wrote it sees the
- * problem, instead of it surfacing as an outage later.
- */
+/** Evaluation runs this against caller input, so a backtracking pattern hangs the server. */
 function regexError(pattern: string): string | null {
   try {
     new RegExp(pattern)

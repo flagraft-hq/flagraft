@@ -59,7 +59,6 @@ describe('constraintError', () => {
       expect(regex('^(unclosed')).toBe('"^(unclosed" is not a valid regular expression')
     })
 
-    /** Only the regex operator pays for the check. */
     it('leaves other operators alone', () => {
       expect(regex('(a+)+$')).not.toBeNull()
       expect(

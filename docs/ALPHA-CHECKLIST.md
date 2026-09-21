@@ -53,11 +53,35 @@ encapsulation confines it to `/api/v1/client/*`. `/admin/auth/login` is
 is both a credential-stuffing surface and a CPU-exhaustion DoS reachable without
 any credential.
 
-Fix: a rate limit on the auth routes, keyed on IP and email. Account lockout is a
-larger decision — decide whether it is in scope for alpha.
+Fixed with a separate, much tighter limit (`AUTH_RATE_LIMIT_MAX`, default 20 per
+15 minutes per IP) registered with `global: false` and opted into per route, so
+logout and `/public/workspace` stay open -- the login screen fetches the latter
+on every page load.
 
-- [ ] Fixed
-- [ ] Documented
+Scope was wider than the finding said. `/public/invite/:token/accept` also runs
+argon2 on a guessable token, and `/public/invite/:token` allows invite
+enumeration, so both are throttled too. Fixing login alone would have left the
+identical hole next door.
+
+Keying on email as well as IP was rejected: with a rate limit rather than a
+lockout, an email key lets anyone lock a colleague out by guessing at their
+address.
+
+**This uncovered a pre-existing bug.** `@fastify/rate-limit` signals a breach by
+throwing the plain object its `errorResponseBuilder` returns. That matches no
+error class, so it fell through `toResponse` to the catch-all: every rate limit
+breach, including the client evaluation one the README documents as a `429`, was
+answered with `500 Internal error` and logged as a server fault. The error
+handler now keeps the status of any thrown 4xx, while a 5xx still refuses to
+describe itself. Regression tests at both the unit and integration level.
+
+Account lockout stays out of alpha -- see the roadmap entry for why, along with
+the residual distributed-attack gap.
+
+- [x] Fixed -- login and both invite routes
+- [x] Pre-existing 500-instead-of-429 bug fixed in `src/plugins/errorHandler.ts`
+- [x] Documented in the README config table and the rate limiting section
+- [x] Lockout and the per-IP gap recorded in `docs/ROADMAP.md`
 
 ### 3. The Docker image cannot migrate itself, and there are no deployment docs
 

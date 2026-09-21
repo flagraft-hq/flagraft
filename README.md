@@ -53,7 +53,7 @@ Every project exports to a versioned JSON document that round-trips losslessly -
 Flag state is cached per `projectId + environmentId` using BentoCache. Any write (flag update, strategy change, environment delete) invalidates the relevant cache entries automatically. TTL is configurable via `CACHE_TTL_SECONDS`.
 
 **Rate limiting**
-Client evaluation routes (`/api/v1/client/*`) are rate-limited per IP. The limit and window are configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`. Breaches return a `429` with the standard error envelope.
+Client evaluation routes (`/api/v1/client/*`) are rate-limited per IP, configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`. The unauthenticated routes that verify a password or an invite token -- login, and the two invite endpoints -- get a separate, much tighter limit via `AUTH_RATE_LIMIT_MAX` and `AUTH_RATE_LIMIT_WINDOW_MS`, because those run argon2 and are worth both guessing at and exhausting CPU with. Breaches return a `429` with the standard error envelope. Behind a proxy, set `TRUST_PROXY` or every caller counts as one.
 
 **Logging**
 Only the requests worth reading are logged: any `5xx`, and anything slower than 500ms. Successful and `4xx` responses are silent, because the client evaluation endpoint is polled on a timer by every SDK instance -- a line per request is thousands a second describing nothing wrong, and it buries the events an operator needs. Set `REQUEST_LOG=true` to log every request while debugging. `5xx` errors are always logged with their stack, whatever the setting.
@@ -202,12 +202,14 @@ and `JWT_SECRET`.
 
 ### Caching and rate limiting
 
-| Variable               | Default | Description                                                                                                          |
-| ---------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
-| `CACHE_TTL_SECONDS`    | `30`    | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
-| `RATE_LIMIT_MAX`       | `100`   | Maximum requests per window per IP on client evaluation routes.                                                      |
-| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit sliding window duration in milliseconds.                                                                  |
-| `TRUST_PROXY`          | off     | How much of `X-Forwarded-For` to believe when working out the caller's IP. See below.                                |
+| Variable                    | Default  | Description                                                                                                          |
+| --------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `CACHE_TTL_SECONDS`         | `30`     | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
+| `RATE_LIMIT_MAX`            | `100`    | Maximum requests per window per IP on client evaluation routes.                                                      |
+| `RATE_LIMIT_WINDOW_MS`      | `60000`  | Rate limit sliding window duration in milliseconds.                                                                  |
+| `TRUST_PROXY`               | off      | How much of `X-Forwarded-For` to believe when working out the caller's IP. See below.                                |
+| `AUTH_RATE_LIMIT_MAX`       | `20`     | Maximum attempts per window per IP on login and the invite routes.                                                   |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | `900000` | Window for that limit, in milliseconds. Default is 15 minutes.                                                       |
 
 ### First-boot seed
 

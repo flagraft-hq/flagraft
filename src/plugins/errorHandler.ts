@@ -40,6 +40,23 @@ interface ErrorResponse {
   body: { error: string; message: string; statusCode: number; issues?: ZodError['issues'] }
 }
 
+/** @fastify/rate-limit signals a breach by throwing a plain object, not an Error. */
+function toClientError(error: unknown): ErrorResponse | null {
+  if (typeof error !== 'object' || error === null) return null
+  const candidate = error as { statusCode?: unknown; error?: unknown; message?: unknown }
+  const { statusCode } = candidate
+  if (typeof statusCode !== 'number' || statusCode < 400 || statusCode > 499) return null
+
+  return {
+    statusCode,
+    body: {
+      error: typeof candidate.error === 'string' ? candidate.error : 'BadRequest',
+      message: typeof candidate.message === 'string' ? candidate.message : 'Request rejected',
+      statusCode,
+    },
+  }
+}
+
 /**
  * Maps a thrown error to the response the caller gets. Kept separate from the
  * handler so the status is known before the reply is sent, which is what
@@ -89,6 +106,9 @@ function toResponse(error: FastifyError | Error): ErrorResponse {
       body: { error: error.code, message: error.message, statusCode: error.statusCode },
     }
   }
+
+  const clientError = toClientError(error)
+  if (clientError) return clientError
 
   return {
     statusCode: 500,
