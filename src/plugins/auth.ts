@@ -182,11 +182,10 @@ async function authPlugin(fastify: FastifyInstance) {
     if (request.routeOptions.config?.skipAuth) return
 
     /**
-     * @fastify/swagger-ui registers its routes internally and provides no way to
-     * set `config.skipAuth` on them, so the skipAuth flag check above cannot
-     * reach those routes. A URL prefix guard is the correct escape hatch.
+     * Everything that needs a caller lives under /api/. Swagger UI and the
+     * bundled admin UI register routes this hook cannot set config on.
      */
-    if (request.url.startsWith('/docs')) return
+    if (!request.url.startsWith('/api/')) return
 
     /**
      * Try JWT session cookie first -- used by browser clients (admin UI).

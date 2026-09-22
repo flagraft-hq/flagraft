@@ -402,4 +402,38 @@ describeIfDb('auth', () => {
       await app.close()
     })
   })
+
+  /**
+   * Auth is required for /api/ and nothing else, so the bundled UI and Swagger
+   * can serve themselves. This pins the rest of the surface: adding a route
+   * outside /api/ makes it public, and that should be a deliberate act.
+   */
+  describe('the unauthenticated route surface', () => {
+    /** '*' is the CORS preflight route; '/' and '/*' appear when the UI is bundled. */
+    const PUBLIC_OUTSIDE_API = ['/docs', '/health', '/ready', '/', '/*', '*']
+
+    it('has no route outside /api/ beyond the known public ones', async () => {
+      const app = await buildServer({ db, skipBootSeed: true })
+      await app.ready()
+
+      const topLevel = app
+        .printRoutes({ commonPrefix: false })
+        .split('\n')
+        .map((line) => /^[├└]── (\S+)/.exec(line)?.[1])
+        .filter((p): p is string => Boolean(p))
+
+      const unexpected = topLevel.filter(
+        (p) => !p.startsWith('/api/') && !PUBLIC_OUTSIDE_API.includes(p),
+      )
+      expect(unexpected).toEqual([])
+      await app.close()
+    })
+
+    it('still refuses an /api/ route without credentials', async () => {
+      const app = await buildServer({ db, skipBootSeed: true })
+      const res = await app.inject({ method: 'GET', url: '/api/v1/admin/projects' })
+      expect(res.statusCode).toBe(401)
+      await app.close()
+    })
+  })
 })

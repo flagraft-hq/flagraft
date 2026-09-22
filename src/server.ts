@@ -7,6 +7,7 @@ import { USER_ROLES } from './auth/constants.js'
 import { loadConfig, type AppConfig } from './config.js'
 import type { Cache } from './cache/index.js'
 import type { Db } from './db/index.js'
+import { runMigrations } from './db/migrate.js'
 import { createUser } from './modules/auth/auth.service.js'
 import { createProject } from './modules/projects/project.service.js'
 import { users, projects } from './db/schema.js'
@@ -29,6 +30,7 @@ import errorHandlerPlugin from './plugins/errorHandler.js'
 import healthPlugin from './plugins/health.js'
 import requestIdPlugin from './plugins/requestId.js'
 import requestLogPlugin from './plugins/requestLog.js'
+import staticUiPlugin from './plugins/staticUi.js'
 import swaggerPlugin from './plugins/swagger.js'
 
 declare module 'fastify' {
@@ -98,6 +100,7 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   await fastify.register(userRoutes, v1Prefix)
   await fastify.register(authRoutes, v1Prefix)
   await fastify.register(publicRoutes, v1Prefix)
+  await fastify.register(staticUiPlugin)
 
   fastify.addHook('onReady', async () => {
     if (opts.skipBootSeed) return
@@ -137,6 +140,9 @@ export async function buildServer(opts: BuildServerOptions = {}) {
  */
 export async function start() {
   const config = loadConfig()
+  if (config.RUN_MIGRATIONS) {
+    await runMigrations(config.DATABASE_URL)
+  }
   const server = await buildServer()
   await server.listen({ port: config.PORT, host: '0.0.0.0' })
 

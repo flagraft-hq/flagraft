@@ -37,6 +37,11 @@ const configSchema = z.object({
       const hops = Number(value)
       return Number.isInteger(hops) && hops >= 0 ? hops : value
     }),
+  /** Applies pending migrations at startup so a fresh container just works. */
+  RUN_MIGRATIONS: z
+    .string()
+    .optional()
+    .transform((v) => v !== 'false'),
   JWT_SECRET: z.string().min(32),
   DEFAULT_ADMIN_EMAIL: z.string().email().default('admin@flagraft.local'),
   DEFAULT_ADMIN_PASSWORD: z.string().min(8).default('flagraft-admin'),

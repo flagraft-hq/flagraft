@@ -99,9 +99,40 @@ Fix: decide how migrations run in a container (bundle them and migrate on boot,
 or ship a separate migrate entrypoint), decide how the admin UI is served, and
 write the deployment section.
 
-- [ ] Migrations reachable from the image
-- [ ] Admin UI deployment story decided and implemented
-- [ ] README deployment section written
+Both decisions taken, both matching what Unleash does (verified against the
+running `unleashorg/unleash-server:6.5.2`: one container serves the UI at `/`
+and the API on the same origin, and `db-migrate` ships as a runtime dependency).
+
+Migrations run at startup unless `RUN_MIGRATIONS=false`, with
+`node dist/db/migrate.cjs` as the standalone path. The migrations folder is
+copied to the same path it has in the repo, so the migrator needs no config.
+
+The admin UI is served by the server from `/public`, with a SPA fallback so a
+refresh on `/flags/...` does not 404. Same origin by construction, which is why
+**item 4 is now mostly resolved** -- no CORS, and `SameSite=Strict` works
+untouched. Auth now guards `/api/` rather than exempting `/docs`, and a test
+pins the route surface outside `/api/` so making something public stays
+deliberate.
+
+Verified by building the image and running it against a genuinely empty
+database: migrations applied, first-boot seed ran, container healthy, UI served,
+deep links fell back correctly, API 404s stayed JSON, and a real login round
+trip set and accepted the session cookie.
+
+**Two bugs found by actually building it**, neither visible from the source:
+
+- `@fastify/static@8` requires Fastify 5; this project is on 4.29.1. It never
+  failed locally because the plugin short-circuits when no `public/` exists.
+  Pinned to `^7`.
+- `packages/admin-ui` imports `@heroui/styles` in `src/styles/index.css` without
+  declaring it. It resolved only through pnpm's hidden hoisted store, so the UI
+  build worked on the host and in CI but failed in a clean install. Now a
+  declared dependency.
+
+- [x] Migrations reachable from the image, applied on boot, overridable
+- [x] Admin UI served by the server, one container
+- [x] README deployment section -- docker run, Compose, migrations, proxy, prod checklist
+- [x] Covered by `tests/plugins/staticUi.test.ts` and a route-surface guard
 
 ### 4. Cross-origin admin UI is silently broken in production
 

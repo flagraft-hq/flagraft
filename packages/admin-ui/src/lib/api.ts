@@ -29,8 +29,10 @@ export class ApiError extends Error {
   }
 }
 
-/** Where the API lives: VITE_API_URL when set, localhost otherwise. */
-const apiOrigin = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000'
+/** Same origin when the server bundles the UI; VITE_API_URL overrides for a split deploy. */
+const apiOrigin =
+  (import.meta.env.VITE_API_URL as string | undefined) ??
+  (typeof window === 'undefined' ? 'http://localhost:3000' : window.location.origin)
 
 /**
  * The base URL of this install's API, for the endpoints and snippets shown in

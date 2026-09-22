@@ -181,6 +181,111 @@ The seed only runs when the database is empty. Restarting the server later will 
 
 ---
 
+## Deployment
+
+One container is the whole product. The image serves the admin UI at `/`, the API
+under `/api/v1`, and applies its own database migrations at startup.
+
+```sh
+docker run -d \
+  -p 3000:3000 \
+  -e DATABASE_URL=postgres://user:pass@your-db:5432/flagraft \
+  -e JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))") \
+  -e NODE_ENV=production \
+  -e DEFAULT_ADMIN_PASSWORD=pick-something-strong \
+  ghcr.io/flagraft-hq/flagraft:latest
+```
+
+Open `http://localhost:3000`, sign in as `admin@flagraft.local`, change the
+password. That is the whole setup -- there is no separate UI to deploy and no
+CORS to configure, because the UI and API share an origin.
+
+### With Docker Compose
+
+```yaml
+services:
+  flagraft:
+    image: ghcr.io/flagraft-hq/flagraft:latest
+    ports: ['3000:3000']
+    environment:
+      DATABASE_URL: postgres://flagraft:flagraft@db:5432/flagraft
+      JWT_SECRET: replace-with-32-plus-random-characters
+      NODE_ENV: production
+      DEFAULT_ADMIN_PASSWORD: pick-something-strong
+    depends_on: [db]
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: flagraft
+      POSTGRES_PASSWORD: flagraft
+      POSTGRES_DB: flagraft
+    volumes: ['flagraft-pg:/var/lib/postgresql/data']
+    restart: unless-stopped
+
+volumes:
+  flagraft-pg:
+```
+
+### Migrations
+
+The server applies pending migrations before it starts listening, so a fresh
+database needs no extra step. To take control of when schema changes land -- a
+maintenance window, or a deploy that runs more than one instance -- turn it off
+and run the migrator yourself:
+
+```sh
+docker run --rm -e DATABASE_URL=... ghcr.io/flagraft-hq/flagraft:latest \
+  node dist/db/migrate.cjs
+
+docker run -d -e RUN_MIGRATIONS=false ... ghcr.io/flagraft-hq/flagraft:latest
+```
+
+Migrations are forward-only and there is no down path. Back the database up
+before upgrading.
+
+### Behind a reverse proxy
+
+Terminating TLS in front of Flagraft is the normal setup. Forward everything to
+the container on one origin -- do not split the UI and API across hostnames, or
+the session cookie (`SameSite=Strict`) stops being sent:
+
+```nginx
+server {
+  server_name flags.example.com;
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+Then set `TRUST_PROXY=1` so rate limits count real client IPs instead of
+treating your whole deployment as a single caller. See
+[Running behind a reverse proxy](#running-behind-a-reverse-proxy).
+
+### Before you go to production
+
+- `NODE_ENV=production` -- also disables Swagger UI at `/docs`.
+- `JWT_SECRET` set to 32+ random characters. Changing it later signs everyone out.
+- `DEFAULT_ADMIN_PASSWORD` changed. The server refuses to start otherwise.
+- `TRUST_PROXY` set if anything sits in front.
+- One instance for now. The flag cache is per-process, so a second instance
+  serves stale flags until its own entries expire -- see
+  [known limitations](docs/ROADMAP.md#known-limitations).
+
+### Running the UI separately
+
+You do not have to use the bundled UI. Build `packages/admin-ui` with
+`VITE_API_URL` pointing at your API and host the output anywhere. Keep it on the
+same origin as the API through your proxy, or the session cookie will not be
+sent.
+
+---
+
 ## Configuration
 
 All config is read from environment variables. `.env.example` is a copyable
@@ -191,14 +296,15 @@ and `JWT_SECRET`.
 
 ### Core
 
-| Variable       | Default       | Description                                                                                                                                                                                           |
-| -------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL` | --            | **Required.** Postgres connection string.                                                                                                                                                             |
-| `JWT_SECRET`   | --            | **Required.** Signs the admin session cookie. At least 32 characters. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Changing it signs every user out. |
-| `PORT`         | `3000`        | Port the server listens on.                                                                                                                                                                           |
-| `NODE_ENV`     | `development` | Set to `production` in deployments. Also disables Swagger UI at `/docs`.                                                                                                                              |
-| `LOG_LEVEL`    | `info`        | Pino log level.                                                                                                                                                                                       |
-| `REQUEST_LOG`  | `false`       | Log a line for every request. Off by default: `5xx` and slow requests are logged either way.                                                                                                          |
+| Variable         | Default       | Description                                                                                                                                                                                           |
+| ---------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`   | --            | **Required.** Postgres connection string.                                                                                                                                                             |
+| `JWT_SECRET`     | --            | **Required.** Signs the admin session cookie. At least 32 characters. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Changing it signs every user out. |
+| `PORT`           | `3000`        | Port the server listens on.                                                                                                                                                                           |
+| `NODE_ENV`       | `development` | Set to `production` in deployments. Also disables Swagger UI at `/docs`.                                                                                                                              |
+| `LOG_LEVEL`      | `info`        | Pino log level.                                                                                                                                                                                       |
+| `RUN_MIGRATIONS` | `true`        | Apply pending migrations at startup. Set `false` to run them yourself with `node dist/db/migrate.cjs`.                                                                                                |
+| `REQUEST_LOG`    | `false`       | Log a line for every request. Off by default: `5xx` and slow requests are logged either way.                                                                                                          |
 
 ### Caching and rate limiting
 
