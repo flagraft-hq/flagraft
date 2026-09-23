@@ -35,9 +35,11 @@ These are documented behaviors rather than bugs:
   published default password. The server refuses to start in production until
   `DEFAULT_ADMIN_PASSWORD` is changed. Leaving it set in a non-production
   deployment that is nonetheless reachable is a deployment mistake.
-- **Client keys are public.** A client key is scoped to one project and
-  environment and can only evaluate flags. It is meant to ship inside frontend
-  bundles. Finding one in a published bundle is expected.
+- **Client keys are low-privilege, but not public.** A client key is scoped to
+  one project and environment and can only evaluate flags. It is still a
+  credential: the SDK is server-side, and browser apps are expected to proxy
+  evaluation through their own backend rather than ship the key to visitors. A
+  client key found in a published frontend bundle is a real report.
 - **Swagger UI at `/docs`.** Served outside production, disabled when
   `NODE_ENV=production`.
 - **`TRUST_PROXY` left off behind a proxy.** Rate limits then count every caller

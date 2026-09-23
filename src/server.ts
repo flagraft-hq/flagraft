@@ -69,6 +69,11 @@ export async function buildServer(opts: BuildServerOptions = {}) {
   })
   fastify.decorate('config', config)
 
+  /**
+   * Same-origin is the only supported topology: the server serves the admin UI,
+   * and the SDK is server-side, so nothing legitimate calls this cross-origin.
+   * Dev allows any origin only because the Vite dev server is a separate port.
+   */
   await fastify.register(cors, {
     origin: config.NODE_ENV === 'production' ? false : true,
     credentials: true,

@@ -33,11 +33,14 @@ of proxy addresses and CIDR ranges. Off is the right default in both directions:
 with no proxy in front, trusting `X-Forwarded-For` lets any caller invent an IP
 per request and bypass the limit entirely.
 
-Keying the limiter on the API key instead of the IP was considered and rejected.
-A client key is embedded in frontend bundles, so one key is shared by every
-browser running the app — per-key limiting would put thousands of users into a
-single 100/min bucket, which is worse than the bug being fixed. Per-IP is the
-right unit here; it just needed the real IP.
+Keying the limiter on the API key instead of the IP was considered and rejected:
+one key belongs to a whole application, so per-key limiting collapses an entire
+server fleet into one bucket. Per-IP is the right unit; it just needed the real
+IP.
+
+(Corrected under item 4: the original reasoning here said a client key "is
+embedded in frontend bundles". It is not -- the SDK is server-side. The
+conclusion is unchanged.)
 
 - [x] Fixed -- `TRUST_PROXY` in `src/config.ts`, applied in `src/server.ts`
 - [x] Documented in the README config table, with a "Running behind a reverse proxy" section
@@ -144,11 +147,34 @@ the API in production. But `VITE_API_URL` is documented as "set it to your own
 domain when self-hosting", which implies the opposite. In development the Vite
 proxy masks this entirely, so it will not surface until someone deploys.
 
-Fix: either commit to same-origin and ship a reverse-proxy recipe, or add a
-`CORS_ORIGIN` env var and relax `sameSite` accordingly. Pick one and document it.
+Decided: **same origin only, no `CORS_ORIGIN`.** Item 3 already made the server
+serve the UI, so the supported path is same-origin by construction and the bug
+as written can no longer reach anyone using the image.
 
-- [ ] Decided and implemented
-- [ ] Documented
+The reason there is no cross-origin mode is stronger than "we did not get to
+it". Nothing legitimate calls this API cross-origin: the admin UI is
+same-origin, and the SDK is server-side -- its README says never to construct a
+client in browser code -- so browser apps proxy evaluation through their own
+backend and never talk to Flagraft directly. `origin: false` in production was
+therefore already correct rather than accidental; it is now commented as a
+decision so nobody "fixes" it.
+
+Failure is made loud instead of silent: the UI logs a console error when
+`VITE_API_URL` resolves to an origin other than the page's, naming the dropped
+cookie. That was the whole trap -- login succeeds, every later call 401s, and it
+reads like a login bug.
+
+**This item corrected a factual error made earlier in the audit.** Three places
+claimed a client key "ships inside frontend bundles" and is effectively public.
+The SDK documents the opposite. `SECURITY.md` said finding a client key in a
+published bundle was expected; it now says that is a real report. The
+conclusions in items 1 and 7 survive, but their reasoning was wrong and is
+corrected below.
+
+- [x] Decided and implemented -- same origin only, cross-origin warned about at runtime
+- [x] Documented -- "Same origin is the only supported topology" in the README
+- [x] `SECURITY.md` corrected on client key exposure
+- [x] Covered by `packages/admin-ui/src/lib/__tests__/crossOrigin.test.ts`
 
 ### 5. README config table is missing required variables
 
@@ -194,10 +220,15 @@ not go out wrong.
 `src/modules/client/evaluate.ts:22`
 
 `safeRegexTest` catches syntax errors but not catastrophic backtracking. The
-pattern is admin-authored, but the value it is tested against is caller-supplied,
-and a client key lives in frontend bundles — effectively public. One crafted
-context value against a pattern like `(a+)+$` hangs the event loop for every
-evaluation request.
+pattern is admin-authored, but the value it is tested against is caller-supplied.
+One crafted context value against a pattern like `(a+)+$` hangs the event loop
+for every evaluation request.
+
+(Corrected under item 4: this originally called a client key "effectively
+public", which overstated the deliberate-attack risk -- a caller needs a client
+key, and those are server-side. The accidental case stands on its own and was
+always the stronger argument: `^(\w+\s?)*$` is a pattern a careful admin writes
+by hand, and it takes the flag server down for everyone.)
 
 Fixed by validating the pattern at write time in `constraintError`, which is the
 single choke point both the strategy endpoint and the flag importer already go

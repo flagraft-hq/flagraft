@@ -277,12 +277,26 @@ treating your whole deployment as a single caller. See
   serves stale flags until its own entries expire -- see
   [known limitations](docs/ROADMAP.md#known-limitations).
 
-### Running the UI separately
+### Same origin is the only supported topology
 
-You do not have to use the bundled UI. Build `packages/admin-ui` with
-`VITE_API_URL` pointing at your API and host the output anywhere. Keep it on the
-same origin as the API through your proxy, or the session cookie will not be
-sent.
+The admin UI and the API must answer on one origin. The bundled image does this
+for you; behind a proxy, route `/` and `/api/` to the same hostname.
+
+Splitting them across hostnames does not work, and fails in a way that looks
+like a login bug rather than a configuration one: the session cookie is
+`SameSite=Strict`, so the browser accepts it at login and then refuses to send
+it anywhere else. Every request after signing in returns `401` and the UI bounces
+back to the login screen with nothing useful in the network tab. The UI logs a
+console error when it detects this.
+
+There is no `CORS_ORIGIN` setting, deliberately. Nothing legitimate calls this
+API cross-origin: the admin UI is same-origin, and the SDK is server-side --
+browser applications proxy evaluation through their own backend rather than
+holding a client key, so the browser never talks to Flagraft directly.
+
+You can still host the UI build yourself rather than using the bundled one --
+set `VITE_API_URL` and serve the output of `pnpm ui:build`. Put it on the same
+origin as the API through your proxy, or it will not work.
 
 ---
 
@@ -370,9 +384,9 @@ limit entirely. Turn it on only when a proxy you control is actually there.
 The admin UI is a separate build and reads one variable of its own, at build
 time rather than at run time:
 
-| Variable       | Default                 | Description                                                                                                                                                                         |
-| -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_URL` | `http://localhost:3000` | Origin of the Flagraft API the admin UI talks to. Also the endpoint it shows on the Environments screen and in the API-key snippet, so set it to your own domain when self-hosting. |
+| Variable       | Default               | Description                                                                                                                                                 |
+| -------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL` | the page's own origin | Origin of the Flagraft API the admin UI talks to. Only needed when hosting the UI build yourself, and it must still resolve to the same origin as the page. |
 
 ---
 
