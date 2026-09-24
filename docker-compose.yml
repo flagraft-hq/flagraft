@@ -1,4 +1,17 @@
 services:
+  flagraft:
+    image: ghcr.io/flagraft-hq/flagraft:latest
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgres://flagraft:flagraft@flagraft-pg:5432/flagraft
+      JWT_SECRET: replace-with-32-plus-random-characters
+      NODE_ENV: production
+      DEFAULT_ADMIN_PASSWORD: pick-something-strong
+    depends_on:
+      - flagraft-pg
+    restart: unless-stopped
+
   flagraft-pg:
     image: postgres:15
     container_name: flagraft-pg
