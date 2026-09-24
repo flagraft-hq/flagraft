@@ -40,6 +40,44 @@ describe('errorHandlerPlugin', () => {
     expect(response.json()).toMatchObject({ error: 'NotFound', message: 'not found' })
   })
 
+  it('answers an oversized body with 413, not a misleading 500', async () => {
+    const fastify = Fastify({ logger: false, bodyLimit: 32 })
+    await fastify.register(errorHandlerPlugin)
+    fastify.post('/import', async () => ({ ok: true }))
+
+    const response = await fastify.inject({
+      method: 'POST',
+      url: '/import',
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ document: 'x'.repeat(200) }),
+    })
+
+    expect(response.statusCode).toBe(413)
+    expect(response.json()).toMatchObject({ error: 'PayloadTooLarge', statusCode: 413 })
+  })
+
+  it('keeps the status of a thrown 4xx that is not an Error', async () => {
+    const fastify = await app()
+    fastify.get('/limited', () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw { error: 'TooManyRequests', message: 'Rate limit exceeded', statusCode: 429 }
+    })
+    const response = await fastify.inject('/limited')
+    expect(response.statusCode).toBe(429)
+    expect(response.json()).toMatchObject({ error: 'TooManyRequests', statusCode: 429 })
+  })
+
+  it('does not let a thrown 5xx describe itself', async () => {
+    const fastify = await app()
+    fastify.get('/oops', () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw { error: 'DatabaseExploded', message: 'connection string was bad', statusCode: 503 }
+    })
+    const response = await fastify.inject('/oops')
+    expect(response.statusCode).toBe(500)
+    expect(response.body).not.toContain('connection string')
+  })
+
   it('does not leak unknown internals', async () => {
     const fastify = await app()
     fastify.get('/boom', async () => {

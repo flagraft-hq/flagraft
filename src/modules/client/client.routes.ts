@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { loadConfig } from '../../config.js'
 import { cacheKeys } from '../../cache/keys.js'
+import { rateLimitErrorResponse } from '../../plugins/rateLimit.js'
 import * as service from './client.service.js'
 
 const flagParamSchema = z.object({ flagKey: z.string().min(1) })
@@ -31,11 +32,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
   await fastify.register(rateLimit, {
     max: config.RATE_LIMIT_MAX,
     timeWindow: config.RATE_LIMIT_WINDOW_MS,
-    errorResponseBuilder: (_request, context) => ({
-      error: 'TooManyRequests',
-      message: `Rate limit exceeded, retry in ${context.after}`,
-      statusCode: 429,
-    }),
+    errorResponseBuilder: rateLimitErrorResponse,
   })
 
   fastify.get(

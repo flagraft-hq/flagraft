@@ -316,4 +316,124 @@ describeIfDb('auth', () => {
       await app.close()
     })
   })
+
+  describe('rate limiting on the unauthenticated routes', () => {
+    async function appWithLimit(max: number) {
+      process.env.AUTH_RATE_LIMIT_MAX = String(max)
+      try {
+        return await buildServer({ db })
+      } finally {
+        delete process.env.AUTH_RATE_LIMIT_MAX
+      }
+    }
+
+    const login = (app: Awaited<ReturnType<typeof buildServer>>) =>
+      app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/auth/login',
+        payload: { email: 'nobody@flagraft.local', password: 'wrong-password' },
+      })
+
+    it('refuses further login attempts once the limit is hit', async () => {
+      const app = await appWithLimit(2)
+
+      expect((await login(app)).statusCode).toBe(401)
+      expect((await login(app)).statusCode).toBe(401)
+
+      const blocked = await login(app)
+      expect(blocked.statusCode).toBe(429)
+      expect(blocked.json()).toMatchObject({ error: 'TooManyRequests', statusCode: 429 })
+      await app.close()
+    })
+
+    it('throttles invite acceptance, which also hashes a password', async () => {
+      const app = await appWithLimit(2)
+      const accept = () =>
+        app.inject({
+          method: 'POST',
+          url: '/api/v1/public/invite/not-a-real-token/accept',
+          payload: { password: 'a-long-enough-password' },
+        })
+
+      await accept()
+      await accept()
+      expect((await accept()).statusCode).toBe(429)
+      await app.close()
+    })
+
+    it('leaves logout alone', async () => {
+      const app = await appWithLimit(2)
+      const logout = () => app.inject({ method: 'POST', url: '/api/v1/admin/auth/logout' })
+
+      for (let i = 0; i < 5; i++) expect((await logout()).statusCode).toBe(200)
+      await app.close()
+    })
+
+    it('leaves the public workspace endpoint alone', async () => {
+      const app = await appWithLimit(2)
+      const workspace = () => app.inject({ method: 'GET', url: '/api/v1/public/workspace' })
+
+      for (let i = 0; i < 5; i++) expect((await workspace()).statusCode).toBe(200)
+      await app.close()
+    })
+
+    /** Regression: this was a 500 until the error handler kept a thrown 4xx. */
+    it('answers the client evaluation limit with a real 429', async () => {
+      process.env.RATE_LIMIT_MAX = '1'
+      const app = await buildServer({ db })
+      delete process.env.RATE_LIMIT_MAX
+
+      const call = () => app.inject({ method: 'GET', url: '/api/v1/client/features' })
+      await call()
+      const blocked = await call()
+      expect(blocked.statusCode).toBe(429)
+      expect(blocked.json()).toMatchObject({ error: 'TooManyRequests', statusCode: 429 })
+      await app.close()
+    })
+
+    it('does not spend the client budget on login attempts', async () => {
+      const app = await appWithLimit(2)
+      await login(app)
+      await login(app)
+      expect((await login(app)).statusCode).toBe(429)
+
+      const client = await app.inject({ method: 'GET', url: '/api/v1/client/features' })
+      expect(client.statusCode).not.toBe(429)
+      await app.close()
+    })
+  })
+
+  /**
+   * Auth is required for /api/ and nothing else, so the bundled UI and Swagger
+   * can serve themselves. This pins the rest of the surface: adding a route
+   * outside /api/ makes it public, and that should be a deliberate act.
+   */
+  describe('the unauthenticated route surface', () => {
+    /** '*' is the CORS preflight route; '/' and '/*' appear when the UI is bundled. */
+    const PUBLIC_OUTSIDE_API = ['/docs', '/health', '/ready', '/', '/*', '*']
+
+    it('has no route outside /api/ beyond the known public ones', async () => {
+      const app = await buildServer({ db, skipBootSeed: true })
+      await app.ready()
+
+      const topLevel = app
+        .printRoutes({ commonPrefix: false })
+        .split('\n')
+        .map((line) => /^[├└]── (\S+)/.exec(line)?.[1])
+        .filter((p): p is string => Boolean(p))
+
+      const unexpected = topLevel.filter(
+        (p) => !p.startsWith('/api/') && !PUBLIC_OUTSIDE_API.includes(p),
+      )
+      expect(unexpected).toEqual([])
+      await app.close()
+    })
+
+    it('still refuses an /api/ route without credentials', async () => {
+      const app = await buildServer({ db, skipBootSeed: true })
+      const res = await app.inject({ method: 'GET', url: '/api/v1/admin/projects' })
+      expect(res.statusCode).toBe(401)
+      await app.close()
+    })
+  })
 })

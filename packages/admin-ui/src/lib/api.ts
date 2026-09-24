@@ -29,8 +29,26 @@ export class ApiError extends Error {
   }
 }
 
-/** Where the API lives: VITE_API_URL when set, localhost otherwise. */
-const apiOrigin = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000'
+/** Same origin when the server bundles the UI; VITE_API_URL overrides for a split deploy. */
+const apiOrigin =
+  (import.meta.env.VITE_API_URL as string | undefined) ??
+  (typeof window === 'undefined' ? 'http://localhost:3000' : window.location.origin)
+
+/**
+ * Cross-origin is not supported: the session cookie is SameSite=Strict, so a
+ * browser drops it and every call after login 401s with nothing in the console
+ * to explain why. Say so at startup rather than let it look like a login bug.
+ */
+export function warnIfCrossOrigin(
+  pageOrigin: string | undefined = typeof window === 'undefined' ? undefined : location.origin,
+  configured: string = apiOrigin,
+): string | null {
+  if (!pageOrigin || new URL(configured, pageOrigin).origin === pageOrigin) return null
+  return `Flagraft: the admin UI is served from ${pageOrigin} but VITE_API_URL points at ${configured}. Cross-origin is not supported -- the session cookie will be dropped and you will be logged out after signing in. Serve both from one origin.`
+}
+
+const crossOriginWarning = warnIfCrossOrigin()
+if (crossOriginWarning) console.error(crossOriginWarning) // eslint-disable-line no-console
 
 /**
  * The base URL of this install's API, for the endpoints and snippets shown in

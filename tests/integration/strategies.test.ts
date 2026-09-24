@@ -130,6 +130,31 @@ describeIfDb('targeting strategies', () => {
     await app.close()
   })
 
+  it('rejects a catastrophic regex with 400 and says why', async () => {
+    const { app, put } = await setup()
+    const res = await put({
+      strategies: [
+        { constraints: [{ fieldKey: 'tenant', operator: 'regex', values: ['(a+)+$'] }] },
+      ],
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json()).toMatchObject({
+      message: expect.stringContaining('can hang flag evaluation') as string,
+    })
+    await app.close()
+  })
+
+  it('still accepts an ordinary regex', async () => {
+    const { app, put } = await setup()
+    const res = await put({
+      strategies: [
+        { constraints: [{ fieldKey: 'tenant', operator: 'regex', values: ['^acme-[0-9]+$'] }] },
+      ],
+    })
+    expect(res.statusCode).toBe(200)
+    await app.close()
+  })
+
   it('returns 404 for an unknown flag', async () => {
     const { app, project, auth } = await setup()
     const res = await app.inject({

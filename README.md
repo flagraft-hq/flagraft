@@ -7,7 +7,7 @@
 > **Open source feature flag service for Node.js and TypeScript.** Self-host feature flags, feature toggles, kill switches, A/B tests, canary releases, and gradual rollouts on your own Postgres database, with a typed SDK and zero vendor lock-in.
 
 <p align="center">
-  <a href="./packages/sdk-js"><img alt="@flagraft/sdk status" src="https://img.shields.io/badge/%40flagraft%2Fsdk-in_development-f59e0b"></a>
+  <a href="./packages/sdk-js"><img alt="@flagraft/sdk status" src="https://img.shields.io/badge/%40flagraft%2Fsdk-alpha-f59e0b"></a>
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-2dd4bf"></a>
   <a href="#"><img alt="node" src="https://img.shields.io/badge/node-%3E%3D20-2dd4bf"></a>
   <a href="#"><img alt="built with" src="https://img.shields.io/badge/built_with-Fastify%20%E2%80%A2%20Drizzle%20%E2%80%A2%20Postgres-2dd4bf"></a>
@@ -35,7 +35,7 @@ SaaS feature flag tools work fine until you hit their pricing tiers, need flags 
 ## What's included
 
 **Projects and environments**
-Flags are scoped per environment. Each project can have any number of environments (production, staging, preview -- whatever matches your workflow). Deleting an environment cascades cleanly.
+Flags are scoped per environment. Each project can have up to three environments (production, staging, preview -- whatever matches your workflow). Deleting an environment cascades cleanly.
 
 **Context-aware targeting**
 Pass any key/value context at evaluation time -- user ID, tenant, plan, region -- and match it against per-environment targeting strategies to turn a flag on for a subset of callers. Useful for canary releases and per-tenant rollouts.
@@ -53,7 +53,7 @@ Every project exports to a versioned JSON document that round-trips losslessly -
 Flag state is cached per `projectId + environmentId` using BentoCache. Any write (flag update, strategy change, environment delete) invalidates the relevant cache entries automatically. TTL is configurable via `CACHE_TTL_SECONDS`.
 
 **Rate limiting**
-Client evaluation routes (`/api/v1/client/*`) are rate-limited per IP. The limit and window are configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`. Breaches return a `429` with the standard error envelope.
+Client evaluation routes (`/api/v1/client/*`) are rate-limited per IP, configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`. The unauthenticated routes that verify a password or an invite token -- login, and the two invite endpoints -- get a separate, much tighter limit via `AUTH_RATE_LIMIT_MAX` and `AUTH_RATE_LIMIT_WINDOW_MS`, because those run argon2 and are worth both guessing at and exhausting CPU with. Breaches return a `429` with the standard error envelope. Behind a proxy, set `TRUST_PROXY` or every caller counts as one.
 
 **Logging**
 Only the requests worth reading are logged: any `5xx`, and anything slower than 500ms. Successful and `4xx` responses are silent, because the client evaluation endpoint is polled on a timer by every SDK instance -- a line per request is thousands a second describing nothing wrong, and it buries the events an operator needs. Set `REQUEST_LOG=true` to log every request while debugging. `5xx` errors are always logged with their stack, whatever the setting.
@@ -181,27 +181,212 @@ The seed only runs when the database is empty. Restarting the server later will 
 
 ---
 
+## Deployment
+
+One container is the whole product. The image serves the admin UI at `/`, the API
+under `/api/v1`, and applies its own database migrations at startup.
+
+```sh
+docker run -d \
+  -p 3000:3000 \
+  -e DATABASE_URL=postgres://user:pass@your-db:5432/flagraft \
+  -e JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))") \
+  -e NODE_ENV=production \
+  -e DEFAULT_ADMIN_PASSWORD=pick-something-strong \
+  ghcr.io/flagraft-hq/flagraft:latest
+```
+
+Open `http://localhost:3000`, sign in as `admin@flagraft.local`, change the
+password. That is the whole setup -- there is no separate UI to deploy and no
+CORS to configure, because the UI and API share an origin.
+
+### With Docker Compose
+
+```yaml
+services:
+  flagraft:
+    image: ghcr.io/flagraft-hq/flagraft:latest
+    ports: ['3000:3000']
+    environment:
+      DATABASE_URL: postgres://flagraft:flagraft@db:5432/flagraft
+      JWT_SECRET: replace-with-32-plus-random-characters
+      NODE_ENV: production
+      DEFAULT_ADMIN_PASSWORD: pick-something-strong
+    depends_on: [db]
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: flagraft
+      POSTGRES_PASSWORD: flagraft
+      POSTGRES_DB: flagraft
+    volumes: ['flagraft-pg:/var/lib/postgresql/data']
+    restart: unless-stopped
+
+volumes:
+  flagraft-pg:
+```
+
+### Migrations
+
+The server applies pending migrations before it starts listening, so a fresh
+database needs no extra step. To take control of when schema changes land -- a
+maintenance window, or a deploy that runs more than one instance -- turn it off
+and run the migrator yourself:
+
+```sh
+docker run --rm -e DATABASE_URL=... ghcr.io/flagraft-hq/flagraft:latest \
+  node dist/db/migrate.cjs
+
+docker run -d -e RUN_MIGRATIONS=false ... ghcr.io/flagraft-hq/flagraft:latest
+```
+
+Migrations are forward-only and there is no down path. Back the database up
+before upgrading.
+
+### Behind a reverse proxy
+
+Terminating TLS in front of Flagraft is the normal setup. Forward everything to
+the container on one origin -- do not split the UI and API across hostnames, or
+the session cookie (`SameSite=Strict`) stops being sent:
+
+```nginx
+server {
+  server_name flags.example.com;
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+Then set `TRUST_PROXY=1` so rate limits count real client IPs instead of
+treating your whole deployment as a single caller. See
+[Running behind a reverse proxy](#running-behind-a-reverse-proxy).
+
+### Before you go to production
+
+- `NODE_ENV=production` -- also disables Swagger UI at `/docs`.
+- `JWT_SECRET` set to 32+ random characters. Changing it later signs everyone out.
+- `DEFAULT_ADMIN_PASSWORD` changed. The server refuses to start otherwise.
+- `TRUST_PROXY` set if anything sits in front.
+- One instance for now. The flag cache is per-process, so a second instance
+  serves stale flags until its own entries expire -- see
+  [known limitations](docs/ROADMAP.md#known-limitations).
+
+### Same origin is the only supported topology
+
+The admin UI and the API must answer on one origin. The bundled image does this
+for you; behind a proxy, route `/` and `/api/` to the same hostname.
+
+Splitting them across hostnames does not work, and fails in a way that looks
+like a login bug rather than a configuration one: the session cookie is
+`SameSite=Strict`, so the browser accepts it at login and then refuses to send
+it anywhere else. Every request after signing in returns `401` and the UI bounces
+back to the login screen with nothing useful in the network tab. The UI logs a
+console error when it detects this.
+
+There is no `CORS_ORIGIN` setting, deliberately. Nothing legitimate calls this
+API cross-origin: the admin UI is same-origin, and the SDK is server-side --
+browser applications proxy evaluation through their own backend rather than
+holding a client key, so the browser never talks to Flagraft directly.
+
+You can still host the UI build yourself rather than using the bundled one --
+set `VITE_API_URL` and serve the output of `pnpm ui:build`. Put it on the same
+origin as the API through your proxy, or it will not work.
+
+---
+
 ## Configuration
 
-All config is read from environment variables. See `.env.example` for the full list.
+All config is read from environment variables. `.env.example` is a copyable
+starting point with the same list.
 
-| Variable               | Default       | Description                                                                                                          |
-| ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | --            | Postgres connection string                                                                                           |
-| `PORT`                 | `3000`        | Port the server listens on                                                                                           |
-| `NODE_ENV`             | `development` | Set to `production` in deployments                                                                                   |
-| `LOG_LEVEL`            | `info`        | Pino log level                                                                                                       |
-| `REQUEST_LOG`          | `false`       | Log a line for every request. Off by default: `5xx` and slow requests are logged either way.                         |
-| `CACHE_TTL_SECONDS`    | `30`          | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
-| `RATE_LIMIT_MAX`       | `100`         | Maximum requests per window per IP on client evaluation routes.                                                      |
-| `RATE_LIMIT_WINDOW_MS` | `60000`       | Rate limit sliding window duration in milliseconds.                                                                  |
+Two have no default and the server refuses to start without them: `DATABASE_URL`
+and `JWT_SECRET`.
+
+### Core
+
+| Variable         | Default       | Description                                                                                                                                                                                           |
+| ---------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`   | --            | **Required.** Postgres connection string.                                                                                                                                                             |
+| `JWT_SECRET`     | --            | **Required.** Signs the admin session cookie. At least 32 characters. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Changing it signs every user out. |
+| `PORT`           | `3000`        | Port the server listens on.                                                                                                                                                                           |
+| `NODE_ENV`       | `development` | Set to `production` in deployments. Also disables Swagger UI at `/docs`.                                                                                                                              |
+| `LOG_LEVEL`      | `info`        | Pino log level.                                                                                                                                                                                       |
+| `RUN_MIGRATIONS` | `true`        | Apply pending migrations at startup. Set `false` to run them yourself with `node dist/db/migrate.cjs`.                                                                                                |
+| `REQUEST_LOG`    | `false`       | Log a line for every request. Off by default: `5xx` and slow requests are logged either way.                                                                                                          |
+
+### Caching and rate limiting
+
+| Variable                    | Default  | Description                                                                                                          |
+| --------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `CACHE_TTL_SECONDS`         | `30`     | How long flag state is cached per project/environment. Set to `1` to effectively disable caching during development. |
+| `RATE_LIMIT_MAX`            | `100`    | Maximum requests per window per IP on client evaluation routes.                                                      |
+| `RATE_LIMIT_WINDOW_MS`      | `60000`  | Rate limit sliding window duration in milliseconds.                                                                  |
+| `TRUST_PROXY`               | off      | How much of `X-Forwarded-For` to believe when working out the caller's IP. See below.                                |
+| `AUTH_RATE_LIMIT_MAX`       | `20`     | Maximum attempts per window per IP on login and the invite routes.                                                   |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | `900000` | Window for that limit, in milliseconds. Default is 15 minutes.                                                       |
+
+### First-boot seed
+
+Applied only when the server starts against an empty database. Changing them
+later does nothing -- see [First Setup](#first-setup).
+
+| Variable                 | Default                | Description                                                                                                                          |
+| ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `DEFAULT_ADMIN_EMAIL`    | `admin@flagraft.local` | Email of the admin account created on first boot.                                                                                    |
+| `DEFAULT_ADMIN_PASSWORD` | `flagraft-admin`       | Password for that account. The default is published in these docs, so the server refuses to start in production until you change it. |
+| `DEFAULT_ADMIN_NAME`     | `Admin`                | Display name for that account.                                                                                                       |
+| `DEFAULT_PROJECT_NAME`   | `Default`              | Name of the project created on first boot.                                                                                           |
+| `DEFAULT_PROJECT_SLUG`   | `default`              | Slug of that project.                                                                                                                |
+
+### Email (optional)
+
+Used to send user invites. Leave `SMTP_HOST` unset to disable email entirely:
+invites still work, and the admin shares the invite link by hand instead.
+
+| Variable       | Default | Description                                                                                                                                                                   |
+| -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SMTP_HOST`    | unset   | SMTP server hostname. Unset disables email.                                                                                                                                   |
+| `SMTP_PORT`    | `587`   | SMTP server port.                                                                                                                                                             |
+| `SMTP_SECURE`  | `false` | Use TLS on connect. Set `true` for port 465.                                                                                                                                  |
+| `SMTP_USER`    | unset   | SMTP username.                                                                                                                                                                |
+| `SMTP_PASS`    | unset   | SMTP password.                                                                                                                                                                |
+| `SMTP_FROM`    | unset   | From address on invite emails, e.g. `Flagraft <no-reply@yourcompany.com>`. Falls back to `SMTP_USER`, then `no-reply@flagraft.local`.                                         |
+| `APP_BASE_URL` | unset   | Public URL of the admin UI, used to build the invite link. Falls back to the origin of the request that created the invite, so this is only needed when that origin is wrong. |
+
+### Running behind a reverse proxy
+
+The rate limit above is counted per caller IP. Behind nginx, traefik, a cloud load
+balancer or any other proxy, every request arrives from the proxy's address, so
+without `TRUST_PROXY` your entire deployment shares a single bucket and legitimate
+SDK traffic starts getting `429`s.
+
+Set `TRUST_PROXY` so the server reads the real client IP from `X-Forwarded-For`:
+
+```env
+# Trust one hop -- correct when exactly one proxy you control is in front.
+TRUST_PROXY=1
+
+# Or name the proxies explicitly.
+TRUST_PROXY=10.0.0.0/8,192.168.1.1
+```
+
+It is off by default on purpose, and leaving it off is right when you have no
+proxy: `X-Forwarded-For` is caller-supplied, so a server that trusts it with
+nothing in front lets anyone invent a fresh IP per request and bypass the rate
+limit entirely. Turn it on only when a proxy you control is actually there.
 
 The admin UI is a separate build and reads one variable of its own, at build
 time rather than at run time:
 
-| Variable       | Default                 | Description                                                                                                                                                                         |
-| -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_URL` | `http://localhost:3000` | Origin of the Flagraft API the admin UI talks to. Also the endpoint it shows on the Environments screen and in the API-key snippet, so set it to your own domain when self-hosting. |
+| Variable       | Default               | Description                                                                                                                                                 |
+| -------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL` | the page's own origin | Origin of the Flagraft API the admin UI talks to. Only needed when hosting the UI build yourself, and it must still resolve to the same origin as the page. |
 
 ---
 
@@ -293,6 +478,13 @@ Full endpoint reference, the report shape, and the complete Unleash mapping tabl
 ## Client SDKs
 
 - **TypeScript / JavaScript:** [`@flagraft/sdk`](packages/sdk-js/README.md)
+
+Flagraft is in alpha, so the SDK publishes under the `alpha` dist-tag rather than
+`latest`:
+
+```sh
+pnpm add @flagraft/sdk@alpha
+```
 
 ---
 

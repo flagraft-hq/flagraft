@@ -27,9 +27,34 @@ function isSchemaValidationError(error: unknown): error is FastifyError {
   )
 }
 
+function isBodyTooLargeError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as FastifyError).code === 'FST_ERR_CTP_BODY_TOO_LARGE'
+  )
+}
+
 interface ErrorResponse {
   statusCode: number
   body: { error: string; message: string; statusCode: number; issues?: ZodError['issues'] }
+}
+
+/** @fastify/rate-limit signals a breach by throwing a plain object, not an Error. */
+function toClientError(error: unknown): ErrorResponse | null {
+  if (typeof error !== 'object' || error === null) return null
+  const candidate = error as { statusCode?: unknown; error?: unknown; message?: unknown }
+  const { statusCode } = candidate
+  if (typeof statusCode !== 'number' || statusCode < 400 || statusCode > 499) return null
+
+  return {
+    statusCode,
+    body: {
+      error: typeof candidate.error === 'string' ? candidate.error : 'BadRequest',
+      message: typeof candidate.message === 'string' ? candidate.message : 'Request rejected',
+      statusCode,
+    },
+  }
 }
 
 /**
@@ -64,12 +89,26 @@ function toResponse(error: FastifyError | Error): ErrorResponse {
     }
   }
 
+  if (isBodyTooLargeError(error)) {
+    return {
+      statusCode: 413,
+      body: {
+        error: 'PayloadTooLarge',
+        message: 'Request body is too large',
+        statusCode: 413,
+      },
+    }
+  }
+
   if (error instanceof AppError) {
     return {
       statusCode: error.statusCode,
       body: { error: error.code, message: error.message, statusCode: error.statusCode },
     }
   }
+
+  const clientError = toClientError(error)
+  if (clientError) return clientError
 
   return {
     statusCode: 500,

@@ -143,6 +143,21 @@ commitment. Items move only when they are actually done.
   BentoCache bus over Redis for deployments that already run one — see Configurable shared
   cache layer.
 
+- **Regex constraints are screened, not sandboxed.** A `regex` pattern is rejected at write
+  time when it has nested quantifiers, which covers the patterns that cause exponential
+  backtracking by accident. The check is a star-height heuristic, so a deliberately
+  ambiguous pattern such as `(a|a)*` still gets through, and patterns that are merely
+  polynomial are allowed -- those stay cheap because the context values they run against
+  arrive in a query string, which the HTTP layer already bounds. Closing the gap properly
+  needs a matcher that can be given a timeout, which Node's `RegExp` cannot.
+
+- **Login throttling is per IP, with no account lockout.** An attacker spread across many
+  IPs can still work through one account's password space slowly, and the limit counts
+  successful logins alongside failed ones because `@fastify/rate-limit` cannot tell them
+  apart. Lockout was left out on purpose: it needs failed-attempt state on the user row, an
+  unlock path for the locked-out admin, and it hands anyone a way to lock a colleague out by
+  guessing at their email. Worth doing, but it is a feature rather than a patch.
+
 ## Not planned
 
 - **Hosted SaaS.** Flagraft is self-hosted by design.

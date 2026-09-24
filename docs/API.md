@@ -209,6 +209,12 @@ Now `?tenant=phyg` returns `enabled: true, reason: strategy-match`, while any ot
 
 **Operators by field type:** `string` -- `equals`, `in`, `notIn`, `startsWith`, `contains`, `regex`; `enum` -- `equals`, `in`, `notIn`; `boolean` -- `is`; `number` -- `eq`, `neq`, `lt`, `lte`, `gt`, `gte`; `version` -- `eq`, `gte`, `lte`, `satisfies`; `date` -- `before`, `after`. Constraints on `enum` fields are validated against the field's allowed values.
 
+A `regex` pattern is checked when it is saved. An invalid pattern, or one that can
+backtrack exponentially -- a repeated group that itself repeats, such as `(a+)+$` --
+is rejected with a `400`, because evaluation runs the pattern against caller-supplied
+context on every request and a pattern like that would hang the server for everyone.
+Ordinary patterns are unaffected.
+
 ---
 
 ## Import and Export

@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest something Flagraft should do
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check [the roadmap](../../blob/main/docs/ROADMAP.md) first — it lists
+        what is planned and what is deliberately not planned.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that Flagraft makes hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like it to do
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you are doing instead
+      description: Workarounds you have tried, or how another tool handles it.

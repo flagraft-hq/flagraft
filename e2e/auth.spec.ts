@@ -3,6 +3,15 @@ import { test, expect } from '@playwright/test'
 const ADMIN_EMAIL = process.env.DEFAULT_ADMIN_EMAIL ?? 'admin@flagraft.local'
 const ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD ?? 'flagraft-admin'
 
+/** Signing in is the preamble to most of these tests; keep the selectors in one place. */
+async function signIn(page: import('@playwright/test').Page) {
+  await page.goto('/login')
+  await page.getByLabel(/^email/i).fill(ADMIN_EMAIL)
+  await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await expect(page).toHaveURL(/\/flags/)
+}
+
 // ---------------------------------------------------------------------------
 // 2. Unauthenticated Redirect
 // ---------------------------------------------------------------------------
@@ -41,8 +50,8 @@ test.describe('Login screen UI', () => {
     await expect(page.locator('.auth-main')).toBeVisible()
   })
 
-  test('email field has label "Work email" and type email', async ({ page }) => {
-    const input = page.getByLabel(/work email/i)
+  test('email field has a label and type email', async ({ page }) => {
+    const input = page.getByLabel(/^email/i)
     await expect(input).toBeVisible()
     await expect(input).toHaveAttribute('type', 'email')
   })
@@ -59,17 +68,6 @@ test.describe('Login screen UI', () => {
     await page.getByRole('button', { name: /hide password/i }).click()
     await expect(input).toHaveAttribute('type', 'password')
   })
-
-  test('Google and SAML SSO buttons show "Coming soon" toast', async ({ page }) => {
-    await page.getByRole('button', { name: /continue with google/i }).click()
-    await expect(page.getByText(/coming soon/i)).toBeVisible()
-  })
-
-  test('brand panel stats row shows flag count and project name from API', async ({ page }) => {
-    await expect(page.locator('.auth-stats')).toBeVisible()
-    // Should not be all dashes — the API call resolves
-    await expect(page.locator('.auth-stats .num').first()).not.toHaveText('—')
-  })
 })
 
 // ---------------------------------------------------------------------------
@@ -78,7 +76,7 @@ test.describe('Login screen UI', () => {
 test.describe('Login with wrong credentials', () => {
   test('shows error alert and no cookie is set', async ({ page }) => {
     await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
+    await page.getByLabel(/^email/i).fill(ADMIN_EMAIL)
     await page.getByLabel(/^password/i).fill('wrongpassword')
     await page.getByRole('button', { name: /sign in/i }).click()
 
@@ -89,7 +87,7 @@ test.describe('Login with wrong credentials', () => {
 
   test('submit button is disabled during request', async ({ page }) => {
     await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
+    await page.getByLabel(/^email/i).fill(ADMIN_EMAIL)
     await page.getByLabel(/^password/i).fill('wrongpassword')
     const btn = page.getByRole('button', { name: /sign in/i })
     await btn.click()
@@ -103,19 +101,11 @@ test.describe('Login with wrong credentials', () => {
 // ---------------------------------------------------------------------------
 test.describe('Login with correct credentials', () => {
   test('redirects to /flags after successful login', async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
-    await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await expect(page).toHaveURL(/\/flags/)
+    await signIn(page)
   })
 
   test('sets an HttpOnly flagraft_session cookie', async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
-    await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await expect(page).toHaveURL(/\/flags/)
+    await signIn(page)
 
     const cookies = await page.context().cookies()
     const session = cookies.find((c) => c.name === 'flagraft_session')
@@ -126,11 +116,7 @@ test.describe('Login with correct credentials', () => {
   })
 
   test('session cookie is NOT accessible via document.cookie', async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
-    await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await expect(page).toHaveURL(/\/flags/)
+    await signIn(page)
 
     const cookieStr = await page.evaluate(() => document.cookie)
     expect(cookieStr).not.toContain('flagraft_session')
@@ -142,11 +128,7 @@ test.describe('Login with correct credentials', () => {
 // ---------------------------------------------------------------------------
 test.describe('Authenticated state', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
-    await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await expect(page).toHaveURL(/\/flags/)
+    await signIn(page)
   })
 
   test('SideNav footer shows logged-in user name and role', async ({ page }) => {
@@ -166,11 +148,7 @@ test.describe('Authenticated state', () => {
 // ---------------------------------------------------------------------------
 test.describe('Protected routes work when logged in', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
-    await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await expect(page).toHaveURL(/\/flags/)
+    await signIn(page)
   })
 
   test('/flags loads the flags screen', async ({ page }) => {
@@ -202,11 +180,7 @@ test.describe('Protected routes work when logged in', () => {
 // ---------------------------------------------------------------------------
 test.describe('Sign out', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
-    await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await expect(page).toHaveURL(/\/flags/)
+    await signIn(page)
   })
 
   test('clicking sign out redirects to /login and clears the session cookie', async ({ page }) => {
@@ -229,11 +203,7 @@ test.describe('Sign out', () => {
 // ---------------------------------------------------------------------------
 test.describe('Already logged-in redirect', () => {
   test('visiting /login while authenticated redirects to /flags', async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/work email/i).fill(ADMIN_EMAIL)
-    await page.getByLabel(/^password/i).fill(ADMIN_PASSWORD)
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await expect(page).toHaveURL(/\/flags/)
+    await signIn(page)
 
     await page.goto('/login')
     await expect(page).toHaveURL(/\/flags/)

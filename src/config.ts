@@ -21,6 +21,27 @@ const configSchema = z.object({
   CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(30),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+
+  /** Login and invite routes: they run argon2, so guessing is also a CPU drain. */
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  AUTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
+
+  /** Off by default: trusting this header with no proxy in front skips the rate limit. */
+  TRUST_PROXY: z
+    .string()
+    .optional()
+    .transform((value): boolean | number | string => {
+      if (value === undefined || value.trim() === '' || value === 'false') return false
+      if (value === 'true') return true
+      /** 0 is a hop count too -- it is how an operator spells "trust nothing". */
+      const hops = Number(value)
+      return Number.isInteger(hops) && hops >= 0 ? hops : value
+    }),
+  /** Applies pending migrations at startup so a fresh container just works. */
+  RUN_MIGRATIONS: z
+    .string()
+    .optional()
+    .transform((v) => v !== 'false'),
   JWT_SECRET: z.string().min(32),
   DEFAULT_ADMIN_EMAIL: z.string().email().default('admin@flagraft.local'),
   DEFAULT_ADMIN_PASSWORD: z.string().min(8).default('flagraft-admin'),
