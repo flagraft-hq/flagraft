@@ -295,10 +295,36 @@ other half.
 `@playwright/test` is a devDependency and the config and spec both exist, but
 there is no `test:e2e` script and no CI job. The suite has never run in CI.
 
-Fix: wire it up, or state in the README that it is run manually.
+Wired into CI as an `e2e` job. Running the suite for the first time turned it
+from a wiring task into a repair job.
+
+**The suite was 70% broken** -- 17 of 24 failing, all from the same cause: the
+login field's label was renamed `Work email` to `Email` during the HeroUI
+migration and the spec was never updated. Two more tests covered features that
+no longer exist at all (Google/SAML SSO buttons, the brand-panel stats row);
+both were deleted rather than rewritten. The seven copies of the sign-in
+preamble are now one `signIn` helper, so the next rename is a one-line fix.
+22 tests, all passing.
+
+**CI runs it against the built server, not the Vite dev proxy.** Since item 3
+the server bundles the UI, and item 4 made same-origin the only supported
+topology, so the dev proxy no longer resembles what ships. `E2E_BASE_URL` picks
+the target and defaults to the dev server for local work.
+
+Two things worth recording:
+
+- The audit's port-3000 assumption was wrong on this machine: an unrelated Lago
+  API answers there, and it serves `/health` too, so a naive check looks
+  healthy while every Flagraft route 404s. `E2E_BASE_URL` is the escape hatch.
+- **The suite trips the login rate limit from item 2.** It signs in on nearly
+  every test, so one clean run fits under 20 per 15 minutes but a rerun or a
+  retry gets `429`. CI and the local instructions set
+  `AUTH_RATE_LIMIT_MAX=1000`. Verified by running twice back to back.
 
 - [x] `pnpm test:e2e` script added
-- [ ] CI job, or a README note that it is run manually
+- [x] Spec repaired -- 22 passing against the built server
+- [x] CI job with Postgres, a build, a boot wait, and report upload on failure
+- [x] Both local paths documented in `CONTRIBUTING.md`
 
 ### 11. Missing open-source furniture
 

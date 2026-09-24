@@ -41,12 +41,40 @@ The integration tests need a second database. `docker compose up` creates it via
 when `TEST_DATABASE_URL` is unset, so a bare `pnpm test` passes without ever
 telling you it silently skipped half the suite -- check the skip count.
 
-End-to-end tests are Playwright and are **not** in CI yet. They expect the API on
-:3000 and the UI on :5173, both already running:
+End-to-end tests are Playwright. One command builds the server and the UI,
+starts them, runs the suite and shuts the server down again:
 
 ```sh
 pnpm test:e2e
 ```
+
+It runs against what ships -- one server on one origin serving both the UI and
+the API -- not the Vite dev proxy.
+
+It uses port 3999 rather than 3000, because the e2e server is a throwaway and
+3000 is the port most likely to already have something on it. Override with
+`E2E_PORT` if 3999 is taken too.
+
+That command rebuilds every time, which is right for a one-off but wasteful when
+iterating. Start the server once and leave it up; runs then reuse it and skip the
+build entirely (~24s instead of ~45s):
+
+```sh
+pnpm e2e:server &        # build once, keep it running
+npx playwright test      # reuses it, no rebuild
+```
+
+Rebuild by restarting that server after changing the app.
+
+To run against a server you started yourself, which skips the build:
+
+```sh
+E2E_BASE_URL=http://localhost:5173 pnpm test:e2e
+```
+
+Useful while iterating: `npx playwright test --headed` to watch it,
+`--debug` to step through, `-g "sign out"` for one test, and
+`npx playwright show-report` after a failure. Pass `E2E_PORT` the same way.
 
 ## Changing the database
 

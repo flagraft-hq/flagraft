@@ -184,3 +184,57 @@ jobs:
         run: pnpm db:migrate
 
       - run: pnpm test
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: flagraft
+          POSTGRES_PASSWORD: flagraft
+          POSTGRES_DB: flagraft_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://flagraft:flagraft@127.0.0.1:5432/flagraft_e2e
+      JWT_SECRET: 'b48c4a956e8dcf83b5588a7092125277ee195942e1d891eb60220f89a2bd2263'
+      LOG_LEVEL: silent
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec playwright install --with-deps chromium
+
+      # Playwright builds the server and the UI and starts them itself. The
+      # server migrates on boot and seeds the default admin, so an empty
+      # database is all this needs.
+      - run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

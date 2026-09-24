@@ -26,6 +26,7 @@
     "test:all": "vitest run && pnpm -r --filter=\"./packages/**\" test",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "e2e:server": "pnpm build && pnpm ui:build && rm -rf public && cp -r packages/admin-ui/dist public && PORT=${E2E_PORT:-3999} AUTH_RATE_LIMIT_MAX=${AUTH_RATE_LIMIT_MAX:-1000} node dist/server.cjs",
     "ui:dev": "pnpm --filter @flagraft/admin-ui dev",
     "ui:build": "pnpm --filter @flagraft/admin-ui build",
     "bench:seed": "tsx benchmarks/seed.ts",
