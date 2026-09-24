@@ -1,6 +1,6 @@
 {
   "name": "flagraft",
-  "version": "0.0.1",
+  "version": "0.1.0-alpha.0",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -38,7 +38,10 @@
     "lint": "pnpm typecheck:all && eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm --filter @flagraft/sdk build && changeset publish"
   },
   "dependencies": {
     "@fastify/cookie": "^9.3.1",
@@ -62,6 +65,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@types/argon2": "^0.15.4",

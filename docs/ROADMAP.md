@@ -110,8 +110,46 @@ commitment. Items move only when they are actually done.
   - Not a paid tier. Charging for the login that makes a self-hosted tool usable in a company
     is the pattern this project exists to avoid.
 
+- **SAML and SCIM provisioning** — a separate, larger job than the OIDC flow above: SAML for
+  identity providers that don't speak OIDC, SCIM for automated user provisioning and
+  deprovisioning from the IdP instead of manual invites. Typically a hard requirement for
+  larger enterprise buyers regardless of which SSO protocol they use.
+- **Custom RBAC roles** — today's four roles (owner/admin/editor/viewer) are fixed. Let a
+  deployment define its own permission sets per project or environment for teams whose
+  approval structure doesn't map onto four tiers.
+- **Webhooks on flag and audit events** — push flag changes and audit entries to an external
+  endpoint (Slack, SIEM, internal notification service) instead of requiring a poll.
+- **Scheduled flag changes** — enable or disable a flag at a future time, for planned launches
+  and time-boxed rollouts.
 - **Evaluation metrics** — optional reporting of which flags were evaluated, so stale flags
   can be found and removed.
+
+### Security and compliance
+
+Flagraft is self-hosted, so SOC2/HIPAA-style certification is mostly the deploying
+organization's responsibility, not the project's. What the project can do is close the
+technical-control gaps a security review actually checks for, and document how the rest maps
+onto a deployer's own audit.
+
+- **MFA/2FA on login** — currently password (argon2) plus a session cookie only, no second
+  factor. Expected by SOC2 CC6.1 and HIPAA's access-control safeguard for privileged accounts.
+- **Security response headers** — `@fastify/cors` is registered; `@fastify/helmet` is not
+  (no CSP, HSTS, X-Frame-Options).
+- **Dependency and vulnerability scanning in CI** — `.github/workflows/` has no Dependabot
+  config, CodeQL, or equivalent. A common ask in vendor security questionnaires.
+- **Independent security audit / pen test** — `SECURITY.md` already states plainly that
+  Flagraft is pre-1.0 and has not had one. Usually the first thing a security review asks for.
+- **Encryption-at-rest documentation** — data lives in the customer's own Postgres, which is
+  their responsibility, but there is no doc walking a HIPAA-covered deployer through
+  configuring it (e.g. Postgres TDE / disk encryption) to meet the safeguard.
+- **Compliance control mapping doc** — a short published mapping from Flagraft's actual
+  controls (RBAC, two-admin approval, scoped API keys, session cookie flags, and the audit log
+  above once shipped) to SOC2 CC6 / HIPAA technical safeguards, so an enterprise security team
+  can self-serve their questionnaire instead of asking for a certificate that does not apply to
+  self-hosted OSS.
+
+Account lockout is a related, already-tracked gap — see
+[Known limitations](#known-limitations).
 
 ### Ecosystem
 
