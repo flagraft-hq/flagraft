@@ -342,17 +342,27 @@ worse than none. **Enable it in repo settings** (Settings, Security, Private
 vulnerability reporting) or the link 404s. The Discussions link in the issue
 template config needs Discussions enabled too, or it should be removed.
 
-The release workflow is manual dispatch only, defaults to a dry run, and refuses
-to publish a prerelease as `latest` or a stable version as `alpha`. It needs an
-`NPM_TOKEN` repo secret and an `@flagraft` npm org before its first real run.
+Releases are cut by hand -- no publish workflow, by decision. The steps and the
+two rules the tooling cannot enforce (never tag a prerelease `latest`, always
+`--access public`) are written up under "Releasing" in `CONTRIBUTING.md`. The
+package stays ready to publish: version `0.1.0-alpha.0` and
+`publishConfig.access: public`. `--provenance` is not part of the manual path --
+it needs a CI environment with OIDC and fails from a laptop.
+
+`SECURITY.md` points at GitHub private vulnerability reporting rather than an
+email address, because no security contact exists yet and inventing one would be
+worse than none. **Enable it in repo settings** (Settings, Security, Private
+vulnerability reporting) or the link 404s. The Discussions link in the issue
+template config needs Discussions enabled too, or it should be removed.
 
 - [x] CONTRIBUTING.md -- real setup, the two-database test gotcha, house style
 - [x] SECURITY.md
 - [x] CHANGELOG.md -- Keep a Changelog, seeded with the 0.1.0-alpha.0 feature set
 - [x] Issue templates -- bug, feature, plus config routing security elsewhere
-- [x] SDK publish decision -- alpha dist-tag, `.github/workflows/release.yml`
+- [x] SDK publish decision -- alpha dist-tag, published by hand
+- [x] Release workflow dropped; manual steps documented in `CONTRIBUTING.md`
 - [ ] Enable private vulnerability reporting and Discussions in repo settings
-- [ ] Create the `@flagraft` npm org and add the `NPM_TOKEN` secret
+- [ ] Create the `@flagraft` npm org (still needed to publish, by hand or not)
 
 ---
 

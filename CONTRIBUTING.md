@@ -111,6 +111,41 @@ Flagraft is pre-1.0 and the roadmap ([docs/ROADMAP.md](docs/ROADMAP.md)) says wh
 is planned and what is deliberately not. Worth a look before building something
 large -- it may already be a decided "no", and that is nothing personal.
 
+## Releasing
+
+Releases are cut by hand; there is no publish workflow. The SDK is the only
+published artifact.
+
+```sh
+pnpm --filter @flagraft/sdk typecheck
+pnpm --filter @flagraft/sdk test
+pnpm --filter @flagraft/sdk build
+
+cd packages/sdk-js
+npm publish --dry-run --tag alpha --access public   # read the file list first
+npm publish --tag alpha --access public
+```
+
+Two rules the tooling will not enforce for you:
+
+- **A prerelease never goes out as `latest`.** While the version carries a
+  `-alpha.N` suffix it publishes under `--tag alpha`, so `npm i @flagraft/sdk`
+  resolves to nothing and only `@flagraft/sdk@alpha` installs. Drop the suffix
+  and switch to `--tag latest` in the same change, never separately.
+- **`--access public` every time.** `@flagraft/sdk` is scoped, and scoped
+  packages default to restricted. `publishConfig` in `package.json` sets it too;
+  the flag is belt and braces.
+
+Publishing cannot be undone after 72 hours, so the dry run is worth the extra
+minute. `--provenance` is deliberately absent: it needs a CI environment with
+OIDC and fails from a laptop.
+
+Then tag the repo and write the release notes from `CHANGELOG.md`:
+
+```sh
+git tag v0.1.0-alpha.0 && git push origin v0.1.0-alpha.0
+```
+
 ## Reporting bugs and asking for features
 
 Use the issue templates. For anything security related, do **not** open an issue
