@@ -71,7 +71,7 @@ The same data as a list of `{"name": ..., "enabled": ...}` dicts. The returned l
 
 ### Context
 
-A mapping of `str` to `str | int | float | bool | datetime`. Values are converted the same way the TypeScript SDK converts them: booleans become `"true"`/`"false"`, whole floats drop the `.0`, and datetimes become ISO 8601 in UTC (naive datetimes are treated as UTC).
+A mapping of `str` to `str | int | float | bool | datetime`. Values are converted the same way the TypeScript SDK converts them: booleans become `"true"`/`"false"`, floats use JavaScript number formatting (`1.0` → `"1"`, `1e-6` → `"0.000001"`, `1e-7` → `"1e-7"`), and datetimes become ISO 8601 in UTC (naive datetimes are treated as UTC).
 
 ### `StaleEvent`
 

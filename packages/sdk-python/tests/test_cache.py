@@ -1,6 +1,7 @@
 import threading
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from conftest import Clock
 
 from flagraft._cache import TtlCache, make_key, stringify
@@ -142,3 +143,32 @@ def test_cap_holds_under_concurrent_writers() -> None:
 
 def test_stringify_zero_pads_early_years() -> None:
     assert stringify(datetime(5, 1, 1)) == "0005-01-01T00:00:00.000Z"
+
+
+JS_NUMBER_STRINGS = [
+    (1e-6, "0.000001"),
+    (1e-7, "1e-7"),
+    (1.5e-7, "1.5e-7"),
+    (-1e-7, "-1e-7"),
+    (123.456, "123.456"),
+    (1e21, "1e+21"),
+    (1.5e21, "1.5e+21"),
+    (1e20, "100000000000000000000"),
+    (-0.0, "0"),
+    (float("nan"), "NaN"),
+    (float("inf"), "Infinity"),
+    (float("-inf"), "-Infinity"),
+    (0.1 + 0.2, "0.30000000000000004"),
+    (1.0, "1"),
+    (1.5, "1.5"),
+    (123e-20, "1.23e-18"),
+    (0.000123, "0.000123"),
+    (-2.5e-5, "-0.000025"),
+    (5e-324, "5e-324"),
+    (1.7976931348623157e308, "1.7976931348623157e+308"),
+]
+
+
+@pytest.mark.parametrize(("value", "expected"), JS_NUMBER_STRINGS)
+def test_stringify_formats_floats_like_js(value: float, expected: str) -> None:
+    assert stringify(value) == expected

@@ -1,6 +1,8 @@
 import json
+import math
 import threading
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Generic, NamedTuple, TypeVar
 
 from . import _clock
@@ -10,15 +12,39 @@ from ._types import Context, ContextValue
 T = TypeVar("T")
 
 
+def _js_number(value: float) -> str:
+    """ECMAScript Number::toString, using repr for the same shortest round-trip digits."""
+    if math.isnan(value):
+        return "NaN"
+    if math.isinf(value):
+        return "Infinity" if value > 0 else "-Infinity"
+    if value == 0:
+        return "0"
+    sign = "-" if value < 0 else ""
+    _, digit_tuple, exponent = Decimal(repr(abs(value))).normalize().as_tuple()
+    digits = "".join(map(str, digit_tuple))
+    k = len(digits)
+    n = int(exponent) + k
+    if k <= n <= 21:
+        return sign + digits + "0" * (n - k)
+    if 0 < n <= 21:
+        return sign + digits[:n] + "." + digits[n:]
+    if -6 < n <= 0:
+        return sign + "0." + "0" * -n + digits
+    e = n - 1
+    mantissa = digits if k == 1 else digits[0] + "." + digits[1:]
+    return f"{sign}{mantissa}e{'+' if e > 0 else '-'}{abs(e)}"
+
+
 def stringify(value: ContextValue) -> str:
-    """Matches JavaScript's String(value) for realistic values; the server was built against it."""
+    """Matches JavaScript's String(value); the server was built against it."""
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, datetime):
         utc = value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
         return utc.isoformat(timespec="milliseconds").replace("+00:00", "Z")
-    if isinstance(value, float) and value.is_integer():
-        return str(int(value))
+    if isinstance(value, float):
+        return _js_number(value)
     return str(value)
 
 
