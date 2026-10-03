@@ -87,6 +87,34 @@ jobs:
 
       - run: pnpm --filter @flagraft/sdk build
 
+  sdk-python:
+    name: SDK (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+    env:
+      UV_PYTHON: ${{ matrix.python }}
+    defaults:
+      run:
+        working-directory: packages/sdk-python
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.2.0
+
+      - run: uv sync --locked
+
+      - run: uv run ruff check
+
+      - run: uv run ruff format --check
+
+      - run: uv run mypy
+
+      - run: uv run pytest
+
+      - run: uv build
+
   admin-ui:
     name: Admin UI
     runs-on: ubuntu-latest

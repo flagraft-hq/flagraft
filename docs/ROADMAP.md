@@ -18,6 +18,8 @@ commitment. Items move only when they are actually done.
 - **TypeScript SDK** — [`@flagraft/sdk`](../packages/sdk-js), with TTL caching, a cache size
   cap, stale-on-error fallback, request timeouts, negative caching for unknown flags,
   rate-limit backoff and per-call default values.
+- **Python SDK** — [`flagraft`](../packages/sdk-python), a sync, thread-safe, zero-dependency
+  port of the TypeScript client with identical failure behaviour.
 - **Conditional requests** — `ETag` / `If-None-Match` on the bulk evaluation endpoint, so an
   unchanged flag list costs a 304 with no body. Handled automatically by the SDK.
 - **Import and export** — a versioned `flagraft.export` document that round-trips losslessly,
@@ -160,12 +162,13 @@ Account lockout is a related, already-tracked gap — see
   the design: a client key shipped to a browser is public, so it must stay a client key scoped
   to one environment, and the evaluation context is whatever the page already knows about the
   user.
-- **Python and Go SDKs.** Any language can already call the HTTP API directly; these would
-  add the same caching and fail-safe behaviour as the TypeScript client: TTL cache with a size
-  cap, stale-on-error, request timeouts, negative caching, rate-limit backoff and per-call
-  defaults. Idiomatic where it matters — a context manager and type hints in Python, a
-  `context.Context` on every call in Go — but the same behaviour under failure, since an SDK
-  that fails differently per language is worse than no SDK.
+- **Go SDK.** Any language can already call the HTTP API directly; this would add the same
+  caching and fail-safe behaviour as the TypeScript and Python clients. Idiomatic where it
+  matters — a `context.Context` on every call — but the same behaviour under failure, since
+  an SDK that fails differently per language is worse than no SDK.
+- **Async Python client**, if asked for. The sync client works from asyncio through
+  `asyncio.to_thread` today.
+- **PyPI release pipeline** for `flagraft`.
 - **npm release pipeline** for `@flagraft/sdk`.
 
 ## Known limitations

@@ -94,6 +94,7 @@ Flagraft is a deliberately small, focused alternative to the well-known feature 
 | Per-seat pricing        | None                  | Yes          | None (OSS)    | None (OSS)    | Yes        |
 | Context-aware targeting | Built-in              | Built-in     | Built-in      | Built-in      | Built-in   |
 | Official TypeScript SDK | `@flagraft/sdk`       | Yes          | Yes           | Yes           | Yes        |
+| Official Python SDK     | `flagraft`            | Yes          | Yes           | Yes           | Yes        |
 | Admin UI                | Built in              | Yes          | Yes           | Yes           | Yes        |
 | OpenAPI / Swagger UI    | Yes, at `/docs`       | Partial      | Yes           | Yes           | Yes        |
 | External services       | Just Postgres         | SaaS         | Postgres + UI | Postgres + UI | SaaS       |
@@ -478,13 +479,17 @@ Full endpoint reference, the report shape, and the complete Unleash mapping tabl
 ## Client SDKs
 
 - **TypeScript / JavaScript:** [`@flagraft/sdk`](packages/sdk-js/README.md)
+- **Python:** [`flagraft`](packages/sdk-python/README.md)
 
-Flagraft is in alpha, so the SDK publishes under the `alpha` dist-tag rather than
-`latest`:
+Flagraft is in alpha, so the SDKs publish as pre-releases:
 
 ```sh
 pnpm add @flagraft/sdk@alpha
+pip install --pre flagraft
 ```
+
+The Python SDK is not on PyPI yet. Until the first release, install it from the repository, as
+shown in [its README](packages/sdk-python/README.md#install).
 
 ---
 
@@ -539,7 +544,7 @@ Yes, for the core feature flag management workflow (toggle features per environm
 Yes. Use context-aware targeting strategies keyed by `userId`, `cohort`, `region`, `tenant`, or any custom context field to direct subsets of users to a variant or canary. The evaluation engine returns a deterministic on/off per (flag, context) pair.
 
 **What languages and frameworks are supported?**
-Any language can call the HTTP API directly. Today the official SDK is TypeScript / JavaScript via [`@flagraft/sdk`](packages/sdk-js/README.md), works with Node 20+, Bun, Deno, Cloudflare Workers, and Vercel Edge. Python and Go SDKs are on the [roadmap](docs/ROADMAP.md).
+Any language can call the HTTP API directly. Official SDKs exist for TypeScript / JavaScript via [`@flagraft/sdk`](packages/sdk-js/README.md) (Node 20+, Bun, Deno, Cloudflare Workers, Vercel Edge) and Python 3.11+ via [`flagraft`](packages/sdk-python/README.md). A Go SDK is on the [roadmap](docs/ROADMAP.md).
 
 **Does Flagraft support context-aware targeting (user, tenant, plan, region)?**
 Yes. The evaluation engine accepts a `Record<string, string>` context on every call and matches it against targeting strategies stored per flag and environment.
