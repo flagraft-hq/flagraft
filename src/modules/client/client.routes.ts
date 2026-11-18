@@ -7,6 +7,19 @@ import { cacheKeys } from '../../cache/keys.js'
 import { rateLimitErrorResponse } from '../../plugins/rateLimit.js'
 import * as service from './client.service.js'
 
+/** Fastify drops response fields the schema does not list, so the variant has to be spelled out. */
+const variantJsonSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    enabled: { type: 'boolean' },
+    payload: {
+      type: 'object',
+      properties: { type: { type: 'string' }, value: { type: 'string' } },
+    },
+  },
+} as const
+
 const flagParamSchema = z.object({ flagKey: z.string().min(1) })
 
 /**
@@ -53,6 +66,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
                   properties: {
                     name: { type: 'string' },
                     enabled: { type: 'boolean' },
+                    variant: variantJsonSchema,
                   },
                 },
               },
@@ -103,6 +117,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
               name: { type: 'string' },
               enabled: { type: 'boolean' },
               reason: { type: 'string', enum: ['disabled', 'strategy-match', 'default'] },
+              variant: variantJsonSchema,
             },
           },
         },

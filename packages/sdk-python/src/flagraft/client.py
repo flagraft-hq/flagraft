@@ -5,6 +5,7 @@ import math
 import urllib.error
 import urllib.request
 from collections.abc import Callable
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.message import Message
@@ -25,7 +26,7 @@ from ._constants import (
     NOT_MODIFIED_STATUS,
     RATE_LIMIT_STATUS,
 )
-from ._types import Context, EvaluationResult, Feature, StaleEvent
+from ._types import Context, EvaluatedVariant, EvaluationResult, Feature, StaleEvent, Variant
 from .errors import FlagraftError
 
 logger = logging.getLogger("flagraft")
@@ -63,11 +64,11 @@ def _error_from(status: int, reason: str, body: bytes) -> FlagraftError:
 
 
 def _copy_features(features: list[Feature]) -> list[Feature]:
-    return [Feature(name=f["name"], enabled=f["enabled"]) for f in features]
+    return deepcopy(features)
 
 
-def _find_in_bulk(features: list[Feature], flag_key: str) -> bool | None:
-    return next((f["enabled"] for f in features if f["name"] == flag_key), None)
+def _find_in_bulk(features: list[Feature], flag_key: str) -> Feature | None:
+    return next((f for f in features if f["name"] == flag_key), None)
 
 
 def _parse_retry_after(header: str | None) -> float:
@@ -154,55 +155,69 @@ class FlagraftClient:
     def is_enabled(
         self, flag_key: str, context: Context | None = None, default: bool = False
     ) -> bool:
+        found = self._lookup(flag_key, context, str(default))
+        return default if found is None else found["enabled"]
+
+    def get_variant(self, flag_key: str, context: Context | None = None) -> Variant:
+        """A flag that is off, has no variants or cannot be read gives the "disabled" variant."""
+        found = self._lookup(flag_key, context, "the disabled variant")
+        if found is None:
+            return Variant(name="disabled", enabled=False, feature_enabled=False)
+        variant = found.get("variant") or EvaluatedVariant(name="disabled", enabled=False)
+        return cast(Variant, {**deepcopy(variant), "feature_enabled": found["enabled"]})
+
+    def _lookup(
+        self, flag_key: str, context: Context | None, fallback: str
+    ) -> Feature | EvaluationResult | None:
         # Existence does not depend on context, so one entry covers every caller.
         if self._missing.get(flag_key):
-            return default
+            return None
 
         ctx: Context = context or {}
         cache_key = make_key(flag_key, ctx)
         cached = self._single.get(cache_key)
         if cached is not None:
-            return cached["enabled"]
+            return cached
 
         bulk_key = make_key(BULK_CACHE_KEY, ctx)
         bulk = self._bulk.get(bulk_key)
         if bulk is not None:
-            enabled = _find_in_bulk(bulk.features, flag_key)
-            if enabled is not None:
-                return enabled
+            feature = _find_in_bulk(bulk.features, flag_key)
+            if feature is not None:
+                return feature
             # Both endpoints read the same flag map, so absent here means a 404 there.
             self._missing.set(flag_key, True)
-            return default
+            return None
 
         try:
             result = self._fetch_single(flag_key, ctx)
         except Exception as error:
             if isinstance(error, FlagraftError) and error.status_code == 404:
                 self._missing.set(flag_key, True)
-                return default
+                return None
 
             stale = self._single.get_stale(cache_key)
             if stale is not None:
                 self._report_stale(flag_key, stale.stored_at)
-                return stale.value["enabled"]
+                return stale.value
 
             stale_bulk = self._bulk.get_stale(bulk_key)
             if stale_bulk is not None:
-                stale_enabled = _find_in_bulk(stale_bulk.value.features, flag_key)
-                if stale_enabled is not None:
+                stale_feature = _find_in_bulk(stale_bulk.value.features, flag_key)
+                if stale_feature is not None:
                     self._report_stale(flag_key, stale_bulk.stored_at)
-                    return stale_enabled
+                    return stale_feature
 
             if isinstance(error, FlagraftError) and _is_caller_error(error.status_code):
                 raise
             if not self._backing_off():
                 logger.warning(
-                    "flag evaluation failed for %s, defaulting to %s: %s", flag_key, default, error
+                    "flag evaluation failed for %s, defaulting to %s: %s", flag_key, fallback, error
                 )
-            return default
+            return None
 
         self._single.set(cache_key, result)
-        return result["enabled"]
+        return result
 
     def get_features(self, context: Context | None = None) -> dict[str, bool]:
         return {f["name"]: f["enabled"] for f in self.get_all_features(context)}

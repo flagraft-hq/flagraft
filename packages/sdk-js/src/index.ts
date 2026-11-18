@@ -4,6 +4,9 @@ export type {
   EvaluationResult,
   FlagraftClientOptions,
   StaleEvent,
+  Variant,
+  VariantPayload,
+  EvaluatedVariant,
 } from './types.js'
 export { FlagraftError } from './errors.js'
 export type { ServerErrorBody } from './errors.js'

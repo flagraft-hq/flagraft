@@ -11,6 +11,13 @@ interface StrategyResponse {
   id: string
   position: number
   constraints: { fieldKey: string; operator: string; values: string[] }[]
+  variants: {
+    name: string
+    weight: number
+    weightType: string
+    stickiness: string
+    payload?: { type: string; value: string }
+  }[]
 }
 
 describeIfDb('targeting strategies', () => {
@@ -163,6 +170,79 @@ describeIfDb('targeting strategies', () => {
       headers: auth,
     })
     expect(res.statusCode).toBe(404)
+    await app.close()
+  })
+
+  it('stores variants and fills in variable weights', async () => {
+    const { app, put, get } = await setup()
+    const res = await put({
+      strategies: [{ constraints: [], variants: [{ name: 'a' }, { name: 'b' }] }],
+    })
+    expect(res.statusCode).toBe(200)
+
+    const expected = [
+      { name: 'a', weight: 500, weightType: 'variable', stickiness: 'default' },
+      { name: 'b', weight: 500, weightType: 'variable', stickiness: 'default' },
+    ]
+    expect(res.json<StrategyResponse[]>()[0].variants).toEqual(expected)
+    expect((await get()).json<StrategyResponse[]>()[0].variants).toEqual(expected)
+    await app.close()
+  })
+
+  it('keeps a fixed weight and a payload', async () => {
+    const { app, put } = await setup()
+    const payload = { type: 'json', value: '{"colour":"blue"}' }
+    const res = await put({
+      strategies: [
+        {
+          constraints: [],
+          variants: [
+            { name: 'a', weightType: 'fix', weight: 100, stickiness: 'tenant', payload },
+            { name: 'b', stickiness: 'tenant' },
+          ],
+        },
+      ],
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json<StrategyResponse[]>()[0].variants).toEqual([
+      { name: 'a', weight: 100, weightType: 'fix', stickiness: 'tenant', payload },
+      { name: 'b', weight: 900, weightType: 'variable', stickiness: 'tenant' },
+    ])
+    await app.close()
+  })
+
+  it('rejects duplicate variant names with 400 and names the duplicate', async () => {
+    const { app, put } = await setup()
+    const res = await put({
+      strategies: [{ constraints: [], variants: [{ name: 'a' }, { name: 'a' }] }],
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json<{ message: string }>().message).toContain('"a"')
+    await app.close()
+  })
+
+  it('rejects fixed weights that do not add up with 400', async () => {
+    const { app, put } = await setup()
+    const res = await put({
+      strategies: [
+        {
+          constraints: [],
+          variants: [
+            { name: 'a', weightType: 'fix', weight: 400 },
+            { name: 'b', weightType: 'fix', weight: 500 },
+          ],
+        },
+      ],
+    })
+    expect(res.statusCode).toBe(400)
+    await app.close()
+  })
+
+  it('a strategy sent without variants has none', async () => {
+    const { app, put } = await setup()
+    const res = await put({ strategies: [{ constraints: [] }] })
+    expect(res.statusCode).toBe(200)
+    expect(res.json<StrategyResponse[]>()[0].variants).toEqual([])
     await app.close()
   })
 })

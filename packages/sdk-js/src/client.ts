@@ -17,6 +17,7 @@ import type {
   Feature,
   FlagraftClientOptions,
   StaleEvent,
+  Variant,
 } from './types.js'
 
 /**
@@ -32,9 +33,12 @@ interface BulkEntry {
  * Finds one flag inside a cached bulk response. Undefined means the server
  * did not list it, which is its way of saying the flag does not exist.
  */
-function findInBulk(features: Feature[], flagKey: string): boolean | undefined {
-  return features.find((f) => f.name === flagKey)?.enabled
+function findInBulk(features: Feature[], flagKey: string): Feature | undefined {
+  return features.find((f) => f.name === flagKey)
 }
+
+/** The server's name for "no variant", which is also what an unanswered lookup falls back to. */
+const DISABLED_VARIANT = { name: 'disabled', enabled: false } as const
 
 /**
  * True when the failure is the caller's to fix -- a bad key, a wrong scope --
@@ -116,17 +120,38 @@ export class FlagraftClient {
     context: EvaluationContext = {},
     defaultValue = false,
   ): Promise<boolean> {
+    const found = await this.lookup(flagKey, context, String(defaultValue))
+    return found?.enabled ?? defaultValue
+  }
+
+  /**
+   * Returns the variant the flag serves for this context. A flag without
+   * variants, a flag that is off and a lookup the server could not answer all
+   * give `{ name: 'disabled', enabled: false }`; `featureEnabled` tells the
+   * first two apart.
+   */
+  async getVariant(flagKey: string, context: EvaluationContext = {}): Promise<Variant> {
+    const found = await this.lookup(flagKey, context, 'the disabled variant')
+    return { ...(found?.variant ?? DISABLED_VARIANT), featureEnabled: found?.enabled ?? false }
+  }
+
+  /** One lookup behind isEnabled and getVariant, so they share every cache; undefined means "use the fallback". */
+  private async lookup(
+    flagKey: string,
+    context: EvaluationContext,
+    fallbackLabel: string,
+  ): Promise<Feature | undefined> {
     /**
      * Checked before the per-context cache, since a flag that does not exist
      * is missing for every context and would otherwise be re-asked once per
      * distinct caller. The cache records only that it is missing, so two
      * callers with different defaults each still get their own.
      */
-    if (this.missingCache.get(flagKey)) return defaultValue
+    if (this.missingCache.get(flagKey)) return undefined
 
     const cacheKey = makeKey(flagKey, context)
     const cached = this.singleCache.get(cacheKey)
-    if (cached) return cached.enabled
+    if (cached) return cached
 
     /**
      * A bulk response already holds every flag for this context, so if one is
@@ -135,21 +160,21 @@ export class FlagraftClient {
     const bulkKey = makeKey(BULK_CACHE_KEY, context)
     const bulk = this.bulkCache.get(bulkKey)
     if (bulk) {
-      const enabled = findInBulk(bulk.features, flagKey)
-      if (enabled !== undefined) return enabled
+      const feature = findInBulk(bulk.features, flagKey)
+      if (feature) return feature
       /**
        * The server builds both endpoints from the same flag map, so a key
        * absent from the bulk list is exactly what the single endpoint would
        * answer 404 for. Recording it here saves that round trip entirely.
        */
       this.missingCache.set(flagKey, true)
-      return defaultValue
+      return undefined
     }
 
     try {
       const result = await this.fetchSingle(flagKey, context)
       this.singleCache.set(cacheKey, result)
-      return result.enabled
+      return result
     } catch (error) {
       /**
        * An unknown flag is a real answer rather than an outage, so it falls
@@ -159,14 +184,14 @@ export class FlagraftClient {
        */
       if (error instanceof FlagraftError && error.statusCode === 404) {
         this.missingCache.set(flagKey, true)
-        return defaultValue
+        return undefined
       }
 
       /** A real value we fetched earlier always beats a static guess. */
       const stale = this.singleCache.getStale(cacheKey)
       if (stale) {
         this.reportStale(flagKey, stale.storedAt)
-        return stale.value.enabled
+        return stale.value
       }
 
       /**
@@ -176,19 +201,19 @@ export class FlagraftClient {
        */
       const staleBulk = this.bulkCache.getStale(bulkKey)
       if (staleBulk) {
-        const enabled = findInBulk(staleBulk.value.features, flagKey)
-        if (enabled !== undefined) {
+        const feature = findInBulk(staleBulk.value.features, flagKey)
+        if (feature) {
           this.reportStale(flagKey, staleBulk.storedAt)
-          return enabled
+          return feature
         }
       }
 
       if (error instanceof FlagraftError && isCallerError(error.statusCode)) throw error
       if (!this.backingOff()) {
         // eslint-disable-next-line no-console
-        console.warn(`[flagraft] flag evaluation failed, defaulting to ${defaultValue}`, error)
+        console.warn(`[flagraft] flag evaluation failed, defaulting to ${fallbackLabel}`, error)
       }
-      return defaultValue
+      return undefined
     }
   }
 

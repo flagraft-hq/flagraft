@@ -1121,3 +1121,132 @@ describe('FlagraftClient.getAllFeatures', () => {
     await expect(client.getAllFeatures()).resolves.toEqual([{ name: 'a', enabled: true }])
   })
 })
+
+describe('FlagraftClient.getVariant', () => {
+  const payload = { type: 'string', value: 'blue' }
+  const withVariant = {
+    name: 'checkout-v2',
+    enabled: true,
+    reason: 'strategy-match',
+    variant: { name: 'a', enabled: true, payload },
+  }
+  const disabledVariant = { name: 'disabled', enabled: false, featureEnabled: false }
+
+  it('returns the variant the server picked', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/checkout-v2`, () => HttpResponse.json(withVariant)),
+    )
+
+    await expect(makeClient().getVariant('checkout-v2', { userId: 'u1' })).resolves.toEqual({
+      name: 'a',
+      enabled: true,
+      payload,
+      featureEnabled: true,
+    })
+  })
+
+  it('reports an enabled flag without variants as disabled variant, feature on', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/checkout-v2`, () =>
+        HttpResponse.json({ name: 'checkout-v2', enabled: true, reason: 'default' }),
+      ),
+    )
+
+    await expect(makeClient().getVariant('checkout-v2')).resolves.toEqual({
+      name: 'disabled',
+      enabled: false,
+      featureEnabled: true,
+    })
+  })
+
+  it('returns the disabled variant for an unknown flag and remembers it', async () => {
+    let calls = 0
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/missing`, () => {
+        calls += 1
+        return HttpResponse.json(
+          { error: 'NotFound', message: 'Flag not found', statusCode: 404 },
+          { status: 404 },
+        )
+      }),
+    )
+
+    const client = makeClient()
+    await expect(client.getVariant('missing')).resolves.toEqual(disabledVariant)
+    await expect(client.getVariant('missing')).resolves.toEqual(disabledVariant)
+    expect(calls).toBe(1)
+  })
+
+  it('shares one request with isEnabled', async () => {
+    let calls = 0
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/checkout-v2`, () => {
+        calls += 1
+        return HttpResponse.json(withVariant)
+      }),
+    )
+
+    const client = makeClient()
+    await expect(client.isEnabled('checkout-v2', { userId: 'u1' })).resolves.toBe(true)
+    await expect(client.getVariant('checkout-v2', { userId: 'u1' })).resolves.toMatchObject({
+      name: 'a',
+    })
+    expect(calls).toBe(1)
+  })
+
+  it('answers from a bulk response without another request', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features`, () =>
+        HttpResponse.json({
+          features: [{ name: 'checkout-v2', enabled: true, variant: withVariant.variant }],
+        }),
+      ),
+    )
+
+    const client = makeClient()
+    await client.getAllFeatures({ userId: 'u1' })
+    await expect(client.getVariant('checkout-v2', { userId: 'u1' })).resolves.toEqual({
+      name: 'a',
+      enabled: true,
+      payload,
+      featureEnabled: true,
+    })
+  })
+
+  it('serves the stale variant when the server stops answering', async () => {
+    let healthy = true
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/checkout-v2`, () =>
+        healthy ? HttpResponse.json(withVariant) : HttpResponse.error(),
+      ),
+    )
+
+    vi.useFakeTimers()
+    try {
+      const onStale = vi.fn()
+      const client = makeClient({ ttl: 1, staleTtl: 60, onStale })
+      await client.getVariant('checkout-v2')
+      healthy = false
+      vi.advanceTimersByTime(2000)
+
+      await expect(client.getVariant('checkout-v2')).resolves.toMatchObject({
+        name: 'a',
+        featureEnabled: true,
+      })
+      expect(onStale).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('falls back to the disabled variant when nothing is cached', async () => {
+    mswServer.use(
+      http.get(`${BASE}/api/v1/client/features/checkout-v2`, () => HttpResponse.error()),
+    )
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await expect(makeClient().getVariant('checkout-v2')).resolves.toEqual(disabledVariant)
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})

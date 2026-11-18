@@ -819,3 +819,85 @@ def test_concurrent_callers_get_correct_answers(
     with ThreadPoolExecutor(max_workers=50) as pool:
         results = list(pool.map(call, range(1000)))
     assert results == [(n % 10) % 2 == 0 for n in range(1000)]
+
+
+class TestGetVariant:
+    PAYLOAD = {"type": "string", "value": "blue"}
+    VARIANT = {"name": "a", "enabled": True, "payload": PAYLOAD}
+    DISABLED = {"name": "disabled", "enabled": False, "feature_enabled": False}
+
+    def with_variant(self, name: str = "f") -> Reply:
+        body = {"name": name, "enabled": True, "reason": "strategy-match", "variant": self.VARIANT}
+        return Reply(body=body)
+
+    def test_returns_the_variant_the_server_picked(
+        self, server: FakeServer, make_client: MakeClient
+    ) -> None:
+        server.route(flag_path("f"), self.with_variant())
+        assert make_client().get_variant("f", {"userId": "u1"}) == {
+            **self.VARIANT,
+            "feature_enabled": True,
+        }
+
+    def test_an_enabled_flag_without_variants_is_disabled_variant_feature_on(
+        self, server: FakeServer, make_client: MakeClient
+    ) -> None:
+        server.route(flag_path("f"), evaluation("f", True))
+        assert make_client().get_variant("f") == {
+            "name": "disabled",
+            "enabled": False,
+            "feature_enabled": True,
+        }
+
+    def test_unknown_flag_is_the_disabled_variant_and_is_remembered(
+        self, server: FakeServer, make_client: MakeClient
+    ) -> None:
+        client = make_client()
+        assert client.get_variant("missing") == self.DISABLED
+        assert client.get_variant("missing") == self.DISABLED
+        assert len(server.requests) == 1
+
+    def test_shares_one_request_with_is_enabled(
+        self, server: FakeServer, make_client: MakeClient
+    ) -> None:
+        server.route(flag_path("f"), self.with_variant())
+        client = make_client()
+        assert client.is_enabled("f") is True
+        assert client.get_variant("f")["name"] == "a"
+        assert len(server.requests) == 1
+
+    def test_answers_from_a_bulk_response_without_another_request(
+        self, server: FakeServer, make_client: MakeClient
+    ) -> None:
+        features = [{"name": "f", "enabled": True, "variant": self.VARIANT}]
+        server.route(BULK, Reply(body={"features": features}))
+        client = make_client()
+        assert client.get_all_features()[0]["variant"] == self.VARIANT
+        assert client.get_variant("f") == {**self.VARIANT, "feature_enabled": True}
+        assert len(server.requests) == 1
+
+    def test_changing_the_result_does_not_change_the_cache(
+        self, server: FakeServer, make_client: MakeClient
+    ) -> None:
+        server.route(flag_path("f"), self.with_variant())
+        client = make_client()
+        client.get_variant("f")["payload"]["value"] = "red"
+        assert client.get_variant("f")["payload"]["value"] == "blue"
+
+    def test_serves_the_stale_variant_when_the_server_stops_answering(
+        self, server: FakeServer, make_client: MakeClient, clock: Clock
+    ) -> None:
+        server.route(flag_path("f"), self.with_variant())
+        stale: list[StaleEvent] = []
+        client = make_client(on_stale=stale.append)
+        client.get_variant("f")
+        clock.advance(30)
+        server.route(flag_path("f"), BOOM)
+        assert client.get_variant("f")["name"] == "a"
+        assert len(stale) == 1
+
+    def test_falls_back_to_the_disabled_variant_when_nothing_is_cached(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        assert FlagraftClient(UNREACHABLE, "k").get_variant("f") == self.DISABLED
+        assert "defaulting to the disabled variant" in caplog.text

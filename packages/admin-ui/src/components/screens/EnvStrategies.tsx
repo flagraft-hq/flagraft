@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useStrategies } from '../../hooks/useStrategies'
 import { usePermissions } from '../../hooks/usePermissions'
 import type { ContextField } from '../../lib/types'
+import { formatPercent } from '../../lib/variants'
 import { Denied } from '../primitives/Denied'
 import { StrategyEditorModal } from './StrategyEditorModal'
 
@@ -41,6 +42,14 @@ export function EnvStrategies({ projectId, flagKey, env, contextFields }: EnvStr
               {Array.from(
                 new Set(strategies.flatMap((s) => s.constraints.map((c) => c.fieldKey))),
               ).join(', ')}
+              {strategies
+                .filter((s) => s.variants?.length)
+                .map((s) => (
+                  <span key={s.id}>
+                    {' · '}
+                    {s.variants.map((v) => `${v.name} ${formatPercent(v.weight)}`).join(', ')}
+                  </span>
+                ))}
             </span>
           )}
         </div>

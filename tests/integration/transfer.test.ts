@@ -24,7 +24,10 @@ interface NativeDocument {
     key: string
     name: string
     description: string | null
-    environments: Record<string, { enabled: boolean; strategies: { constraints: unknown[] }[] }>
+    environments: Record<
+      string,
+      { enabled: boolean; strategies: { constraints: unknown[]; variants?: unknown[] }[] }
+    >
   }[]
 }
 
@@ -95,7 +98,9 @@ describeIfDb('native flag transfer', () => {
       url: `${base}/flags/checkout/environments/development/strategies`,
       headers: auth,
       payload: {
-        strategies: [{ constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }] }],
+        strategies: [
+          { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }], variants: [] },
+        ],
       },
     })
 
@@ -111,7 +116,7 @@ describeIfDb('native flag transfer', () => {
     const { document, warnings } = res.json<ExportBody>()
     expect(warnings).toEqual([])
     expect(document.format).toBe('flagraft.export')
-    expect(document.version).toBe(1)
+    expect(document.version).toBe(2)
     expect(document.contextFields).toEqual([
       { key: 'plan', type: 'enum', description: null, enumValues: ['free', 'pro'] },
     ])
@@ -123,7 +128,9 @@ describeIfDb('native flag transfer', () => {
     })
     expect(document.flags[0].environments.development).toEqual({
       enabled: true,
-      strategies: [{ constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }] }],
+      strategies: [
+        { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }], variants: [] },
+      ],
     })
     expect(document.flags[0].environments.production).toEqual({ enabled: false, strategies: [] })
 
@@ -652,7 +659,10 @@ describeIfDb('native flag transfer', () => {
             production: {
               enabled: true,
               strategies: [
-                { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }] },
+                {
+                  constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }],
+                  variants: [],
+                },
               ],
             },
           },
@@ -754,5 +764,110 @@ describeIfDb('native flag transfer', () => {
     expect(imported.statusCode).toBe(403)
 
     await app.close()
+  })
+  describe('variants', () => {
+    const variants = [
+      { name: 'a', weight: 100, weightType: 'fix', stickiness: 'default' },
+      {
+        name: 'b',
+        weight: 900,
+        weightType: 'variable',
+        stickiness: 'default',
+        payload: { type: 'json', value: '{"colour":"blue"}' },
+      },
+    ]
+
+    async function seededWithVariants() {
+      const seed = await seeded()
+      await seed.app.inject({
+        method: 'PUT',
+        url: `${seed.base}/flags/checkout/environments/development/strategies`,
+        headers: seed.auth,
+        payload: {
+          strategies: [
+            {
+              constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }],
+              variants: [
+                { name: 'a', weightType: 'fix', weight: 100 },
+                { name: 'b', payload: variants[1].payload },
+              ],
+            },
+          ],
+        },
+      })
+      const exported = await seed.app.inject({
+        method: 'GET',
+        url: `${seed.base}/transfer/export`,
+        headers: seed.auth,
+      })
+      return { ...seed, document: exported.json<ExportBody>().document }
+    }
+
+    it('exports variants and round trips them into another project', async () => {
+      const { app, rootKey, document } = await seededWithVariants()
+      expect(document.flags[0].environments.development.strategies[0].variants).toEqual(variants)
+
+      const { targetAuth, targetBase } = await freshTarget(app, rootKey, 'variants-dst')
+      const imported = await app.inject({
+        method: 'POST',
+        url: `${targetBase}/transfer/import`,
+        headers: targetAuth,
+        payload: { document },
+      })
+      expect(imported.statusCode).toBe(200)
+      expect(imported.json<ImportBody>().report.counts).toMatchObject({ strategiesImported: 1 })
+
+      const again = await app.inject({
+        method: 'GET',
+        url: `${targetBase}/transfer/export`,
+        headers: targetAuth,
+      })
+      expect(again.json<ExportBody>().document.flags).toEqual(document.flags)
+
+      await app.close()
+    })
+
+    it('drops and reports a strategy whose variants are not valid', async () => {
+      const { app, rootKey } = await seeded()
+      const { targetAuth, targetBase } = await freshTarget(app, rootKey, 'variants-bad')
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `${targetBase}/transfer/import`,
+        headers: targetAuth,
+        payload: {
+          document: {
+            format: 'flagraft.export',
+            version: 2,
+            flags: [
+              {
+                key: 'checkout',
+                name: 'Checkout',
+                environments: {
+                  development: {
+                    enabled: true,
+                    strategies: [{ constraints: [], variants: [{ name: 'a' }, { name: 'a' }] }],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      })
+
+      expect(res.statusCode).toBe(200)
+      const { report } = res.json<ImportBody>()
+      expect(report.counts).toMatchObject({
+        flagsCreated: 1,
+        strategiesImported: 0,
+        strategiesSkipped: 1,
+      })
+      expect(report.flags[0].warnings).toEqual([
+        expect.objectContaining({ kind: 'variant-rejected', environment: 'development' }),
+      ])
+      expect(report.flags[0].warnings[0].detail).toContain('"a"')
+
+      await app.close()
+    })
   })
 })

@@ -11,7 +11,7 @@ import {
   targetingStrategies,
 } from '../../db/schema.js'
 import { AppError } from '../../plugins/errorHandler.js'
-import type { EvalContext, EvalReason, FieldTypes, FlagState } from './evaluate.js'
+import type { EvalContext, EvalReason, EvalVariant, FieldTypes, FlagState } from './evaluate.js'
 import { evaluateFlag } from './evaluate.js'
 
 /**
@@ -62,6 +62,7 @@ export interface EvaluatedFeature {
   name: string
   enabled: boolean
   reason: EvalReason
+  variant: EvalVariant
 }
 
 /**
@@ -94,6 +95,7 @@ export async function loadEnvState(
     .select({
       flagId: targetingStrategies.flagId,
       constraints: targetingStrategies.constraints,
+      variants: targetingStrategies.variants,
     })
     .from(targetingStrategies)
     .innerJoin(featureFlags, eq(featureFlags.id, targetingStrategies.flagId))
@@ -107,7 +109,10 @@ export async function loadEnvState(
 
   const strategiesByFlag: Record<string, FlagState['strategies']> = {}
   for (const row of strategyRows) {
-    ;(strategiesByFlag[row.flagId] ??= []).push({ constraints: row.constraints })
+    ;(strategiesByFlag[row.flagId] ??= []).push({
+      constraints: row.constraints,
+      variants: row.variants,
+    })
   }
 
   const fieldRows = await db
@@ -131,11 +136,11 @@ export async function loadEnvState(
 export function evaluateAll(
   state: EnvState,
   context: EvalContext,
-): Array<{ name: string; enabled: boolean }> {
-  return Object.entries(state.flags).map(([name, flagState]) => ({
-    name,
-    enabled: evaluateFlag(flagState, state.fieldTypes, context).enabled,
-  }))
+): Array<{ name: string; enabled: boolean; variant: EvalVariant }> {
+  return Object.entries(state.flags).map(([name, flagState]) => {
+    const { enabled, variant } = evaluateFlag(name, flagState, state.fieldTypes, context)
+    return { name, enabled, variant }
+  })
 }
 
 export function evaluateOne(
@@ -147,6 +152,6 @@ export function evaluateOne(
   if (!flagState) {
     throw new AppError('Flag not found', 404, 'NotFound')
   }
-  const { enabled, reason } = evaluateFlag(flagState, state.fieldTypes, context)
-  return { name: flagKey, enabled, reason }
+  const { enabled, reason, variant } = evaluateFlag(flagKey, flagState, state.fieldTypes, context)
+  return { name: flagKey, enabled, reason, variant }
 }

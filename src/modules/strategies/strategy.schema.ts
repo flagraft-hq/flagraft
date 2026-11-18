@@ -26,9 +26,21 @@ const constraintSchema = z.object({
   values: z.array(z.string().min(1)).min(1),
 })
 
+/** Shape only: every rule with a message lives in variant-rules.ts, which the importer shares. */
+export const variantSchema = z.object({
+  name: z.string(),
+  weight: z.number().optional(),
+  weightType: z.enum(['variable', 'fix']).optional(),
+  stickiness: z.string().min(1).optional(),
+  payload: z
+    .object({ type: z.enum(['string', 'json', 'csv', 'number']), value: z.string() })
+    .optional(),
+})
+
 /** A strategy with no constraints always matches (on for everyone). */
 const strategySchema = z.object({
   constraints: z.array(constraintSchema),
+  variants: z.array(variantSchema).default([]),
 })
 
 /** PUT replaces the whole ordered list; position is the array index. */

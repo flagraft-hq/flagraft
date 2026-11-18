@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 
 import { strategiesApi, ApiError } from '../../lib/api'
 import { OPERATORS_BY_TYPE } from '../../lib/operators'
-import type { ContextField, Strategy } from '../../lib/types'
+import type { ContextField, Strategy, StrategyVariantInput } from '../../lib/types'
+import { fillWeights, percentToWeight, toDraftVariant, type DraftVariant } from '../../lib/variants'
 import { Button } from '../primitives/Button'
 import { FormError } from '../primitives/FormError'
 import { Icon } from '../primitives/Icon'
 import { Modal } from '../primitives/Modal'
 import { Select } from '../primitives/Select'
+import { StrategyVariantsEditor } from './StrategyVariantsEditor'
 
 interface DraftConstraint {
   fieldKey: string
@@ -16,6 +18,8 @@ interface DraftConstraint {
 }
 interface DraftStrategy {
   constraints: DraftConstraint[]
+  variants: DraftVariant[]
+  stickiness: string
 }
 
 function MultiValueInput({
@@ -106,7 +110,39 @@ function toDraft(strategies: Strategy[]): DraftStrategy[] {
       operator: c.operator,
       values: c.values,
     })),
+    variants: (s.variants ?? []).map(toDraftVariant),
+    stickiness: s.variants?.[0]?.stickiness ?? 'default',
   }))
+}
+
+/** Returns the request variants, or a message saying why the draft cannot be saved. */
+function toVariantInput(strategy: DraftStrategy): StrategyVariantInput[] | string {
+  const fixedWeights: (number | null)[] = []
+  const variants: StrategyVariantInput[] = []
+
+  for (const variant of strategy.variants) {
+    const name = variant.name.trim()
+    if (!name) return 'Every variant needs a name.'
+
+    const weight = variant.fixed ? percentToWeight(variant.percent) : null
+    if (variant.fixed && weight === null) return 'A fixed weight must be between 0 and 100%.'
+    fixedWeights.push(weight)
+
+    variants.push({
+      name,
+      weightType: variant.fixed ? 'fix' : 'variable',
+      ...(weight === null ? {} : { weight }),
+      stickiness: strategy.stickiness,
+      ...(variant.payloadType
+        ? { payload: { type: variant.payloadType, value: variant.payloadValue } }
+        : {}),
+    })
+  }
+
+  if (!fillWeights(fixedWeights)) {
+    return 'Fixed weights must add up to 100%, or leave at least one variant on automatic.'
+  }
+  return variants
 }
 
 export function StrategyEditorModal({
@@ -141,9 +177,13 @@ export function StrategyEditorModal({
     return { fieldKey, operator: ops[0]?.value ?? '', values: [] }
   }
 
+  function patchDraft(si: number, patch: Partial<DraftStrategy>) {
+    setDrafts((prev) => prev.map((s, i) => (i === si ? { ...s, ...patch } : s)))
+  }
+
   /** Immutably replace one strategy's constraints. */
   function patchStrategy(si: number, constraints: DraftConstraint[]) {
-    setDrafts((prev) => prev.map((s, i) => (i === si ? { constraints } : s)))
+    patchDraft(si, { constraints })
   }
 
   function updateConstraint(si: number, ci: number, patch: Partial<DraftConstraint>) {
@@ -151,6 +191,7 @@ export function StrategyEditorModal({
       prev.map((s, i) => {
         if (i !== si) return s
         return {
+          ...s,
           constraints: s.constraints.map((c, j) => {
             if (j !== ci) return c
             const next = { ...c, ...patch }
@@ -166,13 +207,22 @@ export function StrategyEditorModal({
   }
 
   async function handleSave() {
-    const payload = drafts.map((s) => ({
-      constraints: s.constraints.map((c) => ({
-        fieldKey: c.fieldKey,
-        operator: c.operator,
-        values: c.values.filter(Boolean),
-      })),
-    }))
+    const payload = []
+    for (const s of drafts) {
+      const variants = toVariantInput(s)
+      if (typeof variants === 'string') {
+        setError(variants)
+        return
+      }
+      payload.push({
+        constraints: s.constraints.map((c) => ({
+          fieldKey: c.fieldKey,
+          operator: c.operator,
+          values: c.values.filter(Boolean),
+        })),
+        variants,
+      })
+    }
     for (const s of payload) {
       for (const c of s.constraints) {
         if (!c.fieldKey || !c.operator || c.values.length === 0) {
@@ -199,7 +249,9 @@ export function StrategyEditorModal({
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
-      <Modal.Header subtitle={`Serve this flag ON when a strategy matches, in ${env}.`}>
+      <Modal.Header
+        subtitle={`Serve this flag ON when a strategy matches, in ${env}. Variants split the matched users.`}
+      >
         Targeting strategies
       </Modal.Header>
       <Modal.Body>
@@ -282,6 +334,14 @@ export function StrategyEditorModal({
                 >
                   Add condition
                 </Button>
+
+                <StrategyVariantsEditor
+                  variants={strategy.variants}
+                  stickiness={strategy.stickiness}
+                  contextFieldKeys={contextFields.map((f) => f.key)}
+                  onVariantsChange={(variants) => patchDraft(si, { variants })}
+                  onStickinessChange={(stickiness) => patchDraft(si, { stickiness })}
+                />
               </div>
             ))}
           </div>
@@ -291,7 +351,12 @@ export function StrategyEditorModal({
           <Button
             variant="ghost"
             leftIcon="plus"
-            onClick={() => setDrafts((prev) => [...prev, { constraints: [] }])}
+            onClick={() =>
+              setDrafts((prev) => [
+                ...prev,
+                { constraints: [], variants: [], stickiness: 'default' },
+              ])
+            }
           >
             Add strategy
           </Button>

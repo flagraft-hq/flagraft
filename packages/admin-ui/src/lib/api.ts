@@ -9,6 +9,7 @@ import type {
   ContextFieldInput,
   Strategy,
   StrategyConstraint,
+  StrategyVariantInput,
   Project,
   ProjectSettings,
   Env,
@@ -179,7 +180,7 @@ export const strategiesApi = {
     projectId: string,
     flagKey: string,
     env: string,
-    strategies: { constraints: StrategyConstraint[] }[],
+    strategies: { constraints: StrategyConstraint[]; variants: StrategyVariantInput[] }[],
   ) =>
     http.put<Strategy[]>(
       `/api/v1/admin/projects/${projectId}/flags/${flagKey}/environments/${env}/strategies`,
@@ -371,6 +372,7 @@ export type TransferWarningKind =
   | 'unknown-environment'
   | 'approval-required'
   | 'constraint-rejected'
+  | 'variant-rejected'
   | 'behaviour-change'
 
 export interface TransferWarning {

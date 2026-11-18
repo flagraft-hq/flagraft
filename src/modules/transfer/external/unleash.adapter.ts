@@ -1,4 +1,6 @@
+import type { StrategyVariant } from '../../../db/schema.js'
 import type { ConstraintLike } from '../../strategies/constraint-rules.js'
+import { normaliseVariants } from '../../strategies/variant-rules.js'
 import {
   NATIVE_FORMAT,
   NATIVE_VERSION,
@@ -8,6 +10,7 @@ import {
 } from '../transfer.schema.js'
 import {
   unleashDocumentSchema,
+  unleashVariantsSchema,
   type UnleashConstraint,
   type UnleashDocument,
   type UnleashStrategy,
@@ -339,6 +342,53 @@ function convertStrategy(
 }
 
 /**
+ * Carries a strategy's variants over, or says why the strategy has to go.
+ *
+ * `notes` are differences the caller should know about but that do not widen
+ * who gets the flag: users landing in a different variant than in Unleash.
+ */
+function convertVariants(
+  strategy: UnleashStrategy,
+  flagKey: string,
+): { variants: StrategyVariant[]; notes: string[] } | { skip: string } {
+  if (strategy.variants.length === 0) return { variants: [], notes: [] }
+
+  const parsed = unleashVariantsSchema.safeParse(strategy.variants)
+  if (!parsed.success) {
+    return { skip: 'its variants are not in a shape this importer understands' }
+  }
+
+  /** Unleash reads stickiness off the first variant and falls back to the strategy's own. */
+  const stickiness = parsed.data[0].stickiness || strategy.parameters.stickiness || 'default'
+  const result = normaliseVariants(parsed.data.map((variant) => ({ ...variant, stickiness })))
+  if ('error' in result) {
+    return { skip: `its variants cannot be stored (${result.error})` }
+  }
+
+  const notes: string[] = []
+  const groupId = strategy.parameters.groupId
+  if (!groupId) {
+    notes.push(
+      'Variants were imported, but the Unleash strategy has no group id, so users will not land in the same variant they had in Unleash.',
+    )
+  } else if (groupId !== flagKey) {
+    notes.push(
+      `Variants were imported, but Unleash bucketed them on group id "${groupId}" and bucketing here uses the flag key, so users will not land in the same variant they had in Unleash.`,
+    )
+  }
+
+  const before = parsed.data.map((variant) => variant.weight)
+  const after = result.variants.map((variant) => variant.weight)
+  if (before.some((weight, index) => weight !== after[index])) {
+    notes.push(
+      `Variant weights were rebalanced from ${before.join('/')} to ${after.join('/')} (out of 1000), so some users will move between variants.`,
+    )
+  }
+
+  return { variants: result.variants, notes }
+}
+
+/**
  * Translates an Unleash export into a native document.
  *
  * Pure: no database, no ids, no side effects. Everything it cannot represent
@@ -413,13 +463,13 @@ export function toNative(input: unknown): ToNativeResult {
       detail: `${source.featureTags.length} tag(s) were not imported; flags carry no tags here.`,
     })
   }
-  const variantCount =
-    source.featureEnvironments.filter((entry) => entry.variants.length > 0).length +
-    source.featureStrategies.filter((strategy) => strategy.variants.length > 0).length
+  const variantCount = source.featureEnvironments.filter(
+    (entry) => entry.variants.length > 0,
+  ).length
   if (variantCount > 0) {
     warnings.push({
       kind: 'unsupported-strategy',
-      detail: `${variantCount} variant set(s) were not imported; flags are boolean here.`,
+      detail: `${variantCount} flag-level variant set(s) were not imported; only variants on a strategy are supported here.`,
     })
   }
 
@@ -500,7 +550,26 @@ export function toNative(input: unknown): ToNativeResult {
           detail: `Constraint on ${converted.caseInsensitive.map((key) => `"${key}"`).join(', ')} ignored case in Unleash; matching here is case-sensitive, so it now matches fewer callers.`,
         })
       }
-      environments[environmentSlug].strategies.push({ constraints: converted.constraints })
+      const variants = convertVariants(strategy, feature.name)
+      if ('skip' in variants) {
+        addFlagWarning(feature.name, {
+          environment: environmentSlug,
+          kind: 'unsupported-strategy',
+          detail: `Strategy dropped: ${variants.skip}. Rebuild it by hand rather than importing it without its variants.`,
+        })
+        continue
+      }
+      for (const detail of variants.notes) {
+        addFlagWarning(feature.name, {
+          environment: environmentSlug,
+          kind: 'behaviour-change',
+          detail,
+        })
+      }
+      environments[environmentSlug].strategies.push({
+        constraints: converted.constraints,
+        variants: variants.variants,
+      })
     }
 
     flags.push({
@@ -628,15 +697,27 @@ export function fromNative(document: NativeDocument): FromNativeResult {
           continue
         }
 
+        /**
+         * Unleash buckets strategy variants on the strategy's group id, which
+         * only flexibleRollout carries. At 100% it matches the same callers as
+         * `default`, and grouping on the flag key keeps the split identical.
+         */
+        const hasVariants = strategy.variants.length > 0
         featureStrategies.push({
           featureName: flag.key,
           environment: slug,
-          strategyName: 'default',
+          strategyName: hasVariants ? 'flexibleRollout' : 'default',
           sortOrder: sortOrder++,
           disabled: false,
-          parameters: {},
+          parameters: hasVariants
+            ? {
+                rollout: '100',
+                stickiness: strategy.variants[0].stickiness ?? 'default',
+                groupId: flag.key,
+              }
+            : {},
           constraints,
-          variants: [],
+          variants: strategy.variants,
           segments: [],
         })
       }

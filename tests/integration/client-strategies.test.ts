@@ -165,4 +165,85 @@ describeIfDb('client evaluation with strategies', () => {
     expect(features.find((f) => f.name === 'lobby')?.enabled).toBe(true)
     await app.close()
   })
+  describe('variants', () => {
+    interface VariantBody {
+      enabled: boolean
+      variant: { name: string; enabled: boolean; payload?: { type: string; value: string } }
+    }
+    const split = { strategies: [{ constraints: [], variants: [{ name: 'a' }, { name: 'b' }] }] }
+
+    it('a flag without variants returns the disabled variant', async () => {
+      const { app, evalLobby } = await setup()
+      expect((await evalLobby()).json<VariantBody>()).toMatchObject({
+        enabled: true,
+        variant: { name: 'disabled', enabled: false },
+      })
+      await app.close()
+    })
+
+    it('returns the variant and its payload', async () => {
+      const { app, putStrategies, evalLobby } = await setup()
+      const payload = { type: 'string', value: 'blue' }
+      await putStrategies({ strategies: [{ constraints: [], variants: [{ name: 'a', payload }] }] })
+      expect((await evalLobby('?userId=u1')).json<VariantBody>().variant).toEqual({
+        name: 'a',
+        enabled: true,
+        payload,
+      })
+      await app.close()
+    })
+
+    it('the same user keeps the same variant and both variants are served', async () => {
+      const { app, putStrategies, evalLobby } = await setup()
+      await putStrategies(split)
+
+      const first = (await evalLobby('?userId=u1')).json<VariantBody>().variant.name
+      for (let i = 0; i < 4; i++) {
+        expect((await evalLobby('?userId=u1')).json<VariantBody>().variant.name).toBe(first)
+      }
+
+      const seen = new Set<string>()
+      for (let i = 0; i < 50; i++) {
+        seen.add((await evalLobby(`?userId=${i}`)).json<VariantBody>().variant.name)
+      }
+      expect([...seen].sort()).toEqual(['a', 'b'])
+      await app.close()
+    })
+
+    it('a disabled flag returns the disabled variant', async () => {
+      const { app, putStrategies, evalLobby, disableLobby } = await setup()
+      await putStrategies(split)
+      await disableLobby()
+      expect((await evalLobby('?userId=u1')).json<VariantBody>()).toMatchObject({
+        enabled: false,
+        variant: { name: 'disabled', enabled: false },
+      })
+      await app.close()
+    })
+
+    it('bulk returns a variant per feature and its ETag follows variant changes', async () => {
+      const { app, putStrategies, clientKey } = await setup()
+      const bulk = () =>
+        app.inject({
+          method: 'GET',
+          url: '/api/v1/client/features?userId=u1',
+          headers: { authorization: clientKey },
+        })
+
+      const before = await bulk()
+      expect(before.json<{ features: VariantBody[] }>().features[0].variant).toEqual({
+        name: 'disabled',
+        enabled: false,
+      })
+
+      await putStrategies({ strategies: [{ constraints: [], variants: [{ name: 'only' }] }] })
+      const after = await bulk()
+      expect(after.json<{ features: VariantBody[] }>().features[0].variant).toEqual({
+        name: 'only',
+        enabled: true,
+      })
+      expect(after.headers.etag).not.toBe(before.headers.etag)
+      await app.close()
+    })
+  })
 })

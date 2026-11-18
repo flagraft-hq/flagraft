@@ -61,13 +61,30 @@ Evaluates one flag. `default` is returned when the server cannot answer (an unkn
 
 Raises `FlagraftError` only for mistakes you need to fix: a 4xx other than 404 and 429 (a bad key, a wrong scope). It raises only when no stale value is available; otherwise the stale value is served.
 
+### `get_variant(flag_key, context=None) -> Variant`
+
+The variant a flag serves for this context, for flags whose strategies define variants.
+
+```python
+variant = client.get_variant("checkout-button", {"userId": "u_42"})
+# {"name": "blue", "enabled": True, "payload": {"type": "string", "value": "#00f"}, "feature_enabled": True}
+```
+
+- A strategy matched and has variants: `enabled` is `True` and `payload` is present if the variant has one.
+- The flag is on but nothing serves a variant: `{"name": "disabled", "enabled": False, "feature_enabled": True}`.
+- The flag is off, unknown, or the server cannot answer: the same with `feature_enabled` set to `False`.
+
+`payload["value"]` is always a string; parse `json` and `number` payloads yourself. The returned dict is a copy.
+
+It shares the request, cache, stale fallback and raising rule of `is_enabled`, so calling both for one flag and context costs one request. Send the value the variants are sticky on (`userId` by default) to keep a user in one variant; without it the server picks at random and the cache holds that pick until it expires.
+
 ### `get_features(context=None) -> dict[str, bool]`
 
 Every flag for the context as `{name: enabled}`. Raises `FlagraftError` under the same rule as `is_enabled`.
 
 ### `get_all_features(context=None) -> list[Feature]`
 
-The same data as a list of `{"name": ..., "enabled": ...}` dicts. The returned list is a copy, so mutating it does not affect the cache. Raises like `get_features`.
+The same data as a list of `{"name": ..., "enabled": ..., "variant": ...}` dicts (`variant` is missing only when the server predates variants). The returned list is a copy, so mutating it does not affect the cache. Raises like `get_features`.
 
 ### Context
 

@@ -144,8 +144,16 @@ curl "http://localhost:3000/api/v1/client/features?userId=usr_123" \
 ```json
 {
   "features": [
-    { "name": "new-checkout-flow", "enabled": true },
-    { "name": "dark-mode", "enabled": false }
+    {
+      "name": "new-checkout-flow",
+      "enabled": true,
+      "variant": {
+        "name": "blue",
+        "enabled": true,
+        "payload": { "type": "string", "value": "#00f" }
+      }
+    },
+    { "name": "dark-mode", "enabled": false, "variant": { "name": "disabled", "enabled": false } }
   ]
 }
 ```
@@ -215,13 +223,80 @@ is rejected with a `400`, because evaluation runs the pattern against caller-sup
 context on every request and a pattern like that would hang the server for everyone.
 Ordinary patterns are unaffected.
 
+### Bonus -- Serve variants from a strategy
+
+A strategy can also split the callers it matches across named variants, each with an
+optional payload. The model and the bucketing are the same as Unleash's strategy variants.
+
+```bash
+curl -X PUT \
+  "http://localhost:3000/api/v1/admin/projects/$PROJECT_ID/flags/new-checkout-flow/environments/production/strategies" \
+  -H "Authorization: $ROOT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "strategies": [
+      {
+        "constraints": [],
+        "variants": [
+          { "name": "control", "weightType": "fix", "weight": 100 },
+          { "name": "blue", "payload": { "type": "string", "value": "#00f" } },
+          { "name": "green", "payload": { "type": "string", "value": "#0f0" } }
+        ]
+      }
+    ]
+  }'
+```
+
+| Field        | Meaning                                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `name`       | 1-100 characters, unique within the strategy.                                                                    |
+| `weightType` | `variable` (default) or `fix`.                                                                                   |
+| `weight`     | Out of 1000, so `100` is 10%. Required for `fix`, ignored for `variable`.                                        |
+| `stickiness` | `default`, `random`, or any context key. Must be the same on every variant of a strategy. Defaults to `default`. |
+| `payload`    | Optional `{ "type": "string" \| "json" \| "csv" \| "number", "value": "..." }`. `value` is always a string.      |
+
+**Weights.** The server shares whatever the `fix` weights leave equally between the
+`variable` variants and returns the result, so stored weights always total 1000. Above,
+`control` keeps 100 and `blue` and `green` get 450 each. When 1000 does not divide evenly the
+first variable variants get one more (three variable variants are 334, 333, 333). `fix`
+weights above 1000 in total, or below 1000 with no `variable` variant to take the rest, are
+rejected with a `400`.
+
+**Other limits.** At most 20 variants per strategy. A `json` payload must parse, a `number`
+payload must be numeric, and a payload value is at most 10,000 characters.
+
+**Which variant a caller gets.** The first strategy that matches decides. Its variants are
+bucketed on `murmur3("<flagKey>:<stickiness value>")`, the same hash and seed Unleash uses,
+so the same caller always gets the same variant:
+
+- `default` uses `userId`, then `sessionId`, then `remoteAddress` from the context, whichever
+  is present first. `remoteAddress` is only used if you send it; the server does not read the
+  request IP.
+- Any other value names the context key to bucket on.
+- `random`, or a missing stickiness value, picks at random on each evaluation.
+
+Both client endpoints return the result as `variant`:
+
+```json
+{
+  "name": "new-checkout-flow",
+  "enabled": true,
+  "reason": "strategy-match",
+  "variant": { "name": "blue", "enabled": true, "payload": { "type": "string", "value": "#00f" } }
+}
+```
+
+When there is nothing to serve -- the flag is off, no strategy matched, or the matching
+strategy has no variants -- `variant` is `{ "name": "disabled", "enabled": false }`. Read
+`enabled` on the flag itself to tell "off" from "on without variants".
+
 ---
 
 ## Import and Export
 
 Two separate surfaces that share no endpoint and no request parameter:
 
-- **Native** -- `flagraft.export` v1. Round-trips losslessly. For backups, restores, and
+- **Native** -- `flagraft.export` v2. Round-trips losslessly. For backups, restores, and
   cloning a project into another project or another install.
 - **External tools** -- one route pair per tool. Unleash is the only one today.
 
@@ -243,7 +318,7 @@ environment including protected ones -- the same rule `DELETE /flags/:key` follo
 ```json
 {
   "format": "flagraft.export",
-  "version": 1,
+  "version": 2,
   "exportedAt": "2026-09-12T05:30:00.000Z",
   "project": { "slug": "web", "name": "Web" },
   "contextFields": [
@@ -272,6 +347,13 @@ environment including protected ones -- the same rule `DELETE /flags/:key` follo
   ]
 }
 ```
+
+A strategy may also carry `variants`, in the shape the strategies endpoint returns (see
+[Serve variants from a strategy](#bonus----serve-variants-from-a-strategy)). Variants are
+what version 2 added. A version 1 file still imports, with no variants; a version 2 file is
+refused by an older Flagraft instead of being imported without them. On import, variants go
+through the same checks as the strategies endpoint, and a strategy whose variants fail them
+is dropped and reported as `variant-rejected`.
 
 Strategy order is array order. `project` and `exportedAt` are informational -- the import
 target is always the `projectId` in the URL, so a document exported from `web` imports
@@ -448,8 +530,9 @@ curl -s -X POST "http://localhost:3000/api/v1/admin/projects/$PROJECT_ID/transfe
   -d "$(jq -n --slurpfile d unleash-export.json '{ document: $d[0], dryRun: true }')" | jq
 ```
 
-Flagraft's model has no variants, no percentage rollouts and no segments. Unleash leans
-on all three, so the mapping is lossy by nature -- and everything lost is reported.
+Flagraft's model has no percentage rollouts, no segments and no flag-level variants.
+Unleash leans on all three, so the mapping is lossy by nature -- and everything lost is
+reported. Variants on a strategy are carried over; see [Variants](#variants) below.
 
 Flagraft is deliberately lenient about the shape: Unleash's export differs between
 versions, and entries arrive missing `environment` or `strategyName` (some write `name`
@@ -481,7 +564,8 @@ on somewhere the export never named.
 | `featureStrategies[].environment` missing               | inferred when unambiguous; see above                |
 | `contextFields[]`, `legalValues[].value`                | context fields, `enumValues`                        |
 | `featureTags`, `tagTypes`, `segments`, `dependencies`   | **dropped**, reported once each                     |
-| any `variants`                                          | **dropped**, reported                               |
+| `featureEnvironments[].variants` (flag-level)           | **dropped**, reported                               |
+| `featureStrategies[].variants`                          | imported with the strategy; see below               |
 
 ### Strategies
 
@@ -497,6 +581,29 @@ on somewhere the export never named.
 | anything else, including custom strategies        | **skipped**                                                             |
 | any strategy with `disabled: true`                | **skipped**, reported as intentionally off rather than unsupported      |
 | any strategy referencing a `segment`              | **skipped** -- a segment is a named constraint set we cannot store      |
+
+### Variants
+
+Variants on a strategy that is itself imported come over one to one: name, weight, weight
+type, stickiness and payload. Stickiness is read the way Unleash reads it, from the first
+variant and then from the strategy's `stickiness` parameter.
+
+Bucketing uses Unleash's hash and seed, so a user lands in the same variant as before when
+both of these hold. When one does not, the variants are still imported and the report says
+so as `behaviour-change`:
+
+- **The strategy's `groupId` equals the flag name.** Unleash buckets on `groupId`; Flagraft
+  buckets on the flag key. Unleash's UI sets `groupId` to the flag name by default.
+- **The weights are unchanged.** `fix` weights are kept. `variable` weights are recomputed
+  with Flagraft's fill rule, and the report names the old and new values if they differ.
+
+Not imported, and reported:
+
+- Flag-level variants (`featureEnvironments[].variants`) and their overrides. Unleash has
+  deprecated these in favor of strategy variants.
+- A strategy whose variants fail validation, for example duplicate names. The whole strategy
+  is dropped rather than imported without its variants.
+- Variants on a strategy that is skipped for another reason, such as a rollout below 100%.
 
 ### Constraint operators
 
@@ -563,6 +670,12 @@ GET /api/v1/admin/projects/:id/transfer/export/unleash
 
 Every collection Unleash's importer expects is present, empty where we have nothing.
 Each strategy goes out as `strategyName: "default"` with `sortOrder` from its position.
+
+A strategy with variants goes out as a `flexibleRollout` at 100% instead, with its
+`variants`, its `stickiness`, and `groupId` set to the flag key. It matches the same callers
+as `default`, and `groupId` is what Unleash buckets strategy variants on, so the split stays
+the same on the other side. This shape follows Unleash's client specification; it has not
+been tested against a running Unleash import.
 
 Operators map back, with two that change shape and five that cannot travel:
 

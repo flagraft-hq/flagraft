@@ -77,12 +77,12 @@ describeIfDb('SDK <-> server contract', () => {
       await post(adminKey, `/api/v1/admin/projects/${project.id}/context-fields`, field)
     }
 
-    for (const key of ['always-on', 'switched-off', 'targeted', 'typed-context']) {
+    for (const key of ['always-on', 'switched-off', 'targeted', 'typed-context', 'with-variant']) {
       await post(adminKey, `/api/v1/admin/projects/${project.id}/flags`, { name: key, key })
     }
 
     const flagBase = `/api/v1/admin/projects/${project.id}/flags`
-    for (const key of ['always-on', 'targeted', 'typed-context']) {
+    for (const key of ['always-on', 'targeted', 'typed-context', 'with-variant']) {
       await post(adminKey, `${flagBase}/${key}/environments/${dev.slug}/enable`)
     }
 
@@ -109,6 +109,20 @@ describeIfDb('SDK <-> server contract', () => {
               { fieldKey: 'signupDate', operator: 'after', values: ['2020-01-01T00:00:00.000Z'] },
               { fieldKey: 'appVersion', operator: 'gte', values: ['2.0.0'] },
             ],
+          },
+        ],
+      },
+    })
+
+    await app.inject({
+      method: 'PUT',
+      url: `${flagBase}/with-variant/environments/${dev.slug}/strategies`,
+      headers: { authorization: adminKey },
+      payload: {
+        strategies: [
+          {
+            constraints: [],
+            variants: [{ name: 'blue', payload: { type: 'string', value: '#00f' } }],
           },
         ],
       },
@@ -222,6 +236,7 @@ describeIfDb('SDK <-> server contract', () => {
         'switched-off',
         'targeted',
         'typed-context',
+        'with-variant',
       ])
       expect(features.every((f) => typeof f.enabled === 'boolean')).toBe(true)
     })
@@ -283,6 +298,35 @@ describeIfDb('SDK <-> server contract', () => {
       const after = await client.getFeatures({ plan: 'pro' })
       expect(after).toEqual(before)
       expect(Object.keys(after).length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('variants', () => {
+    it('returns the variant and payload the server picked', async () => {
+      await expect(sdk().getVariant('with-variant', { userId: 'u1' })).resolves.toEqual({
+        name: 'blue',
+        enabled: true,
+        payload: { type: 'string', value: '#00f' },
+        featureEnabled: true,
+      })
+    })
+
+    it('tells "on without variants" apart from "off"', async () => {
+      await expect(sdk().getVariant('targeted', { plan: 'pro' })).resolves.toEqual({
+        name: 'disabled',
+        enabled: false,
+        featureEnabled: true,
+      })
+      await expect(sdk().getVariant('switched-off')).resolves.toEqual({
+        name: 'disabled',
+        enabled: false,
+        featureEnabled: false,
+      })
+    })
+
+    it('carries the variant on the bulk list', async () => {
+      const features = await sdk().getAllFeatures({ userId: 'u1' })
+      expect(features.find((f) => f.name === 'with-variant')?.variant?.name).toBe('blue')
     })
   })
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { evaluateFlag, matchConstraint } from '../../src/modules/client/evaluate.js'
 import type { FlagState } from '../../src/modules/client/evaluate.js'
+import type { StrategyVariant } from '../../src/db/schema.js'
 
 const c = (fieldKey: string, operator: string, ...values: string[]) => ({
   fieldKey,
@@ -68,12 +69,15 @@ describe('matchConstraint', () => {
 })
 
 describe('evaluateFlag', () => {
-  const strat = (...constraints: ReturnType<typeof c>[]) => ({ constraints })
+  const strat = (...constraints: ReturnType<typeof c>[]) => ({
+    constraints,
+    variants: [] as StrategyVariant[],
+  })
   const types = { tenant: 'string', plan: 'enum' }
 
   it('disabled env is off with reason disabled', () => {
     const state: FlagState = { enabled: false, strategies: [strat(c('tenant', 'in', 'phyg'))] }
-    expect(evaluateFlag(state, types, { tenant: 'phyg' })).toEqual({
+    expect(evaluateFlag('lobby', state, types, { tenant: 'phyg' })).toMatchObject({
       enabled: false,
       reason: 'disabled',
     })
@@ -81,12 +85,15 @@ describe('evaluateFlag', () => {
 
   it('enabled with no strategies is on for everyone', () => {
     const state: FlagState = { enabled: true, strategies: [] }
-    expect(evaluateFlag(state, types, {})).toEqual({ enabled: true, reason: 'default' })
+    expect(evaluateFlag('lobby', state, types, {})).toMatchObject({
+      enabled: true,
+      reason: 'default',
+    })
   })
 
   it('on when a strategy matches', () => {
     const state: FlagState = { enabled: true, strategies: [strat(c('tenant', 'in', 'phyg'))] }
-    expect(evaluateFlag(state, types, { tenant: 'phyg' })).toEqual({
+    expect(evaluateFlag('lobby', state, types, { tenant: 'phyg' })).toMatchObject({
       enabled: true,
       reason: 'strategy-match',
     })
@@ -95,7 +102,7 @@ describe('evaluateFlag', () => {
   it('a strategy referencing an unregistered field fails closed', () => {
     // `tenant` is not in the field-type map (e.g. deleted after the strategy was saved)
     const state: FlagState = { enabled: true, strategies: [strat(c('tenant', 'in', 'phyg'))] }
-    expect(evaluateFlag(state, { plan: 'enum' }, { tenant: 'phyg' })).toEqual({
+    expect(evaluateFlag('lobby', state, { plan: 'enum' }, { tenant: 'phyg' })).toMatchObject({
       enabled: false,
       reason: 'default',
     })
@@ -103,7 +110,7 @@ describe('evaluateFlag', () => {
 
   it('off (default) when no strategy matches', () => {
     const state: FlagState = { enabled: true, strategies: [strat(c('tenant', 'in', 'phyg'))] }
-    expect(evaluateFlag(state, types, { tenant: 'acme' })).toEqual({
+    expect(evaluateFlag('lobby', state, types, { tenant: 'acme' })).toMatchObject({
       enabled: false,
       reason: 'default',
     })
@@ -114,8 +121,10 @@ describe('evaluateFlag', () => {
       enabled: true,
       strategies: [strat(c('tenant', 'in', 'phyg'), c('plan', 'equals', 'pro'))],
     }
-    expect(evaluateFlag(state, types, { tenant: 'phyg', plan: 'pro' }).enabled).toBe(true)
-    expect(evaluateFlag(state, types, { tenant: 'phyg', plan: 'free' }).enabled).toBe(false)
+    expect(evaluateFlag('lobby', state, types, { tenant: 'phyg', plan: 'pro' }).enabled).toBe(true)
+    expect(evaluateFlag('lobby', state, types, { tenant: 'phyg', plan: 'free' }).enabled).toBe(
+      false,
+    )
   })
 
   it('OR across strategies: any strategy matching wins', () => {
@@ -123,7 +132,97 @@ describe('evaluateFlag', () => {
       enabled: true,
       strategies: [strat(c('tenant', 'in', 'phyg')), strat(c('plan', 'equals', 'pro'))],
     }
-    expect(evaluateFlag(state, types, { plan: 'pro' }).enabled).toBe(true)
-    expect(evaluateFlag(state, types, { tenant: 'x', plan: 'free' }).enabled).toBe(false)
+    expect(evaluateFlag('lobby', state, types, { plan: 'pro' }).enabled).toBe(true)
+    expect(evaluateFlag('lobby', state, types, { tenant: 'x', plan: 'free' }).enabled).toBe(false)
+  })
+
+  describe('variants', () => {
+    const variant = (name: string, weight = 1000): StrategyVariant => ({
+      name,
+      weight,
+      weightType: 'variable',
+      stickiness: 'default',
+    })
+    const disabled = { name: 'disabled', enabled: false }
+    const everyone = (...variants: StrategyVariant[]) => ({ constraints: [], variants })
+
+    it('disabled flag returns the disabled variant', () => {
+      const state: FlagState = { enabled: false, strategies: [everyone(variant('a'))] }
+      expect(evaluateFlag('lobby', state, types, {})).toEqual({
+        enabled: false,
+        reason: 'disabled',
+        variant: disabled,
+      })
+    })
+
+    it('enabled with no strategies returns the disabled variant', () => {
+      const state: FlagState = { enabled: true, strategies: [] }
+      expect(evaluateFlag('lobby', state, types, {})).toEqual({
+        enabled: true,
+        reason: 'default',
+        variant: disabled,
+      })
+    })
+
+    it('a matching strategy without variants returns the disabled variant', () => {
+      const state: FlagState = { enabled: true, strategies: [everyone()] }
+      expect(evaluateFlag('lobby', state, types, {}).variant).toEqual(disabled)
+    })
+
+    it('no matching strategy returns the disabled variant', () => {
+      const state: FlagState = {
+        enabled: true,
+        strategies: [{ ...strat(c('tenant', 'in', 'phyg')), variants: [variant('a')] }],
+      }
+      expect(evaluateFlag('lobby', state, types, { tenant: 'acme' })).toEqual({
+        enabled: false,
+        reason: 'default',
+        variant: disabled,
+      })
+    })
+
+    it('returns the picked variant with its payload', () => {
+      const payload = { type: 'string' as const, value: 'blue' }
+      const state: FlagState = {
+        enabled: true,
+        strategies: [everyone({ ...variant('a'), payload })],
+      }
+      expect(evaluateFlag('lobby', state, types, { userId: 'u1' })).toEqual({
+        enabled: true,
+        reason: 'strategy-match',
+        variant: { name: 'a', enabled: true, payload },
+      })
+    })
+
+    it('leaves payload out when the variant has none', () => {
+      const state: FlagState = { enabled: true, strategies: [everyone(variant('a'))] }
+      expect(evaluateFlag('lobby', state, types, {}).variant).toEqual({ name: 'a', enabled: true })
+    })
+
+    it('the first matching strategy decides, even when it has no variants', () => {
+      const first = { ...strat(c('tenant', 'in', 'phyg')), variants: [variant('first')] }
+      const second = everyone(variant('second'))
+      const third = everyone()
+
+      const state: FlagState = { enabled: true, strategies: [first, second] }
+      expect(evaluateFlag('lobby', state, types, { tenant: 'phyg' }).variant.name).toBe('first')
+      expect(evaluateFlag('lobby', state, types, { tenant: 'acme' }).variant.name).toBe('second')
+
+      const shadowed: FlagState = { enabled: true, strategies: [third, second] }
+      expect(evaluateFlag('lobby', shadowed, types, {}).variant).toEqual(disabled)
+    })
+
+    it('buckets on the flag key, as Unleash does on the group id', () => {
+      const state: FlagState = {
+        enabled: true,
+        strategies: [everyone(variant('variant1', 1), variant('variant2', 1))],
+      }
+      expect(evaluateFlag('Feature.Variants.B', state, types, { userId: '2' }).variant.name).toBe(
+        'variant2',
+      )
+      expect(evaluateFlag('Feature.Variants.B', state, types, { userId: '0' }).variant.name).toBe(
+        'variant1',
+      )
+    })
   })
 })

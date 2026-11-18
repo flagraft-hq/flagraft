@@ -115,11 +115,26 @@ export interface StrategyConstraint {
   values: string[]
 }
 
+export type VariantPayloadType = 'string' | 'json' | 'csv' | 'number'
+
+/** One weighted outcome of a strategy. `weight` is out of 1000. */
+export interface StrategyVariant {
+  name: string
+  weight: number
+  weightType: 'variable' | 'fix'
+  stickiness: string
+  payload?: { type: VariantPayloadType; value: string }
+}
+
+/** What the editor sends: the server fills in the weight of every variable variant. */
+export type StrategyVariantInput = Omit<StrategyVariant, 'weight'> & { weight?: number }
+
 /** A targeting strategy for a flag in one environment. A match means "on". */
 export interface Strategy {
   id: string
   position: number
   constraints: StrategyConstraint[]
+  variants: StrategyVariant[]
 }
 
 export interface ApiKey {

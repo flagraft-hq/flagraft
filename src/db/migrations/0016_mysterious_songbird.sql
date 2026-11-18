@@ -1,0 +1,1 @@
+ALTER TABLE "targeting_strategies" ADD COLUMN "variants" jsonb DEFAULT '[]'::jsonb NOT NULL;

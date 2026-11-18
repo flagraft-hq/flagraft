@@ -9,6 +9,9 @@ commitment. Items move only when they are actually done.
   default state for new flags.
 - **Context-aware targeting** — ordered strategies with AND-ed constraints over typed context
   fields (string, enum, boolean, number, version, date).
+- **Strategy variants** — weighted, sticky variants with optional payloads on a strategy,
+  bucketed with the same hash as Unleash so imported users keep their variant. Supported by
+  both SDKs, the admin UI, and native and Unleash import and export.
 - **Admin UI** — React application covering projects, flags, environments, context fields,
   targeting, API keys and users.
 - **Role-based access control** — owner, admin, editor and viewer roles, with protected
@@ -36,9 +39,8 @@ commitment. Items move only when they are actually done.
 - **Percentage rollouts** — deterministic bucketing on a context field so a flag can be
   enabled for a stable subset of users. The Unleash importer skips `flexibleRollout` below
   100% today and will map it once this exists, so this is worth more than it looks: it is
-  the single most common reason an Unleash migration comes out incomplete.
-- **Flag variants** — beyond boolean, returning a string or JSON value per matched strategy.
-  The Unleash importer drops variants today and will map them once this exists.
+  the single most common reason an Unleash migration comes out incomplete. The hash that
+  variants bucket with is already in place and can be reused here.
 - **Constraint-level evaluation detail** — report _which_ constraint failed, so "why is this
   off for this user" is answerable without re-deriving the strategy by hand.
 

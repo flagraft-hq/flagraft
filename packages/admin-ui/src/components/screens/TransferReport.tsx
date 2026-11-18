@@ -115,6 +115,7 @@ const LABELS: Record<string, string> = {
   'unsupported-strategy': 'Could not be imported',
   'unsupported-operator': 'Could not be exported',
   'constraint-rejected': 'Targeting rules dropped',
+  'variant-rejected': 'Targeting rules dropped: invalid variants',
   'unknown-environment': 'Environments not found',
   'approval-required': 'Needs a second admin',
   'behaviour-change': 'Imported, but behaves slightly differently',

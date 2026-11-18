@@ -5,6 +5,7 @@ import { contextFields, environments, featureFlags, targetingStrategies } from '
 import { AppError } from '../../plugins/errorHandler.js'
 import { constraintError, type FieldRule } from './constraint-rules.js'
 import type { PutStrategiesInput } from './strategy.schema.js'
+import { normaliseVariants } from './variant-rules.js'
 
 type StrategyRow = typeof targetingStrategies.$inferSelect
 
@@ -34,7 +35,12 @@ async function findEnvironment(db: Db, projectId: string, environmentSlug: strin
 
 /** Response shape: order is carried by `position`. */
 function toResponse(row: StrategyRow) {
-  return { id: row.id, position: row.position, constraints: row.constraints }
+  return {
+    id: row.id,
+    position: row.position,
+    constraints: row.constraints,
+    variants: row.variants,
+  }
 }
 
 export async function listStrategies(
@@ -112,6 +118,13 @@ export async function replaceStrategies(
   const flag = await findFlag(db, projectId, flagKey)
   const environment = await findEnvironment(db, projectId, environmentSlug)
   await validateConstraints(db, projectId, input)
+  const variantsByStrategy = input.strategies.map((strategy) => {
+    const result = normaliseVariants(strategy.variants)
+    if ('error' in result) {
+      throw new AppError(result.error, 400, 'BadRequest')
+    }
+    return result.variants
+  })
 
   const rows = await db.transaction(async (tx) => {
     await tx
@@ -133,6 +146,7 @@ export async function replaceStrategies(
           environmentId: environment.id,
           position: index,
           constraints: strategy.constraints,
+          variants: variantsByStrategy[index],
         })),
       )
       .returning()

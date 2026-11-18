@@ -7,14 +7,34 @@ export type ContextValue = string | number | boolean | Date
 
 export type EvaluationContext = Record<string, ContextValue>
 
+export interface VariantPayload {
+  type: 'string' | 'json' | 'csv' | 'number'
+  /** Always a string, whatever the type; parse it yourself for json and number. */
+  value: string
+}
+
+export interface EvaluatedVariant {
+  name: string
+  enabled: boolean
+  payload?: VariantPayload
+}
+
+export interface Variant extends EvaluatedVariant {
+  /** False when the flag itself is off or could not be read; true when it is on but serves no variant. */
+  featureEnabled: boolean
+}
+
 export interface Feature {
   name: string
   enabled: boolean
+  /** Missing when the server predates variants. */
+  variant?: EvaluatedVariant
 }
 
 export interface EvaluationResult {
   name: string
   enabled: boolean
+  variant?: EvaluatedVariant
   reason: 'disabled' | 'strategy-match' | 'default'
 }
 

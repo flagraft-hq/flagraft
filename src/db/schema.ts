@@ -240,6 +240,20 @@ export const pendingFlagToggles = pgTable(
   ],
 )
 
+export interface VariantPayload {
+  type: 'string' | 'json' | 'csv' | 'number'
+  value: string
+}
+
+export interface StrategyVariant {
+  name: string
+  /** Out of 1000, as in Unleash. */
+  weight: number
+  weightType: 'variable' | 'fix'
+  stickiness: string
+  payload?: VariantPayload
+}
+
 export const targetingStrategies = pgTable('targeting_strategies', {
   id: id(),
   flagId: uuid('flag_id')
@@ -251,6 +265,7 @@ export const targetingStrategies = pgTable('targeting_strategies', {
   /** Stable display order within a flag+environment. */
   position: integer('position').notNull().default(0),
   constraints: jsonb('constraints').$type<StrategyConstraint[]>().notNull().default([]),
+  variants: jsonb('variants').$type<StrategyVariant[]>().notNull().default([]),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 })

@@ -158,6 +158,35 @@ Three things it deliberately does not do:
 
 The default is per call, not per client, because different flags have different safe states. It is also not part of any cache key — the SDK caches the server's answer, so two call sites can pass different defaults for the same flag and each gets its own.
 
+### `getVariant(flagKey, context?) => Promise<Variant>`
+
+Returns the variant a flag serves for this context, for flags whose strategies define
+variants.
+
+```ts
+const variant = await flags.getVariant('checkout-button', { userId: 'u_42' })
+// { name: 'blue', enabled: true, payload: { type: 'string', value: '#00f' }, featureEnabled: true }
+
+if (variant.enabled) {
+  render(variant.name, variant.payload?.value)
+}
+```
+
+| Situation                                             | Result                                                        |
+| ----------------------------------------------------- | ------------------------------------------------------------- |
+| A strategy matched and has variants                   | `{ name, enabled: true, payload?, featureEnabled: true }`     |
+| The flag is on, but nothing serves a variant          | `{ name: 'disabled', enabled: false, featureEnabled: true }`  |
+| The flag is off, unknown, or the server cannot answer | `{ name: 'disabled', enabled: false, featureEnabled: false }` |
+
+`payload.value` is always a string, whatever `payload.type` says; parse `json` and `number`
+payloads yourself.
+
+`getVariant` shares everything with `isEnabled`: the same request, the same cache entry, the
+same stale fallback, and the same rule for when a `FlagraftError` is thrown. Calling both for
+one flag and context costs one request. To keep a user in one variant, send the value the
+variants are sticky on (`userId` by default). Without it the server picks at random, and the
+SDK cache then holds that pick until the entry expires.
+
 ### `getFeatures(context?) => Promise<Record<string, boolean>>`
 
 Hydrate a UI in one call. Returns a plain object mapping flag name to enabled state.
@@ -180,10 +209,12 @@ Same data as `getFeatures` but as an array, which is the raw server shape.
 ```ts
 const features = await flags.getAllFeatures()
 // [
-//   { name: 'checkout-v2', enabled: true },
-//   { name: 'dark-mode', enabled: false },
+//   { name: 'checkout-v2', enabled: true, variant: { name: 'blue', enabled: true } },
+//   { name: 'dark-mode', enabled: false, variant: { name: 'disabled', enabled: false } },
 // ]
 ```
+
+Each entry carries the flag's `variant`. It is missing only when the server predates variants.
 
 Pick this when you want to iterate, filter, or pass the array straight to a templating layer.
 

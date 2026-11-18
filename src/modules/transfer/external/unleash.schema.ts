@@ -58,6 +58,19 @@ const featureStrategySchema = z.object({
   segments: z.array(z.union([z.number(), z.string()])).default([]),
 })
 
+/** Checked per strategy by the adapter, so one odd variant drops its strategy and not the whole file. */
+export const unleashVariantsSchema = z.array(
+  z.object({
+    name: z.string(),
+    weight: z.number(),
+    weightType: z.enum(['variable', 'fix']).default('variable'),
+    stickiness: z.string().min(1).optional(),
+    payload: z
+      .object({ type: z.enum(['string', 'json', 'csv', 'number']), value: z.string() })
+      .optional(),
+  }),
+)
+
 const contextFieldSchema = z.object({
   name: z.string().min(1),
   description: z.string().nullable().optional(),

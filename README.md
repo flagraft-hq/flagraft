@@ -40,6 +40,9 @@ Flags are scoped per environment. Each project can have up to three environments
 **Context-aware targeting**
 Pass any key/value context at evaluation time -- user ID, tenant, plan, region -- and match it against per-environment targeting strategies to turn a flag on for a subset of callers. Useful for canary releases and per-tenant rollouts.
 
+**Variants**
+A strategy can split the callers it matches across weighted, sticky variants, each with an optional string, JSON, CSV or number payload. The model and the bucketing match Unleash strategy variants, so a migrated user keeps the variant they had. See [Serve variants from a strategy](docs/API.md#bonus----serve-variants-from-a-strategy).
+
 **Three-tier auth**
 
 - Root admin keys: full access, created via CLI at setup time
@@ -75,7 +78,7 @@ Flagraft is designed around the patterns engineering teams actually use feature 
 
 - **Kill switches and circuit breakers.** Disable a misbehaving feature in production within seconds, no redeploy.
 - **Gradual rollouts and canary releases.** Enable a feature for a small set of users (by `userId`, `cohort`, or `region`), then expand as you gain confidence.
-- **A/B testing infrastructure.** Use targeting strategies to direct cohorts to different variants and read the flag from your analytics pipeline.
+- **A/B testing infrastructure.** Split matched users across weighted variants, keep each user in the same variant, and read the variant from your analytics pipeline.
 - **Per-tenant rollouts.** Enable features for specific tenants in a multi-tenant SaaS, useful for paid-tier gating or trusted-customer previews.
 - **Trunk-based development.** Merge incomplete features behind a flag and ship them dark; flip when ready.
 - **Environment promotion.** Keep separate flag state for `development`, `staging`, and `production` without duplicating config across services.
@@ -458,8 +461,8 @@ Three properties worth knowing before you run one:
   previews first and only writes when you confirm.
 - **It is one transaction.** A half-imported project -- some flags created, some strategies
   missing -- is impossible rather than recoverable.
-- **Import never widens a flag's audience.** Flagraft has no variants, percentage rollouts or
-  segments, so an Unleash export cannot be carried over whole. Rather than approximate, any
+- **Import never widens a flag's audience.** Flagraft has no percentage rollouts, segments or
+  flag-level variants, so an Unleash export cannot be carried over whole. Rather than approximate, any
   strategy that cannot be represented exactly is dropped and named in the report. Importing a 50%
   rollout as an always-on rule would double who sees a feature, which is not a mistake worth
   making quietly. Same for a constraint we cannot express: the whole strategy goes, because
@@ -541,7 +544,7 @@ Yes. Flagraft is open source and self-hosted. There is no SaaS tier, no per-seat
 Yes, for the core feature flag management workflow (toggle features per environment, target users via context, evaluate from server or client SDK). See [How Flagraft compares](#how-flagraft-compares) for a feature-by-feature table. Some advanced capabilities (percentage rollouts, real-time SSE push, audit log) are on the [roadmap](docs/ROADMAP.md).
 
 **Does Flagraft work for A/B testing and canary releases?**
-Yes. Use context-aware targeting strategies keyed by `userId`, `cohort`, `region`, `tenant`, or any custom context field to direct subsets of users to a variant or canary. The evaluation engine returns a deterministic on/off per (flag, context) pair.
+Yes. Use context-aware targeting strategies keyed by `userId`, `cohort`, `region`, `tenant`, or any custom context field to direct subsets of users to a canary, and strategy variants to split them across weighted variants. Evaluation is deterministic per (flag, context) pair, except for variants set to `random` stickiness or evaluated without the context value they are sticky on.
 
 **What languages and frameworks are supported?**
 Any language can call the HTTP API directly. Official SDKs exist for TypeScript / JavaScript via [`@flagraft/sdk`](packages/sdk-js/README.md) (Node 20+, Bun, Deno, Cloudflare Workers, Vercel Edge) and Python 3.11+ via [`flagraft`](packages/sdk-python/README.md). A Go SDK is on the [roadmap](docs/ROADMAP.md).

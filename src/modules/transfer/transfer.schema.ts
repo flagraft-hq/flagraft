@@ -1,9 +1,11 @@
 import { z } from 'zod'
 
 import { FIELD_TYPES, contextFieldKeySchema } from '../context-fields/context-field.schema.js'
+import { variantSchema } from '../strategies/strategy.schema.js'
 
 export const NATIVE_FORMAT = 'flagraft.export'
-export const NATIVE_VERSION = 1
+/** Version 2 added strategy variants. Version 1 files are still accepted on import. */
+export const NATIVE_VERSION = 2
 
 /**
  * Same rules as the create-context-field route, because an import writes to
@@ -43,6 +45,7 @@ const constraintSchema = z.object({
 
 const strategySchema = z.object({
   constraints: z.array(constraintSchema).default([]),
+  variants: z.array(variantSchema).default([]),
 })
 
 const flagEnvironmentSchema = z.object({
@@ -65,7 +68,7 @@ const flagSchema = z.object({
  */
 export const nativeDocumentSchema = z.object({
   format: z.literal(NATIVE_FORMAT),
-  version: z.literal(NATIVE_VERSION),
+  version: z.union([z.literal(1), z.literal(NATIVE_VERSION)]),
   /** Informational. Ignored on import. */
   exportedAt: z.string().optional(),
   /** Informational. The import target is always the projectId in the URL. */
@@ -96,6 +99,7 @@ export type WarningKind =
   | 'unknown-environment'
   | 'approval-required'
   | 'constraint-rejected'
+  | 'variant-rejected'
   | 'behaviour-change'
 
 export interface TransferWarning {

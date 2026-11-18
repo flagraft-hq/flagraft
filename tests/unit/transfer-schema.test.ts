@@ -52,7 +52,7 @@ describe('nativeDocumentSchema', () => {
   })
 
   it('rejects an unknown future version', () => {
-    expect(() => nativeDocumentSchema.parse({ ...minimal, version: 2 })).toThrow()
+    expect(() => nativeDocumentSchema.parse({ ...minimal, version: 3 })).toThrow()
   })
 
   it('keeps strategy order and defaults strategies to empty', () => {
@@ -124,5 +124,48 @@ describe('summariseIssues', () => {
     const summary = summariseIssues(issues)
     expect(summary).toContain('9 problems')
     expect(summary).toContain('and 6 more')
+  })
+})
+
+describe('nativeDocumentSchema versions and variants', () => {
+  const withStrategy = (version: number, strategy: Record<string, unknown>) =>
+    nativeDocumentSchema.safeParse({
+      format: 'flagraft.export',
+      version,
+      flags: [
+        {
+          key: 'f',
+          name: 'F',
+          environments: { production: { enabled: true, strategies: [strategy] } },
+        },
+      ],
+    })
+
+  it.each([1, 2])('accepts version %i', (version) => {
+    expect(nativeDocumentSchema.safeParse({ format: 'flagraft.export', version }).success).toBe(
+      true,
+    )
+  })
+
+  it('refuses a version it does not know', () => {
+    expect(nativeDocumentSchema.safeParse({ format: 'flagraft.export', version: 3 }).success).toBe(
+      false,
+    )
+  })
+
+  it('gives a version 1 strategy no variants', () => {
+    const parsed = withStrategy(1, { constraints: [] })
+    expect(parsed.success && parsed.data.flags[0].environments.production.strategies[0]).toEqual({
+      constraints: [],
+      variants: [],
+    })
+  })
+
+  it('keeps the variants of a version 2 strategy', () => {
+    const variants = [{ name: 'a', weight: 1000, weightType: 'variable', stickiness: 'default' }]
+    const parsed = withStrategy(2, { constraints: [], variants })
+    expect(
+      parsed.success && parsed.data.flags[0].environments.production.strategies[0].variants,
+    ).toEqual(variants)
   })
 })

@@ -5,6 +5,7 @@ import { AppError } from '../../plugins/errorHandler.js'
 import { initialEnabled } from '../flags/flag.service.js'
 import { constraintError, type FieldRule } from '../strategies/constraint-rules.js'
 import { loadFieldRules } from '../strategies/strategy.service.js'
+import { normaliseVariants } from '../strategies/variant-rules.js'
 import {
   contextFields,
   environments,
@@ -12,6 +13,7 @@ import {
   flagEnvironments,
   projects,
   targetingStrategies,
+  type StrategyVariant,
 } from '../../db/schema.js'
 import { MAX_CONTEXT_FIELDS_PER_PROJECT } from '../../limits.js'
 import {
@@ -93,6 +95,7 @@ export async function exportProject(
           flagId: targetingStrategies.flagId,
           slug: environments.slug,
           constraints: targetingStrategies.constraints,
+          variants: targetingStrategies.variants,
         })
         .from(targetingStrategies)
         .innerJoin(environments, eq(targetingStrategies.environmentId, environments.id))
@@ -120,7 +123,10 @@ export async function exportProject(
       for (const strategy of strategyRows) {
         if (strategy.flagId !== flag.id) continue
         /** A strategy only exists for an environment the flag has a row in. */
-        envs[strategy.slug]?.strategies.push({ constraints: strategy.constraints })
+        envs[strategy.slug]?.strategies.push({
+          constraints: strategy.constraints,
+          variants: strategy.variants,
+        })
       }
       return {
         key: flag.key,
@@ -204,7 +210,7 @@ function resolveEnvironment(
 }
 
 /**
- * Keeps only the strategies whose every constraint is legal.
+ * Keeps only the strategies whose every constraint and variant set is legal.
  *
  * A strategy is an AND of constraints, so dropping one constraint widens who
  * the flag is on for -- a strategy scoped to one plan would become
@@ -216,7 +222,7 @@ function filterStrategies(
   environment: string,
   warnings: TransferWarning[],
 ) {
-  const kept: NativeStrategy[] = []
+  const kept: { constraints: NativeStrategy['constraints']; variants: StrategyVariant[] }[] = []
   let skipped = 0
 
   for (const strategy of strategies) {
@@ -232,7 +238,17 @@ function filterStrategies(
       skipped += 1
       continue
     }
-    kept.push(strategy)
+    const variants = normaliseVariants(strategy.variants)
+    if ('error' in variants) {
+      warnings.push({
+        environment,
+        kind: 'variant-rejected',
+        detail: `Strategy dropped: ${variants.error}. Fix its variants and import it again.`,
+      })
+      skipped += 1
+      continue
+    }
+    kept.push({ constraints: strategy.constraints, variants: variants.variants })
   }
 
   return { kept, skipped }
@@ -487,6 +503,7 @@ async function applyImport(tx: DbLike, projectId: string, args: ImportArgs): Pro
           environmentId: target.env.id,
           position: index,
           constraints: strategy.constraints,
+          variants: strategy.variants,
         })),
       )
       report.counts.strategiesImported += kept.length

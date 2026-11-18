@@ -1,8 +1,19 @@
-import type { StrategyConstraint } from '../../db/schema.js'
+import type { StrategyConstraint, StrategyVariant, VariantPayload } from '../../db/schema.js'
+import { selectVariant } from './variants.js'
 
 export interface StrategyDef {
   constraints: StrategyConstraint[]
+  variants: StrategyVariant[]
 }
+
+export interface EvalVariant {
+  name: string
+  enabled: boolean
+  payload?: VariantPayload
+}
+
+/** Unleash's name for "no variant", so SDK callers migrating from it see the same value. */
+export const DISABLED_VARIANT: EvalVariant = { name: 'disabled', enabled: false }
 
 export interface FlagState {
   enabled: boolean
@@ -187,18 +198,30 @@ function strategyMatches(
 /**
  * Unleash-style evaluation: disabled env → off; enabled with no strategies →
  * on for all; enabled with strategies → on if any strategy matches, else off.
+ * The first matching strategy also decides the variant.
  */
 export function evaluateFlag(
+  flagKey: string,
   state: FlagState,
   fieldTypes: FieldTypes,
   context: EvalContext,
-): { enabled: boolean; reason: EvalReason } {
-  if (!state.enabled) return { enabled: false, reason: 'disabled' }
-  if (state.strategies.length === 0) return { enabled: true, reason: 'default' }
+): { enabled: boolean; reason: EvalReason; variant: EvalVariant } {
+  if (!state.enabled) return { enabled: false, reason: 'disabled', variant: DISABLED_VARIANT }
+  if (state.strategies.length === 0) {
+    return { enabled: true, reason: 'default', variant: DISABLED_VARIANT }
+  }
   for (const strategy of state.strategies) {
     if (strategyMatches(strategy, fieldTypes, context)) {
-      return { enabled: true, reason: 'strategy-match' }
+      const picked = selectVariant(flagKey, strategy.variants, context)
+      const variant: EvalVariant = picked
+        ? {
+            name: picked.name,
+            enabled: true,
+            ...(picked.payload ? { payload: picked.payload } : {}),
+          }
+        : DISABLED_VARIANT
+      return { enabled: true, reason: 'strategy-match', variant }
     }
   }
-  return { enabled: false, reason: 'default' }
+  return { enabled: false, reason: 'default', variant: DISABLED_VARIANT }
 }

@@ -7,3 +7,7 @@
  */
 export const MAX_CONTEXT_FIELDS_PER_PROJECT = 25
 export const MAX_ENVIRONMENTS_PER_PROJECT = 3
+
+/** Variant weights are out of 1000, as on the backend and in Unleash. */
+export const VARIANT_WEIGHT_TOTAL = 1000
+export const MAX_VARIANTS_PER_STRATEGY = 20

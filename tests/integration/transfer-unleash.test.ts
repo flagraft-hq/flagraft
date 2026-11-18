@@ -196,8 +196,11 @@ describeIfDb('unleash transfer', () => {
       headers: auth,
       payload: {
         strategies: [
-          { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['acme'] }] },
-          { constraints: [{ fieldKey: 'tenant', operator: 'regex', values: ['^ac'] }] },
+          { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['acme'] }], variants: [] },
+          {
+            constraints: [{ fieldKey: 'tenant', operator: 'regex', values: ['^ac'] }],
+            variants: [],
+          },
         ],
       },
     })

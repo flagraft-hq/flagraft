@@ -188,6 +188,7 @@ describe('toNative', () => {
     const production = result().document.flags[0].environments.production
     expect(production.strategies[0]).toEqual({
       constraints: [{ fieldKey: 'appVersion', operator: 'eq', values: ['2.1.0'] }],
+      variants: [],
     })
   })
 
@@ -206,7 +207,10 @@ describe('toNative', () => {
     const production = result().document.flags[0].environments.production
     expect(production.strategies).toEqual(
       expect.arrayContaining([
-        { constraints: [{ fieldKey: 'userId', operator: 'in', values: ['u-1', 'u-2'] }] },
+        {
+          constraints: [{ fieldKey: 'userId', operator: 'in', values: ['u-1', 'u-2'] }],
+          variants: [],
+        },
       ]),
     )
     expect(result().document.contextFields).toEqual(
@@ -231,7 +235,7 @@ describe('toNative', () => {
     const production = result().document.flags[0].environments.production
     expect(production.strategies).toEqual(
       expect.arrayContaining([
-        { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['free'] }] },
+        { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['free'] }], variants: [] },
       ]),
     )
   })
@@ -247,9 +251,15 @@ describe('toNative', () => {
      * NOT_IN, which negates to `in`); 2, 3 and 5 dropped.
      */
     expect(production.strategies).toEqual([
-      { constraints: [{ fieldKey: 'appVersion', operator: 'eq', values: ['2.1.0'] }] },
-      { constraints: [{ fieldKey: 'userId', operator: 'in', values: ['u-1', 'u-2'] }] },
-      { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['free'] }] },
+      {
+        constraints: [{ fieldKey: 'appVersion', operator: 'eq', values: ['2.1.0'] }],
+        variants: [],
+      },
+      {
+        constraints: [{ fieldKey: 'userId', operator: 'in', values: ['u-1', 'u-2'] }],
+        variants: [],
+      },
+      { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['free'] }], variants: [] },
     ])
   })
 
@@ -293,9 +303,18 @@ describe('fromNative', () => {
           production: {
             enabled: true,
             strategies: [
-              { constraints: [{ fieldKey: 'plan', operator: 'equals', values: ['pro'] }] },
-              { constraints: [{ fieldKey: 'plan', operator: 'regex', values: ['^p'] }] },
-              { constraints: [{ fieldKey: 'build', operator: 'gte', values: ['1.2.0'] }] },
+              {
+                constraints: [{ fieldKey: 'plan', operator: 'equals', values: ['pro'] }],
+                variants: [],
+              },
+              {
+                constraints: [{ fieldKey: 'plan', operator: 'regex', values: ['^p'] }],
+                variants: [],
+              },
+              {
+                constraints: [{ fieldKey: 'build', operator: 'gte', values: ['1.2.0'] }],
+                variants: [],
+              },
             ],
           },
           development: { enabled: false, strategies: [] },
@@ -369,7 +388,7 @@ describe('fromNative', () => {
      * "fixes" it later.
      */
     expect(back.flags[0].environments.production.strategies).toEqual([
-      { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }] },
+      { constraints: [{ fieldKey: 'plan', operator: 'in', values: ['pro'] }], variants: [] },
     ])
     expect(back.flags[0].environments.production.enabled).toBe(true)
     expect(back.flags[0].environments.development.enabled).toBe(false)
@@ -411,7 +430,7 @@ describe('inverted constraints', () => {
       inverted: true,
     })
     expect(strategiesOf(result)).toEqual([
-      { constraints: [{ fieldKey: 'tenant', operator: expected, values: ['acme'] }] },
+      { constraints: [{ fieldKey: 'tenant', operator: expected, values: ['acme'] }], variants: [] },
     ])
   })
 
@@ -429,7 +448,7 @@ describe('inverted constraints', () => {
       inverted: true,
     })
     expect(strategiesOf(result)).toEqual([
-      { constraints: [{ fieldKey: 'seats', operator: expected, values: ['10'] }] },
+      { constraints: [{ fieldKey: 'seats', operator: expected, values: ['10'] }], variants: [] },
     ])
   })
 
@@ -484,7 +503,7 @@ describe('inverted constraints', () => {
       inverted: false,
     })
     expect(strategiesOf(result)).toEqual([
-      { constraints: [{ fieldKey: 'tenant', operator: 'notIn', values: ['acme'] }] },
+      { constraints: [{ fieldKey: 'tenant', operator: 'notIn', values: ['acme'] }], variants: [] },
     ])
   })
 
@@ -507,7 +526,7 @@ describe('inverted constraints', () => {
       expect.objectContaining({ key: 'plan', type: 'enum' }),
     ])
     expect(strategiesOf(result)).toEqual([
-      { constraints: [{ fieldKey: 'plan', operator: 'notIn', values: ['free'] }] },
+      { constraints: [{ fieldKey: 'plan', operator: 'notIn', values: ['free'] }], variants: [] },
     ])
   })
 })
@@ -587,7 +606,7 @@ describe('case-insensitive constraints', () => {
 
     /** Narrowing, so it lands -- but nobody should have to discover it. */
     expect(document.flags[0].environments.production.strategies).toEqual([
-      { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['Acme'] }] },
+      { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['Acme'] }], variants: [] },
     ])
     expect(flagWarnings.get('a')?.[0]).toMatchObject({
       environment: 'production',
@@ -665,7 +684,7 @@ describe('tolerating real-world export variations', () => {
     })
 
     expect(document.flags[0].environments.production.strategies).toEqual([
-      { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['acme'] }] },
+      { constraints: [{ fieldKey: 'tenant', operator: 'in', values: ['acme'] }], variants: [] },
     ])
     /** The inference is reported, so nobody finds targeting they did not ask for. */
     expect(warnings.find((w) => w.kind === 'unknown-environment')?.detail).toMatch(
@@ -689,7 +708,7 @@ describe('tolerating real-world export variations', () => {
     const b = document.flags.find((flag) => flag.key === 'b')
     expect(b?.environments.production).toEqual({
       enabled: false,
-      strategies: [{ constraints: [] }],
+      strategies: [{ constraints: [], variants: [] }],
     })
   })
 
@@ -729,7 +748,9 @@ describe('tolerating real-world export variations', () => {
       ],
     })
 
-    expect(document.flags[0].environments.staging.strategies).toEqual([{ constraints: [] }])
+    expect(document.flags[0].environments.staging.strategies).toEqual([
+      { constraints: [], variants: [] },
+    ])
     expect(document.flags[0].environments.production.strategies).toEqual([])
     expect(warnings.some((w) => w.kind === 'unknown-environment')).toBe(false)
   })
@@ -771,7 +792,9 @@ describe('tolerating real-world export variations', () => {
         },
       ],
     })
-    expect(document.flags[0].environments.production.strategies).toEqual([{ constraints: [] }])
+    expect(document.flags[0].environments.production.strategies).toEqual([
+      { constraints: [], variants: [] },
+    ])
   })
 
   it('coerces numeric strategy parameters instead of rejecting them', () => {
@@ -787,6 +810,205 @@ describe('tolerating real-world export variations', () => {
         },
       ],
     })
-    expect(document.flags[0].environments.production.strategies).toEqual([{ constraints: [] }])
+    expect(document.flags[0].environments.production.strategies).toEqual([
+      { constraints: [], variants: [] },
+    ])
+  })
+})
+
+describe('strategy variants', () => {
+  const variant = (name: string, weight: number, extra: Record<string, unknown> = {}) => ({
+    name,
+    weight,
+    weightType: 'variable',
+    stickiness: 'default',
+    ...extra,
+  })
+
+  function unleashDoc(strategy: Record<string, unknown>, featureVariants: unknown[] = []) {
+    return {
+      features: [{ name: 'checkout' }],
+      featureEnvironments: [
+        {
+          featureName: 'checkout',
+          environment: 'production',
+          enabled: true,
+          variants: featureVariants,
+        },
+      ],
+      featureStrategies: [{ featureName: 'checkout', environment: 'production', ...strategy }],
+    }
+  }
+
+  const imported = (strategy: Record<string, unknown>, featureVariants: unknown[] = []) => {
+    const result = toNative(unleashDoc(strategy, featureVariants))
+    return {
+      ...result,
+      strategies: result.document.flags[0].environments.production.strategies,
+      flagDetails: (result.flagWarnings.get('checkout') ?? []).map((w) => `${w.kind}: ${w.detail}`),
+    }
+  }
+
+  const rollout = (parameters: Record<string, string>, variants: unknown[]) => ({
+    strategyName: 'flexibleRollout',
+    parameters: { rollout: '100', stickiness: 'default', ...parameters },
+    variants,
+  })
+
+  it('maps variants one to one when the weights already match', () => {
+    const payload = { type: 'json', value: '{"a":1}' }
+    const { strategies, flagDetails } = imported(
+      rollout({ groupId: 'checkout' }, [
+        variant('a', 100, { weightType: 'fix', payload }),
+        variant('b', 900),
+      ]),
+    )
+
+    expect(strategies).toEqual([
+      {
+        constraints: [],
+        variants: [
+          { name: 'a', weight: 100, weightType: 'fix', stickiness: 'default', payload },
+          { name: 'b', weight: 900, weightType: 'variable', stickiness: 'default' },
+        ],
+      },
+    ])
+    expect(flagDetails).toEqual([])
+  })
+
+  it('takes stickiness from the strategy when the variants name none', () => {
+    const { strategies } = imported(
+      rollout({ groupId: 'checkout', stickiness: 'tenant' }, [{ name: 'a', weight: 1000 }]),
+    )
+    expect(strategies[0].variants[0].stickiness).toBe('tenant')
+  })
+
+  it('warns when the Unleash group id is not the flag key', () => {
+    const { strategies, flagDetails } = imported(
+      rollout({ groupId: 'other-group' }, [variant('a', 500), variant('b', 500)]),
+    )
+    expect(strategies[0].variants).toHaveLength(2)
+    expect(flagDetails).toHaveLength(1)
+    expect(flagDetails[0]).toMatch(/^behaviour-change: .*other-group/)
+  })
+
+  it('warns when the strategy has no group id at all', () => {
+    const { flagDetails } = imported({ strategyName: 'default', variants: [variant('a', 1000)] })
+    expect(flagDetails).toHaveLength(1)
+    expect(flagDetails[0]).toMatch(/^behaviour-change: .*group id/)
+  })
+
+  it('warns when the weights have to be rebalanced', () => {
+    const { strategies, flagDetails } = imported(
+      rollout({ groupId: 'checkout' }, [variant('a', 1), variant('b', 1)]),
+    )
+    expect(strategies[0].variants.map((v) => v.weight)).toEqual([500, 500])
+    expect(flagDetails).toHaveLength(1)
+    expect(flagDetails[0]).toMatch(/^behaviour-change: .*weights/)
+  })
+
+  it('drops a strategy whose variants cannot be stored, and says why', () => {
+    const { strategies, flagDetails } = imported(
+      rollout({ groupId: 'checkout' }, [variant('a', 500), variant('a', 500)]),
+    )
+    expect(strategies).toEqual([])
+    expect(flagDetails).toHaveLength(1)
+    expect(flagDetails[0]).toMatch(/^unsupported-strategy: .*Duplicate variant name/)
+  })
+
+  it('does not import variants of a strategy it skips', () => {
+    const { strategies } = imported({
+      strategyName: 'flexibleRollout',
+      parameters: { rollout: '50', groupId: 'checkout' },
+      variants: [variant('a', 1000)],
+    })
+    expect(strategies).toEqual([])
+  })
+
+  it('still drops and reports flag-level variants only', () => {
+    const quiet = imported(rollout({ groupId: 'checkout' }, [variant('a', 1000)]))
+    expect(quiet.warnings.filter((w) => w.detail.includes('variant'))).toEqual([])
+
+    const { warnings } = imported({ strategyName: 'default' }, [{ name: 'legacy', weight: 1000 }])
+    const about = warnings.filter((w) => w.detail.includes('variant'))
+    expect(about).toHaveLength(1)
+    expect(about[0].detail).toContain('flag-level')
+  })
+
+  it('exports variants on a 100% flexibleRollout grouped by the flag key', () => {
+    const variants = [
+      { name: 'a', weight: 100, weightType: 'fix' as const, stickiness: 'tenant' },
+      {
+        name: 'b',
+        weight: 900,
+        weightType: 'variable' as const,
+        stickiness: 'tenant',
+        payload: { type: 'string' as const, value: 'blue' },
+      },
+    ]
+    const { document, warnings } = fromNative(
+      nativeDocumentSchema.parse({
+        format: 'flagraft.export',
+        version: 2,
+        flags: [
+          {
+            key: 'checkout',
+            name: 'Checkout',
+            environments: {
+              production: {
+                enabled: true,
+                strategies: [{ constraints: [], variants }, { constraints: [] }],
+              },
+            },
+          },
+        ],
+      }),
+    )
+
+    expect(warnings).toEqual([])
+    expect(document.featureStrategies[0]).toMatchObject({
+      strategyName: 'flexibleRollout',
+      parameters: { rollout: '100', stickiness: 'tenant', groupId: 'checkout' },
+      variants,
+    })
+    expect(document.featureStrategies[1]).toMatchObject({
+      strategyName: 'default',
+      parameters: {},
+      variants: [],
+    })
+  })
+
+  it('an export imports back to the same variants without warnings', () => {
+    const native = nativeDocumentSchema.parse({
+      format: 'flagraft.export',
+      version: 2,
+      flags: [
+        {
+          key: 'checkout',
+          name: 'Checkout',
+          environments: {
+            production: {
+              enabled: true,
+              strategies: [
+                {
+                  constraints: [],
+                  variants: [
+                    { name: 'a', weight: 334, weightType: 'variable', stickiness: 'default' },
+                    { name: 'b', weight: 333, weightType: 'variable', stickiness: 'default' },
+                    { name: 'c', weight: 333, weightType: 'variable', stickiness: 'default' },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    })
+
+    const back = toNative(fromNative(native).document)
+    expect(back.document.flags[0].environments.production.strategies).toEqual(
+      native.flags[0].environments.production.strategies,
+    )
+    expect(back.flagWarnings.get('checkout') ?? []).toEqual([])
   })
 })
